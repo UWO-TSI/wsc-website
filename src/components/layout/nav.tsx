@@ -181,14 +181,14 @@ export default function Nav() {
             data-cursor="hover"
           >
             <Image
-              src="/shark.avif"
+              src="/shark-white.png"
               alt="Western Sales Club logo"
               width={28}
               height={28}
               className="h-7 w-7 object-contain"
               priority
             />
-            <span className="font-body text-sm font-medium tracking-[0.04em] text-text-primary">
+            <span className="font-mono text-md tracking-[0.04em] text-text-primary">
               Western Sales Club
             </span>
           </Link>

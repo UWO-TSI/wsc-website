@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { easing } from "@/lib/motion";
 
 const CRITICAL_IMAGES = [
-  "/shark.avif",
+  "/shark-white.png",
   "/UC-HILL.avif",
   "/TORONTO.avif",
   "/MIDDLESEX.avif",
@@ -67,7 +67,7 @@ export default function Preloader({ onLoadComplete }: PreloaderProps) {
         }}
       >
         <Image
-          src="/shark.avif"
+          src="/shark-white.png"
           alt="Western Sales Club"
           width={80}
           height={80}

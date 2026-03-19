@@ -40,30 +40,43 @@ export default function Footer() {
         className="mx-auto flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between"
         style={{ maxWidth: "1400px" }}
       >
-        {/* Left — Logo + Wordmark */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 shrink-0"
-          data-cursor="hover"
-        >
-          <Image
-            src="/shark.avif"
-            alt="Western Sales Club logo"
-            width={20}
-            height={20}
-            className="object-contain"
-          />
-          <span
-            className="font-body"
-            style={{
-              fontSize: "var(--text-small)",
-              color: "var(--color-text-muted)",
-              fontWeight: 400,
-            }}
+        {/* Left — Wordmark + Social links */}
+        <div className="flex flex-col items-start gap-2 shrink-0">
+          <Link
+            href="/"
+            data-cursor="hover"
           >
-            Western Sales Club
-          </span>
-        </Link>
+            <span
+              className="font-display font-semibold text-lg tracking-[0.04em] text-text-primary"
+              style={{
+                color: "var(--color-text-muted)",
+              }}
+            >
+              Western Sales Club
+            </span>
+          </Link>
+          <div className="flex items-center gap-1 self-center">
+            {SOCIAL_LINKS.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.label}
+                data-cursor="hover"
+                className="social-icon-link flex h-11 w-11 items-center justify-center"
+              >
+                <Image
+                  src={social.icon}
+                  alt={social.label}
+                  width={18}
+                  height={18}
+                  className="social-icon"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
 
         {/* Center — Nav links with dot separators */}
         <nav className="flex flex-wrap items-center justify-center gap-y-1">
@@ -96,28 +109,29 @@ export default function Footer() {
           ))}
         </nav>
 
-        {/* Right — Social icons */}
-        <div className="flex items-center gap-1 shrink-0">
-          {SOCIAL_LINKS.map((social) => (
-            <a
-              key={social.label}
-              href={social.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={social.label}
-              data-cursor="hover"
-              className="social-icon-link flex h-11 w-11 items-center justify-center"
-            >
-              <Image
-                src={social.icon}
-                alt={social.label}
-                width={18}
-                height={18}
-                className="social-icon"
-              />
-            </a>
-          ))}
-        </div>
+        {/* Right — TSI logo + initiative label */}
+        <a
+          href="https://tethos.ca"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="TSI - Tech for Social Impact"
+          data-cursor="hover"
+          className="flex flex-col items-center gap-1 shrink-0"
+        >
+          <Image
+            src="/TSI.avif"
+            alt="TSI"
+            width={56}
+            height={56}
+            className="object-contain"
+          />
+          <span
+            className="font-mono text-[var(--color-text-subtle)]"
+            style={{ fontSize: "var(--text-mono-sm)" }}
+          >
+            A TSI initiative
+          </span>
+        </a>
       </div>
 
       {/* Copyright line */}
@@ -129,8 +143,7 @@ export default function Footer() {
           marginTop: "var(--space-3)",
         }}
       >
-        &copy; {year} Western Sales Club &middot; A TSI Initiative
-      </p>
+        &copy; {year} Western Sales Club      </p>
     </footer>
   );
 }

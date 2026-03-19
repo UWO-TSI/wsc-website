@@ -105,72 +105,212 @@ function FloatingField({
   );
 }
 
-// Floating label select component
+// Custom animated dropdown
 function FloatingSelect({
   label,
   name,
   value,
   options,
-  onChange,
+  onSelect,
   disabled,
 }: {
   label: string;
   name: string;
   value: string;
   options: { value: string; label: string }[];
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+  onSelect: (name: string, value: string) => void;
   disabled: boolean;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const isFilled = value.length > 0;
+  const selectedLabel = options.find((o) => o.value === value)?.label ?? options[0].label;
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [isOpen]);
+
+  // Keyboard navigation inside the list
+  const handleListKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+    const items = listRef.current?.querySelectorAll<HTMLLIElement>('[role="option"]');
+    if (!items) return;
+    const currentIndex = Array.from(items).findIndex((el) => el === document.activeElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[next].focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[prev].focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0].focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1].focus();
+    }
+  };
+
+  const selectOption = (optValue: string) => {
+    onSelect(name, optValue);
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
 
   return (
-    <div className="relative">
-      <select
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={`
-          peer w-full appearance-none border-0 border-b border-b-[var(--color-border)]
-          bg-transparent px-0 pb-2 pt-5
-          font-body text-[length:var(--text-body)] text-[var(--color-text-primary)]
-          outline-none transition-[border-color] duration-250
-          disabled:cursor-not-allowed disabled:opacity-50
-          focus:border-b-[var(--color-gold)] focus-visible:outline-none
-        `}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value} className="bg-[var(--color-bg-base)] text-[var(--color-text-primary)]">
-            {opt.label}
-          </option>
-        ))}
-      </select>
+    <div className="relative" ref={containerRef}>
+      {/* Hidden input so EmailJS can read the value from the form */}
+      <input type="hidden" name={name} value={value} />
+
       <label
-        htmlFor={name}
-        className={`
-          pointer-events-none absolute left-0 origin-left
-          font-mono text-[length:var(--text-mono)] text-[var(--color-text-muted)]
-          transition-all duration-200 ease-out
-          ${isFilled
-            ? 'top-0 -translate-y-1 scale-85 text-[var(--color-gold)]'
-            : 'top-5 translate-y-0 scale-100'
-          }
-          peer-focus:top-0 peer-focus:-translate-y-1 peer-focus:scale-85 peer-focus:text-[var(--color-gold)]
-        `}
+        className="absolute left-0 top-0 block -mt-1 font-mono text-[length:var(--text-mono)] text-[var(--color-text-muted)] pointer-events-none"
       >
         {label}
       </label>
-      {/* Dropdown chevron */}
-      <svg
-        className="pointer-events-none absolute right-0 top-5 h-4 w-4 text-[var(--color-text-muted)]"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
+
+      {/* Trigger button */}
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`
+          mt-5 flex w-full items-center justify-between border-0 border-b
+          bg-transparent px-0 pb-2 pt-0 text-left
+          font-body text-[length:var(--text-body)]
+          outline-none transition-[border-color] duration-250
+          disabled:cursor-not-allowed disabled:opacity-50
+          focus-visible:outline-none
+          ${isOpen
+            ? 'border-b-[var(--color-gold)]'
+            : 'border-b-[var(--color-border)]'
+          }
+        `}
+        data-cursor="hover"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-      </svg>
+        <span className={isFilled ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]'}>
+          {selectedLabel}
+        </span>
+
+        {/* Animated chevron */}
+        <motion.svg
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.25, ease: easing.easeOutQuart }}
+          className="h-4 w-4 flex-shrink-0 text-[var(--color-text-muted)]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </motion.svg>
+      </button>
+
+      {/* Dropdown menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.ul
+            ref={listRef}
+            role="listbox"
+            aria-activedescendant={value ? `${name}-opt-${value}` : undefined}
+            onKeyDown={handleListKeyDown}
+            initial={{ opacity: 0, y: -8, scaleY: 0.96 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -8, scaleY: 0.96, transition: { duration: 0.18, ease: easing.easeOutQuart } }}
+            transition={{ duration: 0.25, ease: easing.easeOutQuart }}
+            className="
+              absolute left-0 right-0 z-50 mt-1 origin-top
+              border border-[var(--color-border)] bg-[var(--color-bg-elevated)]
+              py-1 shadow-[0_8px_32px_rgba(0,0,0,0.5)]
+              overflow-hidden
+            "
+            style={{ maxHeight: 'clamp(180px, 40vh, 320px)' }}
+          >
+            {options
+              .filter((opt) => opt.value !== '') // skip placeholder
+              .map((opt, i) => (
+                <motion.li
+                  key={opt.value}
+                  id={`${name}-opt-${opt.value}`}
+                  role="option"
+                  aria-selected={opt.value === value}
+                  tabIndex={0}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.22, ease: easing.easeOutQuart, delay: i * 0.04 }}
+                  onClick={() => selectOption(opt.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      selectOption(opt.value);
+                    }
+                  }}
+                  className={`
+                    flex w-full cursor-pointer items-center gap-3
+                    px-4 py-3 text-left
+                    font-body text-[length:var(--text-body)]
+                    outline-none transition-colors duration-150
+                    focus-visible:bg-[var(--color-bg-subtle)]
+                    ${opt.value === value
+                      ? 'text-[var(--color-gold)]'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)]'
+                    }
+                  `}
+                  data-cursor="hover"
+                >
+                  {/* Selection indicator */}
+                  <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center">
+                    <AnimatePresence>
+                      {opt.value === value && (
+                        <motion.svg
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: easing.easeOutQuart }}
+                          className="h-4 w-4 text-[var(--color-gold)]"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </motion.svg>
+                      )}
+                    </AnimatePresence>
+                  </span>
+                  {opt.label}
+                </motion.li>
+              ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -283,7 +423,9 @@ export default function ContactForm() {
           name="organization_type"
           value={formData.organization_type}
           options={ORG_TYPE_OPTIONS}
-          onChange={handleChange}
+          onSelect={(fieldName, fieldValue) => {
+            setFormData((prev) => ({ ...prev, [fieldName]: fieldValue }));
+          }}
           disabled={isSubmitting}
         />
 

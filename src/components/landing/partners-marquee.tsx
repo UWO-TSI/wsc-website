@@ -50,15 +50,19 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                 if (!logoUrl) return null;
 
                 return (
-                  <Image
+                  <div
                     key={`${copy}-${sponsor.id}`}
-                    src={logoUrl}
-                    alt={sponsor.name}
-                    width={160}
-                    height={64}
+                    className="group relative h-[clamp(3rem,7vw,6rem)] w-[clamp(7rem,18vw,13rem)] shrink-0"
                     data-cursor="hover"
-                    className="h-[clamp(2.5rem,4vw,4rem)] w-auto object-contain opacity-45 grayscale-[0.5] transition-all duration-300 hover:scale-[1.08] hover:opacity-100 hover:grayscale-0 active:scale-[1.08] active:opacity-100 active:grayscale-0"
-                  />
+                  >
+                    <Image
+                      src={logoUrl}
+                      alt={sponsor.name}
+                      fill
+                      className="object-contain object-center opacity-45 grayscale-[0.5] transition-all duration-300 group-hover:scale-[1.08] group-hover:opacity-100 group-hover:grayscale-0 group-active:scale-[1.08] group-active:opacity-100 group-active:grayscale-0"
+                      sizes="(max-width: 768px) 28vw, 208px"
+                    />
+                  </div>
                 );
               })}
             </div>

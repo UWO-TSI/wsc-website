@@ -18,7 +18,7 @@ export default function EventsPage() {
       <div className="mx-auto max-w-[1400px] px-[clamp(1.5rem,5vw,6rem)] mb-[var(--space-16)]">
         <Eyebrow>EVENTS</Eyebrow>
         <h1 className="mt-[var(--space-3)] font-display text-[length:var(--text-display)] font-semibold leading-[1.1] text-[var(--color-text-primary)]">
-          What&apos;s on.
+          What&apos;s We&apos;re Doing.
         </h1>
       </div>
 

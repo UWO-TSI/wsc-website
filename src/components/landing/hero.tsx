@@ -1,10 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import Button from '@/components/ui/button';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -55,7 +55,7 @@ export default function Hero() {
   const { scrollY } = useScroll();
   const scrollIndicatorOpacity = useTransform(scrollY, [0, 80], [1, 0]);
 
-  // Mount flag — hero entrance starts after a fixed delay (~1.5s) to approximate preloader completion
+  // Mount flag — hero entrance starts after a fixed delay (~1s) to approximate preloader completion
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -84,7 +84,7 @@ export default function Hero() {
         return;
       }
 
-      const tl = gsap.timeline({ delay: 1.5 });
+      const tl = gsap.timeline({ delay: 1 });
 
       // t=0: Eyebrow fades in
       tl.fromTo(
@@ -130,16 +130,16 @@ export default function Hero() {
       tl.fromTo(
         subTextRef.current,
         { opacity: 0, y: 16 },
-        { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
-        1.2
+        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
+        0.9
       );
 
       // t=1.4: CTA row fades in (overlaps sub-text tail, waves into scroll indicator)
       tl.fromTo(
         ctaRowRef.current,
         { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
-        1.4
+        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
+        0.9
       );
 
       // t=1.5: Scroll indicator fades in
@@ -147,7 +147,7 @@ export default function Hero() {
         scrollIndicatorRef.current,
         { opacity: 0 },
         { opacity: 1, duration: 0.4, ease: 'power3.out' },
-        1.5
+        1.2
       );
     }, sectionRef);
 
@@ -253,8 +253,32 @@ export default function Hero() {
           className="mt-[var(--space-8)] flex flex-wrap gap-[var(--space-4)] items-center"
           style={{ opacity: 0 }}
         >
-          <Button href="#contact-form">Contact us</Button>
-          <Button href="#join-section">Join us</Button>
+          {/* Contact Us: yellow bg / black text → hover: black bg / yellow text */}
+          <Link
+            href="#contact-form"
+            className="group relative inline-flex min-h-[2.75rem] items-center justify-center overflow-hidden rounded-none bg-[var(--color-gold)] px-[2.25rem] py-[0.875rem] font-body text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-[var(--color-bg-base)] transition-colors duration-350 hover:text-[var(--color-gold)] focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:outline-offset-[3px] active:scale-[0.97] active:transition-transform active:duration-100"
+            data-cursor="hover"
+          >
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 z-0 origin-left scale-x-0 bg-[var(--color-bg-base)] transition-transform duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100 group-active:scale-x-100"
+            />
+            <span className="relative z-10">Let Us Make Your Sales Calls</span>
+          </Link>
+          {/* Join Us: black bg / yellow text → hover: yellow bg / black text, black border */}
+          <Link
+            href="https://westernusc.store/product/western-sales-club/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative inline-flex min-h-[2.75rem] items-center justify-center overflow-hidden rounded-none bg-[var(--color-bg-base)] px-[2.25rem] py-[0.875rem] font-body text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-[var(--color-gold)] transition-colors duration-350 hover:text-[var(--color-bg-base)] focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:outline-offset-[3px] active:scale-[0.97] active:transition-transform active:duration-100"
+            data-cursor="hover"
+          >
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 z-0 origin-left scale-x-0 bg-[var(--color-gold)] transition-transform duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100 group-active:scale-x-100"
+            />
+            <span className="relative z-10">Join Our Team</span>
+          </Link>
         </div>
       </div>
 

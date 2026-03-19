@@ -29,7 +29,7 @@ export default function SponsorsPage() {
           variants={revealVariant}
           className="mt-[var(--space-3)] font-display text-[length:var(--text-display)] font-semibold leading-[1.1] text-[var(--color-text-primary)]"
         >
-          The companies who believe in us.
+          Organizations empowering sales at Western.
         </motion.h1>
       </motion.div>
 

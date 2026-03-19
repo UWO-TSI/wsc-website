@@ -52,34 +52,39 @@ export default function LogoCard({ sponsor }: LogoCardProps) {
   const [hovered, setHovered] = useState(false);
   const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
 
+  const hoverProps = {
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+    'data-cursor': sponsor.link ? 'view' : 'hover',
+  };
+
   const content = (
     <div
       className="relative flex aspect-[3/2] items-center justify-center overflow-hidden p-[var(--space-4)] sm:p-[var(--space-8)]"
       style={{
-        border: '1px solid var(--color-border)',
+        border: '1px solid',
+        borderColor: hovered ? 'var(--color-border-gold)' : 'var(--color-border)',
         transition: 'border-color 0.4s ease',
-        ...(hovered && { borderColor: 'var(--color-border-gold)' }),
       }}
-      data-cursor={sponsor.link ? 'view' : 'hover'}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
-      {/* Logo — fully opaque at rest, dims on hover, never scales */}
+      {/* Logo — normalized, responsive: scales with card on mobile, fixed on desktop */}
       {logoUrl && (
         <motion.div
-          className="relative z-0 flex items-center justify-center"
+          className="relative z-0 flex w-full items-center justify-center"
           variants={logoVariants}
           animate={hovered ? 'hovered' : 'rest'}
           transition={{ duration: 0.38, ease: EASE }}
         >
-          <Image
-            src={logoUrl}
-            alt={`${sponsor.name} logo`}
-            width={180}
-            height={60}
-            className="max-h-[60px] w-auto object-contain"
-            unoptimized={false}
-          />
+          <div className="relative h-[clamp(56px,18vw,92px)] w-full max-w-[90%] sm:h-[92px] sm:max-w-[240px]">
+            <Image
+              src={logoUrl}
+              alt={`${sponsor.name} logo`}
+              fill
+              className="object-contain object-center"
+              unoptimized={false}
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 240px"
+            />
+          </div>
         </motion.div>
       )}
 
@@ -135,11 +140,17 @@ export default function LogoCard({ sponsor }: LogoCardProps) {
 
   if (sponsor.link) {
     return (
-      <a href={sponsor.link} target="_blank" rel="noopener noreferrer">
+      <a
+        href={sponsor.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block"
+        {...hoverProps}
+      >
         {content}
       </a>
     );
   }
 
-  return content;
+  return <div className="block" {...hoverProps}>{content}</div>;
 }

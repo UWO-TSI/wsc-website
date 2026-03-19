@@ -9,6 +9,8 @@ interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   disabled?: boolean;
+  target?: string;
+  rel?: string;
 }
 
 const baseStyles = [
@@ -52,6 +54,8 @@ export default function Button({
   type = 'button',
   className = '',
   disabled = false,
+  target,
+  rel,
 }: ButtonProps) {
   const inner = (
     <>
@@ -67,7 +71,7 @@ export default function Button({
 
   if (href && !disabled) {
     return (
-      <Link href={href} className={classes} data-cursor="hover">
+      <Link href={href} className={classes} data-cursor="hover" {...(target && { target })} {...(rel && { rel })}>
         {inner}
       </Link>
     );

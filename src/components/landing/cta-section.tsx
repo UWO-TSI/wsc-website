@@ -44,7 +44,7 @@ export default function CTASection() {
           whileInView="visible"
           viewport={viewportConfig}
         >
-          <Eyebrow>JOIN THE TEAM</Eyebrow>
+          <Eyebrow>JOIN OUR TEAM</Eyebrow>
 
           <h2
             className="mt-[var(--space-3)] font-display font-semibold text-[var(--color-text-primary)] leading-[1.1]"
@@ -69,7 +69,7 @@ export default function CTASection() {
           whileInView="visible"
           viewport={viewportConfig}
         >
-          <Button href="/contact-us" className="w-full sm:w-auto">Get in touch</Button>
+          <Button href="https://westernusc.store/product/western-sales-club/" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">Join Western Sales Club</Button>
         </motion.div>
       </div>
     </section>

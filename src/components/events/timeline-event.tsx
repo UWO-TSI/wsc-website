@@ -97,7 +97,7 @@ export default function TimelineEvent({ event, index, isActive, nodeRef }: Timel
 
       {/* ---- Desktop layout (>= 768px): three-column flanking center line ---- */}
       <div className="hidden md:flex items-start">
-        {/* Left column — Location + Description (45%) */}
+        {/* Left column — Event title (45%) */}
         <motion.div
           className="flex w-[45%] justify-end pr-[var(--space-8)]"
           initial={{ opacity: 0, x: -32 }}
@@ -105,18 +105,9 @@ export default function TimelineEvent({ event, index, isActive, nodeRef }: Timel
           transition={{ duration: 0.6, ease: easing.easeOutExpo }}
           viewport={viewportConfig}
         >
-          <div className="max-w-[480px] text-right">
-            {event.location && (
-              <p className="mb-2 font-mono text-[length:var(--text-mono)] uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-                {event.location}
-              </p>
-            )}
-            {event.description && (
-              <p className="font-body text-[length:var(--text-body)] leading-[1.7] text-[var(--color-text-secondary)]">
-                {event.description}
-              </p>
-            )}
-          </div>
+          <h3 className="max-w-[480px] text-right font-display text-[length:var(--text-display)] font-semibold leading-[1.1] text-[var(--color-text-primary)]">
+            {event.title}
+          </h3>
         </motion.div>
 
         {/* Center — Node + Date (10%) */}
@@ -140,7 +131,7 @@ export default function TimelineEvent({ event, index, isActive, nodeRef }: Timel
           </time>
         </motion.div>
 
-        {/* Right column — Event title (45%) */}
+        {/* Right column — Location + Description (45%) */}
         <motion.div
           className="w-[45%] pl-[var(--space-8)]"
           initial={{ opacity: 0, x: 32 }}
@@ -148,9 +139,18 @@ export default function TimelineEvent({ event, index, isActive, nodeRef }: Timel
           transition={{ duration: 0.6, ease: easing.easeOutExpo, delay: 0.1 }}
           viewport={viewportConfig}
         >
-          <h3 className="font-display text-[length:var(--text-display)] font-semibold leading-[1.1] text-[var(--color-text-primary)]">
-            {event.title}
-          </h3>
+          <div className="max-w-[480px] text-left">
+            {event.location && (
+              <p className="mb-2 font-mono text-[length:var(--text-mono)] uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
+                {event.location}
+              </p>
+            )}
+            {event.description && (
+              <p className="font-body text-[length:var(--text-body)] leading-[1.7] text-[var(--color-text-secondary)]">
+                {event.description}
+              </p>
+            )}
+          </div>
         </motion.div>
       </div>
     </div>

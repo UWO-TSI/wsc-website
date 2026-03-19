@@ -12,10 +12,10 @@ This application was designed and built by TSI Team 4 (Winter 2025):
 
 **Project Managers**
 <p>
-  <a href="https://github.com/placeholder">
+  <a href="https://github.com/LlamzonAmazon">
     <img src="https://img.shields.io/badge/Thomas_Llamzon-181717?style=for-the-badge&logo=github&logoColor=white" />
   </a>
-  <a href="https://github.com/placeholder">
+  <a href="https://github.com/JXOHG">
     <img src="https://img.shields.io/badge/Justin_Oh-181717?style=for-the-badge&logo=github&logoColor=white" />
   </a>
 </p>

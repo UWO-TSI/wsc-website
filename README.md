@@ -9,5 +9,32 @@ This is a full-stack application functioning as a frontend website connected to 
 ---
 
 This application was designed and built by TSI Team 4 (Winter 2025): 
-- **Project Managers**: Thomas Llamzon, Justin Oh
-- **Developers**: Andres Pedreros Castro, Adeline Lue Sang, Kenneth Li, Ethan Ung, Harry Yang
+
+**Project Managers**
+<p>
+  <a href="https://github.com/placeholder">
+    <img src="https://img.shields.io/badge/Thomas_Llamzon-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+  <a href="https://github.com/placeholder">
+    <img src="https://img.shields.io/badge/Justin_Oh-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+</p>
+
+**Developers**
+<p>
+  <a href="https://github.com/AndresPedrerosC">
+    <img src="https://img.shields.io/badge/Andres_Pedreros_Castro-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+  <a href="https://github.com/addetude">
+    <img src="https://img.shields.io/badge/Adeline_Lue_Sang-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+  <a href="https://youtu.be/dQw4w9WgXcQ?si=ouBoPQZlsa44TyCc">
+    <img src="https://img.shields.io/badge/Kenneth_Li-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+  <a href="https://github.com/ethan-ung9">
+    <img src="https://img.shields.io/badge/Ethan_Ung-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+  <a href="https://github.com/harryyangzy">
+    <img src="https://img.shields.io/badge/Harry_Yang-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+</p>

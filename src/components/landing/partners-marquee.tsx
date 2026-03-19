@@ -31,7 +31,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
 
       {/* Marquee band — overflow-x-clip prevents page-level horizontal scroll */}
       <div
-        className="marquee-wrapper overflow-x-clip overflow-y-hidden"
+        className="marquee-wrapper overflow-x-clip"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onClick={() => setPaused((prev) => !prev)}

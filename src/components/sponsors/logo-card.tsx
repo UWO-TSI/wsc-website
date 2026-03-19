@@ -17,7 +17,7 @@ const EASE = easing.easeOutQuart;
 // ─── Logo: dims at a measured pace, initiates the hover gesture ─────────────
 const logoVariants = {
   rest:    { opacity: 1 },
-  hovered: { opacity: 0.35 },
+  hovered: { opacity: 0.15 },
 };
 
 // ─── Overlay container: pure opacity fade, no y movement ────────────────────
@@ -122,7 +122,7 @@ export default function LogoCard({ sponsor }: LogoCardProps) {
                   style={{ transformOrigin: 'center' }}
                 />
                 <motion.p
-                  className="text-center font-mono text-[length:var(--text-mono-sm)] text-[var(--color-text-muted)]"
+                  className="text-center font-mono text-[length:var(--text-mono-sm)] text-[var(--color-text-primary)]"
                   variants={descVariants}
                   initial="hidden"
                   animate="visible"

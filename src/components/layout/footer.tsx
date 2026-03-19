@@ -136,9 +136,8 @@ export default function Footer() {
 
       {/* Copyright line */}
       <p
-        className="font-mono text-center"
+        className="font-body text-center"
         style={{
-          fontSize: "var(--text-mono-sm)",
           color: "var(--color-text-subtle)",
           marginTop: "var(--space-3)",
         }}

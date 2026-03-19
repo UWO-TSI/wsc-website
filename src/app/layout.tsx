@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, DM_Sans, DM_Mono } from "next/font/google";
+import { Cormorant_Garamond, Lora, DM_Mono } from "next/font/google";
 import ClientLayout from "@/components/layout/client-layout";
 import "./globals.css";
 
@@ -11,9 +11,10 @@ const cormorantGaramond = Cormorant_Garamond({
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const lora = Lora({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
   variable: "--font-body",
   display: "swap",
 });
@@ -64,7 +65,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cormorantGaramond.variable} ${dmSans.variable} ${dmMono.variable}`}
+      className={`${cormorantGaramond.variable} ${lora.variable} ${dmMono.variable}`}
     >
       <body>
         <ClientLayout>{children}</ClientLayout>

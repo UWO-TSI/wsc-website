@@ -188,7 +188,7 @@ export default function Nav() {
               className="h-7 w-7 object-contain"
               priority
             />
-            <span className="font-mono text-md tracking-[0.04em] text-text-primary">
+            <span className="font-body text-md italic tracking-[0.04em] text-text-primary">
               Western Sales Club
             </span>
           </Link>

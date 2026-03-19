@@ -30,7 +30,7 @@
   --text-display:     clamp(2.5rem, 5.5vw, 5rem);
   --text-display-sm:  clamp(1.75rem, 3.5vw, 3rem);
 
-  /* ── Type Scale: UI / Body (DM Sans) ── */
+  /* ── Type Scale: UI / Body (Lora) ── */
   --text-heading:     clamp(1.25rem, 2.5vw, 1.75rem);
   --text-body-lg:     1.125rem;
   --text-body:        1rem;
@@ -43,7 +43,7 @@
 
   /* ── Font Families ── */
   --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-body:    'Lora', Georgia, serif;
   --font-mono:    'DM Mono', 'Courier New', monospace;
 
   /* ── Spacing ── */
@@ -147,9 +147,9 @@ body {
 
 /* ── Partners Marquee ── */
 .marquee-wrapper {
-  overflow: hidden;
-  /* Prevent any horizontal scroll bleed from the w-max track */
-  contain: content;
+  overflow-x: clip;
+  overflow-y: visible;
+  /* overflow-x: clip prevents horizontal scroll bleed from the w-max track */
 }
 
 @keyframes marquee {

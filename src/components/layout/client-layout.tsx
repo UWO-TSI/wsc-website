@@ -13,7 +13,7 @@ import Footer from '@/components/layout/footer';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [preloaderComplete, setPreloaderComplete] = useState(false);
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/auth');
 
   if (isAdmin) {
     return <>{children}</>;

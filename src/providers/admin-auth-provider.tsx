@@ -68,7 +68,7 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
   const signIn = useCallback(async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/admin' },
+      options: { redirectTo: window.location.origin + '/auth/callback' },
     });
   }, []);
 

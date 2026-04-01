@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
 import { CursorProvider } from '@/providers/cursor-provider';
 import { LenisProvider } from '@/providers/lenis-provider';
@@ -11,6 +12,12 @@ import Footer from '@/components/layout/footer';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [preloaderComplete, setPreloaderComplete] = useState(false);
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith('/admin');
+
+  if (isAdmin) {
+    return <>{children}</>;
+  }
 
   return (
     <CursorProvider>

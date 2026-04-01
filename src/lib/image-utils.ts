@@ -1,6 +1,7 @@
 /**
- * Check that an image file is within max width and height. Rejects if over.
- * No resizing — user must provide an image that fits.
+ * Validates that an image file's dimensions do not exceed the given maximum.
+ * Creates a temporary object URL, loads it as an Image, reads dimensions,
+ * then revokes the URL.
  */
 export function validateImageDimensions(
   file: File,
@@ -8,31 +9,26 @@ export function validateImageDimensions(
   maxHeight: number
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (!file || !file.type.startsWith('image/')) {
-      resolve();
-      return;
-    }
-
-    const img = new Image();
     const url = URL.createObjectURL(file);
+    const img = new Image();
 
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const { width, height } = img;
-      if (width > maxWidth || height > maxHeight) {
+      if (img.width > maxWidth || img.height > maxHeight) {
         reject(
           new Error(
-            `Image dimensions are too large. Maximum size is ${maxWidth}×${maxHeight} pixels (width×height). Your image is ${width}×${height} pixels. Please resize or crop the image before uploading.`
+            `Image dimensions (${img.width}×${img.height}) exceed the maximum allowed ` +
+              `(${maxWidth}×${maxHeight}). Please resize before uploading.`
           )
         );
-        return;
+      } else {
+        resolve();
       }
-      resolve();
     };
 
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Could not read the image file. Make sure it\'s a valid image (JPEG, PNG, WebP, or AVIF) and try again.'));
+      reject(new Error('Could not read image dimensions. Please try a different file.'));
     };
 
     img.src = url;

@@ -8,6 +8,18 @@ This is a full-stack application functioning as a frontend website connected to 
 
 ---
 
+# Website Preview
+
+# Website (Frontend)
+
+![Frontend Preview](public/Landing.png)
+
+# Admin Dashboard (Backend)
+
+![Backend Preview](public/AdminDash.png)
+
+---
+
 This application was designed and built by TSI Team 4 (Winter 2025): 
 
 **Project Managers**

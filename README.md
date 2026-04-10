@@ -8,15 +8,11 @@ This is a full-stack application functioning as a frontend website connected to 
 
 ---
 
-# Website Preview
-
-# Website (Frontend)
-
 ![Frontend Preview](public/Landing.png)
-
-# Admin Dashboard (Backend)
+*Main Website (Frontend) Preview*
 
 ![Backend Preview](public/AdminDash.png)
+*Admin Dashboard (Backend) Preview*
 
 ---
 

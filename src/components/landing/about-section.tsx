@@ -6,7 +6,7 @@ import Eyebrow from '@/components/ui/eyebrow';
 import { revealVariant, delayedRevealVariant, viewportConfig } from '@/lib/motion';
 
 const stats = [
-  { number: '50+', label: 'Members' },
+  { number: '150+', label: 'Members' },
   { number: '10+', label: 'Annual Events' },
   { number: '5+', label: 'Industry Partners' },
 ] as const;

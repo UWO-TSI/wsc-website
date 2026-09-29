@@ -116,10 +116,10 @@ casing. A button label names the action and its confirmation echoes it: "Apply t
 "Application received". Error copy says what broke and how to fix it: "That is missing an @.
 Check it and send again", never "Invalid input".
 
-## Migration progress
+## Migration status
 
-`grep -rl motion-legacy src/` lists every component still on the pre-Floor vocabulary. When it
-returns nothing, delete `src/lib/motion-legacy.ts`. Nothing new imports it.
+Complete. Every component on the public site and in `/admin` is on Floor, the pre-Floor
+`motion-legacy.ts` shim is deleted, and no `--color-*` token or hex literal remains in `src/`.
 
 ## Before you call a component done
 

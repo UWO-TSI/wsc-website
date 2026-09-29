@@ -3,7 +3,7 @@
 import type { ChangeEvent, FocusEvent, ReactNode } from 'react';
 
 /*
-  Field — the component a borderless system has to get right.
+  Field. The component a borderless system has to get right.
 
   Each field is a --page well at --r-sm inside the --sunken form slab it
   lives in, one tone step away from its container in both themes. No stroke.

@@ -64,10 +64,7 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
       />
     </div>
   ) : (
-    <span
-      className="text-center uppercase text-ink"
-      style={{ fontFamily: 'var(--f-display)', fontWeight: 700 }}
-    >
+    <span className="text-center font-display font-bold uppercase text-ink">
       {sponsor.name}
     </span>
   );

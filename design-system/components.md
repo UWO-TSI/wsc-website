@@ -11,13 +11,16 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Cursor | `cursor/custom-cursor.tsx` | Magnetic Pull |
 | Button | `ui/button.tsx` | Magnetic Pull |
 | Eyebrow | `ui/eyebrow.tsx` | travels with its title |
-| Field | `contact/contact-form.tsx` | none |
+| Field | `contact/field.tsx` | none |
 | KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade |
 | SectionHead | `landing/about-section.tsx` | Line Mask Reveal |
-| StatFigure | new | Counter Roll |
-| Slab | new | Slab Clip |
+| StatFigure | `ui/stat-figure.tsx` | Counter Roll |
+| Slab | `ui/slab.tsx` | Slab Clip |
 | Marquee | `landing/partners-marquee.tsx` | Marquee Drift |
 | ExecRow | `team/executive-row.tsx` | Row Expand |
+| ThemeToggle | `ui/theme-toggle.tsx` | Theme Wipe |
+| Avatar | `ui/avatar.tsx` | travels with its row |
+| Chip | `ui/chip.tsx` | none |
 | TimelineEvent | `events/timeline-event.tsx` | Row Expand |
 | LogoWall | `sponsors/logo-wall.tsx`, `logo-card.tsx` | none |
 | BentoGallery | `about/bento-gallery.tsx` | Clip Reveal |
@@ -77,9 +80,11 @@ Never put a shadow above `--sh-1` on a slab. A slab is the page, not a thing flo
 
 Ledger rows inside one slab, separated by 4px, never by a line. At rest a directory is pure type: index in `.label`, name in `.title-sm`, role in `.meta`. That is the point — a wall of names in Archivo caps reads as a roster of operators, not a club page.
 
-Row Expand on hover and keyboard focus, identical states. The whole row is one focusable link, which is how a keyboard user sees the avatar at all.
+Row Expand on hover and keyboard focus, identical states, **where the row has a destination**.
 
-Headshots are `--r-disc` and appear only on hover. A missing headshot renders a `--sunken` disc with initials in `--ink-faint` — designed, not a broken frame. Object names only in the DB; call `getPublicUrl(bucket, objectName)` at runtime.
+As built, it does not. This site has no exec detail page and no event registration URL, so the row is an inert list item: a `<button>` with no handler announces itself as pressable to a screen reader and then does nothing, which is worse than no affordance at all. The expand is therefore a pointer-only response to attention, and the avatar is present at rest wherever hover does not exist, so a touch or keyboard user is never shown less than a mouse user. If exec pages or registration links ever land, make the row a real link and put the avatar back behind hover and focus, which is what the paragraph above describes.
+
+Headshots are `--r-disc` and appear only on hover, on pointer devices. A missing headshot renders a `--sunken` disc with initials in `--ink-faint` — designed, not a broken frame. Object names only in the DB; call `getPublicUrl(bucket, objectName)` at runtime.
 
 Event status is a chip carrying a word: Open, Waitlist, Closed. Never colour alone. Past events drop the chip, take `--ink-muted`, and lose the hover expand, because they are reference and should not look pressable.
 
@@ -94,6 +99,8 @@ Only real numbers. If the figure is not something the club could defend in a roo
 Four states, and none of them is a blank screen: loading, error with a retry, empty, and 404. The spinner is a masked conic gradient, not a `border-top` trick, because borders are out. Empty states name what is missing and do not apologise.
 
 ## LogoWall
+
+As built there is exactly **one** tier group, labelled Partners: the `sponsors` table has no `tier` column and `supabase/` is off limits, so scale comes from `display_order` (the lead tile spans two columns) rather than an invented tier. The paragraph below is what to build the day a `tier` column exists.
 
 Sponsors grouped by tier, `--gold` for the tier bar and label — the explicit mark, not `--accent`, because a sponsor's tier must look the same in both themes. Tile scale carries the hierarchy, not a border.
 

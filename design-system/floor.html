@@ -458,6 +458,30 @@
   .bc:hover .cap, .bc:focus-visible .cap { opacity: 1; transform: none; }
   .run .bc { clip-path: inset(0 0 100% 0 round var(--r-sm)); animation: unclip-s var(--d-arrive) var(--e-enter) forwards; }
 
+  /* logo wall */
+  .lw-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .lw-bar i { display: block; height: 4px; width: 40px; border-radius: var(--r-pill); background: var(--gold); }
+  .lw-bar .label { color: var(--gold); }
+  .lw { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 760px) { .lw { grid-template-columns: repeat(4, 1fr); } }
+  .lw .lead { grid-column: span 2; }
+  .lw .lt {
+    display: flex; aspect-ratio: 3 / 2; align-items: center; justify-content: center;
+    background: var(--sunken); border-radius: var(--r-md); box-shadow: var(--sh-1);
+    padding: 16px; text-decoration: none; color: inherit;
+    transition: box-shadow var(--d-hover) var(--e-enter);
+  }
+  .lw a.lt:hover { box-shadow: var(--sh-2); }
+  /* the fallback when a sponsor has no file: their name, set in the display face */
+  .lw .set { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; text-align: center; font-size: 13px; letter-spacing: 0.02em; color: var(--ink); }
+  /* stand-in marks, since a reference page has no sponsor files to use */
+  .lw .fake { display: flex; align-items: center; gap: 8px; color: var(--ink); }
+  .lw .fake .d { width: 18px; height: 18px; border-radius: var(--r-disc); background: currentColor; }
+  .lw .fake .b { width: 16px; height: 16px; background: currentColor; }
+  .lw .fake .t { font-family: var(--f-text); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .lw .lead .fake .d, .lw .lead .fake .b { width: 26px; height: 26px; }
+  .lw .lead .fake .t { font-size: 22px; }
+
   /* lightbox */
   .lbx { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 22px; }
   .lbx .lscrim { position: absolute; inset: 0; background: color-mix(in srgb, var(--inverse) 92%, transparent); animation: fade var(--d-move) var(--e-enter); }
@@ -947,8 +971,37 @@
     <div style="margin-top:22px"><button class="btn b2" type="button">Join Western Sales Club <span class="aw">&#8594;</span></button></div>
   </section>
 
+  <!--
+    Sits after the accent band rather than beside the other component cards
+    because the tile ground is --sunken, so the section itself has to be
+    --raised, and States above it already is. Adjacent slabs never share a tone.
+  -->
+  <section class="slab">
+    <div class="sechead"><span class="label"><span class="n">12</span> &nbsp;Sponsors</span><span class="meta">Tier bar in gold. Tile scale carries the hierarchy, not a border.</span></div>
+    <div class="lw-bar"><i></i><span class="label">Partners</span></div>
+    <div class="lw">
+      <a class="lt lead" href="#lw"><span class="fake"><span class="d"></span><span class="t">Northbound</span></span></a>
+      <a class="lt" href="#lw"><span class="fake"><span class="b"></span><span class="t">Kepler</span></span></a>
+      <a class="lt" href="#lw"><span class="fake"><span class="d"></span><span class="t">Alta</span></span></a>
+      <span class="lt"><span class="set">Ridgeline Capital</span></span>
+      <a class="lt" href="#lw"><span class="fake"><span class="b"></span><span class="t">Vero</span></span></a>
+      <a class="lt" href="#lw"><span class="fake"><span class="d"></span><span class="t">Hale</span></span></a>
+      <span class="lt"><span class="set">Stratton &amp; Co</span></span>
+    </div>
+    <p class="body-sm" style="margin-top:20px;max-width:62ch">
+      One tier group, because the sponsors table has no tier column and
+      supabase/ is off limits. The bar and label are <b>--gold</b>, not
+      <b>--accent</b>: a sponsor's standing has to read the same in both themes.
+      Scale comes from display_order, the lead tile spanning two columns. Logos
+      sit on <b>--sunken</b> so a single-ink mark has a predictable ground, and
+      a sponsor with no file gets their name set in the display face in the same
+      tile rather than a redrawn mark or an empty frame. A sponsor with a link
+      is an anchor and takes <b>--sh-2</b> on hover; one without is inert.
+    </p>
+  </section>
+
   <section class="slab sunk">
-    <div class="sechead"><span class="label"><span class="n">12</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
+    <div class="sechead"><span class="label"><span class="n">13</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
     <div class="steps">
       <div class="step"><span class="no">1</span><span class="hd">Look first</span><p>Read this page before writing CSS. Most new components are an existing one re-composed.</p></div>
       <div class="step"><span class="no">2</span><span class="hd">Spend tokens only</span><p>Every colour, radius, shadow, duration and easing comes from a token. No new hex, no new number.</p></div>

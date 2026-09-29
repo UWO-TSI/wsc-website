@@ -3,10 +3,17 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore, createContext, useContext, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+/*
+  This provider is mounted on every route, so it must not import GSAP.
+
+  motion.md is explicit that GSAP loads only on the routes that use Scroll
+  Scrub, and a static `import { gsap }` here put the whole library plus
+  ScrollTrigger into the shared bundle for every page. Lenis is driven by a
+  plain requestAnimationFrame loop instead, and the one route that does use
+  ScrollTrigger subscribes itself with useLenis(): see
+  src/components/about/story-section.tsx.
+*/
 
 const LenisContext = createContext<Lenis | null>(null);
 
@@ -64,17 +71,14 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     lenisRef.current = instance;
     listeners.forEach((onChange) => onChange());
 
-    // Integrate with GSAP ScrollTrigger
-    instance.on('scroll', ScrollTrigger.update);
-
-    const raf = (time: number) => {
-      instance.raf(time * 1000);
-    };
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
+    // Native rAF passes milliseconds, which is what Lenis wants.
+    let frame = requestAnimationFrame(function raf(time: number) {
+      instance.raf(time);
+      frame = requestAnimationFrame(raf);
+    });
 
     return () => {
-      gsap.ticker.remove(raf);
+      cancelAnimationFrame(frame);
       instance.destroy();
       lenisRef.current = null;
       listeners.forEach((onChange) => onChange());

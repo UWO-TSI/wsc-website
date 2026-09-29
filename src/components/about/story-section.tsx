@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLenis } from '@/providers/lenis-provider';
 
 /*
   The one place in the site that gets Scroll Scrub (design-system/motion.md,
@@ -18,19 +19,26 @@ interface Panel {
   body: string[];
 }
 
+/*
+  Only what the club can point at. An earlier draft of this section described a
+  session cadence, a curriculum, competition panels and judges drawn from
+  industry, none of which is recorded anywhere in this repo. Saying less is the
+  correct move: the design carries the weight, and an invented specific costs
+  more credibility than a plain sentence saves.
+*/
 const PANELS: Panel[] = [
   {
     title: 'What we do',
     body: [
-      'Western Sales Club runs workshops, cold-call practice, and case competitions for students who want direct experience in sales.',
-      'Members work live projects with local companies and pitch in front of judges drawn from industry.',
+      'Western Sales Club runs workshops and events through the year for students who want experience in sales before they graduate.',
+      'Members learn from people who do the work, not only from a reading list.',
     ],
   },
   {
     title: 'How we run',
     body: [
-      'Weekly sessions are run by the exec team and cover prospecting, discovery calls, objection handling, and closing.',
-      'Sponsors and alumni mentor members through the year and sit on competition panels.',
+      'A student exec team runs the club: presidents, vice presidents, and assistant vice presidents.',
+      'Industry partners back the club and connect members with mentors working in the field.',
     ],
   },
 ];
@@ -40,11 +48,7 @@ function Panel({ panel }: { panel: Panel }) {
     <div>
       <h2 className="title">{panel.title}</h2>
       {panel.body.map((paragraph) => (
-        <p
-          key={paragraph}
-          className="body measure"
-          style={{ marginTop: '1rem', color: 'var(--ink-muted)' }}
-        >
+        <p key={paragraph} className="body measure mt-4 text-ink-muted">
           {paragraph}
         </p>
       ))}
@@ -54,6 +58,7 @@ function Panel({ panel }: { panel: Panel }) {
 
 export default function StorySection() {
   const [scrubEnabled, setScrubEnabled] = useState(false);
+  const lenis = useLenis();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -93,6 +98,15 @@ export default function StorySection() {
       const ScrollTrigger = scrollTriggerModule.ScrollTrigger;
       gsap.registerPlugin(ScrollTrigger);
 
+      /*
+        Lenis owns the scroll position, so ScrollTrigger has to be told when it
+        moves or the pin drifts behind the smooth scroll. This subscription
+        lives here rather than in LenisProvider because the provider is mounted
+        on every route and importing ScrollTrigger there would put GSAP in the
+        shared bundle, which motion.md forbids.
+      */
+      lenis?.on('scroll', ScrollTrigger.update);
+
       const context = gsap.context(() => {
         gsap.to(track, {
           xPercent: -50,
@@ -107,14 +121,17 @@ export default function StorySection() {
         });
       }, wrapper);
 
-      cleanup = () => context.revert();
+      cleanup = () => {
+        lenis?.off('scroll', ScrollTrigger.update);
+        context.revert();
+      };
     })();
 
     return () => {
       cancelled = true;
       cleanup?.();
     };
-  }, [scrubEnabled]);
+  }, [scrubEnabled, lenis]);
 
   if (!scrubEnabled) {
     return (

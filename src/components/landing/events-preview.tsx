@@ -76,7 +76,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
         {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
         <figure className="clip-cell relative m-0 aspect-[3/4] w-full overflow-hidden rounded-md lg:sticky lg:top-28">
           <Image
-            src="/web/college-pro.avif"
+            src="/events/college-pro.avif"
             alt="Western Sales Club members at a College Pro event"
             fill
             sizes="(max-width: 1024px) 100vw, 420px"

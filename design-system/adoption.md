@@ -29,7 +29,7 @@ and gold in Afterhours:
 - Fixed marks: `text-velvet`, `text-gold`, `bg-gold`: the Western lockup and sponsor tiers only
 - Logo ground: `bg-logo-ground` with `text-on-logo-ground`, the third fixed mark and the one
   surface that does **not** flip with the theme. Every supplied logo sits on it: sponsor tiles on
-  the partners page and in the landing marquee, and the TSI lockup in the footer. A sponsor's mark
+  the partners page and in the landing marquee, and the Tethos lockup in the footer. A sponsor's mark
   is artwork we may not redraw and most are light-on-transparent, so they wash out on the Showroom
   ground. Ink on it is `--on-logo-ground`, never `--on-inverse`, which flips and would put dark
   text on a dark ground in Afterhours.
@@ -134,16 +134,31 @@ oversights, and both are reversible.
 
 ## Images
 
-Photographs live in `public/web/` as AVIF with a WebP alongside, capped at 1600px. The
-camera-resolution originals are archived in `assets/originals/`, which is outside `public/` and so
-is never deployed.
+`public/` is organized by what a file **is**, not by where it is used. Only `robots.txt` sits at
+the root.
 
-`node scripts/optimize-photos.mjs` does the pass: drop new photos into `public/`, add a line to its
-`PHOTOS` map, and run it. It is idempotent, so re-running after adding a few more is safe.
+| Folder | Holds |
+| --- | --- |
+| `public/logos/` | Brand marks, ours and other people's: the club shark, the Tethos mark, the social glyphs. |
+| `public/imagery/` | General club photography. |
+| `public/events/` | Photography tied to a named event or partner. |
+| `public/screenshots/` | README captures. Not used by the site. |
 
-Do not point a component at a bare `public/` photo. The only files that belong at the root of
-`public/` are the ones that are not photographs: the shark mark, the TSI mark, the two social SVGs,
-`robots.txt`, and the two README screenshots.
+Photographs ship as AVIF with a WebP alongside, capped at 1600px. The camera-resolution originals
+are archived in `assets/originals/`, which is outside `public/` and so is never deployed.
+
+`node scripts/optimize-photos.mjs` does the pass: drop the new file into `public/`, add a line to
+its `PHOTOS` map naming the destination folder and the slug, and run it. It writes both formats,
+archives the original, and removes it from `public/`. Idempotent, so re-running after adding a few
+more is safe.
+
+Never point a component at a bare file at the root of `public/`. If a reference looks like
+`/Something.jpeg`, it has not been through the pass.
+
+The social share image is `src/app/opengraph-image.png`, a Next file convention rather than a
+`public/` asset: it is served, sized and injected into the OpenGraph and Twitter tags
+automatically, with its alt text from `opengraph-image.alt.txt`. Do not add an explicit `images`
+entry to the metadata alongside it.
 
 ## Copy
 

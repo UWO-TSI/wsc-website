@@ -14,14 +14,14 @@ import { useReveal } from '@/lib/reveal';
   add a fourth, do not invent one.
 */
 /*
-  Optimized derivatives from public/web/. The camera-resolution originals are
+  Optimized derivatives from public/. The camera-resolution originals are
   archived in assets/originals/ and are not deployed: see
   scripts/optimize-photos.mjs.
 */
 const PHOTOS = [
-  { src: '/web/sales-comp-1.avif', alt: 'Western Sales Club members at a sales competition' },
-  { src: '/web/vantage-1.avif', alt: 'Western Sales Club members at a club event' },
-  { src: '/web/sales-comp-3.avif', alt: 'Western Sales Club members presenting' },
+  { src: '/imagery/sales-comp-1.avif', alt: 'Western Sales Club members at a sales competition' },
+  { src: '/events/vantage-1.avif', alt: 'Western Sales Club members at a club event' },
+  { src: '/imagery/sales-comp-3.avif', alt: 'Western Sales Club members presenting' },
 ] as const;
 
 export default function AboutSection() {

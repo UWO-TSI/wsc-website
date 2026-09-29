@@ -53,23 +53,24 @@ export const metadata: Metadata = {
   },
   description:
     "Western University's student-run sales organization. Workshops, competitions and industry mentorship for students who want to sell.",
+  /*
+    No explicit `images` here. The share image is src/app/opengraph-image.png,
+    which is a Next file convention: it is served, sized and injected into both
+    the OpenGraph and Twitter tags automatically, with its alt text taken from
+    opengraph-image.alt.txt.
+
+    It used to be named og-image.png and pointed at by hand as "/og-image.png".
+    That is not a convention filename and the file was not in public/, so the
+    URL 404d and every social preview of the site came up blank.
+  */
   openGraph: {
     type: "website",
     locale: "en_CA",
     url: "https://westernsalesclub.ca",
     siteName: "Western Sales Club",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Western Sales Club",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,

@@ -41,8 +41,8 @@ function Glyph() {
       aria-hidden="true"
       className="mark-mask h-[26px] w-[26px] text-ink"
       style={{
-        WebkitMaskImage: 'url("/shark-white.png")',
-        maskImage: 'url("/shark-white.png")',
+        WebkitMaskImage: 'url("/logos/wsc-shark.png")',
+        maskImage: 'url("/logos/wsc-shark.png")',
       }}
     />
   );

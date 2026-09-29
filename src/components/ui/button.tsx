@@ -94,7 +94,12 @@ export default function Button({
       ? onAccentVariants[variant]
       : variants[variant];
 
-  const classes = `group ${base} ${tone} ${className}`.trim();
+  /*
+    `btn-${variant}` carries no styling of its own. It is the hook globals.css
+    uses to give a tertiary button legible ink inside a loud slab, where
+    --accent-ink is the ground itself and --accent-veil is invisible.
+  */
+  const classes = `group btn-${variant} ${base} ${tone} ${className}`.trim();
 
   const inner = (
     <>

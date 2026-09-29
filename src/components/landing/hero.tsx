@@ -12,10 +12,28 @@ import { useReveal, cascade } from '@/lib/reveal';
   its reveal until the Curtain lifts: design-system/adoption.md, "The
   preloader handoff".
 */
-/* Titles are Archivo all caps by the type role, so these carry the words and
-   not the casing. The org name at hero scale is the homepage's title, which is
-   also what floor.html's own hero card demonstrates. */
-const TITLE_LINES = ['Welcome to', 'Western Sales', 'Community'];
+/*
+  Two scales inside one h1, both existing type roles and nothing between them.
+
+  "Welcome to" takes `.title`, the same role the landing page section heads
+  use, so it reads as a lead-in. The name itself takes `.title-hero` on three
+  lines. On a wide viewport that is 3.25rem against 9rem, which is what makes
+  the name land rather than the greeting.
+
+  The size class goes on the `.ln` wrapper, not the inner span: the mask is an
+  overflow-hidden block whose height and its 0.06em descender allowance are
+  both computed from the wrapper's own font size. Putting the scale on the
+  inner span would leave the greeting masked by a hero-sized line box.
+
+  Titles are Archivo all caps by the type role, so these carry the words and
+  not the casing.
+*/
+const TITLE_LINES = [
+  { text: 'Welcome to', scale: 'title' },
+  { text: 'Western’s', scale: 'title-hero' },
+  { text: 'Sales', scale: 'title-hero' },
+  { text: 'Community', scale: 'title-hero' },
+] as const;
 
 export default function Hero() {
   const { complete } = usePreloader();
@@ -26,10 +44,11 @@ export default function Hero() {
       ref={ref}
       className="flex min-h-[calc(100svh-2px)] flex-col justify-center gap-8 px-[var(--gut)] py-24"
     >
-      <h1 className="title-hero">
+      {/* The h1 carries no scale of its own: each masked line sets its own. */}
+      <h1 className="m-0">
         {TITLE_LINES.map((line) => (
-          <span key={line} className="ln">
-            <i>{line}</i>
+          <span key={line.text} className={`ln ${line.scale}`}>
+            <i>{line.text}</i>
           </span>
         ))}
       </h1>

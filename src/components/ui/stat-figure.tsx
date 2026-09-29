@@ -74,7 +74,7 @@ export default function StatFigure({ value, label, suffix, className = '' }: Sta
     <div ref={ref} className={`flex flex-col gap-1 ${className}`.trim()}>
       <span className="font-data text-[clamp(2.4rem,7vw,56px)] font-medium leading-none tracking-[-0.02em] tabular-nums">
         {shown}
-        {suffix && <span className="text-accent-ink">{suffix}</span>}
+        {suffix && <span className="accent-mark">{suffix}</span>}
       </span>
       <span className="label">{label}</span>
     </div>

@@ -33,6 +33,11 @@ and gold in Afterhours:
   is artwork we may not redraw and most are light-on-transparent, so they wash out on the Showroom
   ground. Ink on it is `--on-logo-ground`, never `--on-inverse`, which flips and would put dark
   text on a dark ground in Afterhours.
+- The accent **as a word** is `.accent-mark`, not the `text-accent-ink` utility. `--accent-ink` is
+  legible on `--page`, `--raised` and `--sunken` and nowhere else: on an `accent` slab it is the
+  ground itself, and on `inverse` or `logo` it is a near match. `.accent-mark` falls back to that
+  slab's own ink automatically, and a tertiary `Button` does the same through `.btn-tertiary`. Use
+  it for section numerals, stat suffixes, and anything else spending the accent as type.
 - Our own single-ink marks (the club shark, the two social glyphs) are the opposite case: they are
   masked and filled with `currentColor` via `.mark-mask`, so one white asset reads correctly in
   both themes and can take `--accent` on hover. Never recolour a sponsor's mark this way.

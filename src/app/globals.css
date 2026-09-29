@@ -432,6 +432,47 @@ img {
   color: color-mix(in srgb, var(--on-logo-ground) 70%, transparent);
 }
 
+/*
+  ── The accent as a word, on a loud ground ──
+
+  --accent-ink is legible on --page, --raised and --sunken, and nowhere else.
+  On a loud slab it is either the ground itself (a velvet numeral on a velvet
+  band, which is invisible) or a near match (light gold on gold, which is
+  close to it). Anything spending the accent as a word therefore falls back to
+  that slab's own ink.
+
+  This lives here rather than in each component on purpose: it was rediscovered
+  separately on the section numerals, the tertiary button and the stat suffix,
+  which is the signal that it belongs to the slab, not to the component.
+*/
+
+.accent-mark {
+  color: var(--accent-ink);
+}
+
+.slab-inv .accent-mark,
+.slab-inv .btn-tertiary {
+  color: var(--on-inverse);
+}
+
+.slab-acc .accent-mark,
+.slab-acc .btn-tertiary {
+  color: var(--on-accent);
+}
+
+.slab-logo .accent-mark,
+.slab-logo .btn-tertiary {
+  color: var(--on-logo-ground);
+}
+
+/* --accent-veil is just as invisible on these grounds, so the hover fill is
+   derived from whatever ink the button is already carrying. */
+.slab-inv .btn-tertiary:hover,
+.slab-acc .btn-tertiary:hover,
+.slab-logo .btn-tertiary:hover {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
 .slab-acc .label,
 .slab-acc .subtitle,
 .slab-acc .meta,

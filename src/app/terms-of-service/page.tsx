@@ -129,7 +129,7 @@ function Section({
   return (
     <section className="flex flex-col gap-3">
       <h2 className="title-sm flex items-baseline gap-3">
-        <span className="label text-accent-ink">{index}</span>
+        <span className="label accent-mark">{index}</span>
         {title}
       </h2>
       <div className="flex flex-col gap-3">{children}</div>

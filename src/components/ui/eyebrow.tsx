@@ -4,8 +4,10 @@
  * It travels with its title rather than animating on its own, so it belongs
  * inside whatever wrapper owns the reveal.
  *
- * An `index` renders as the section numeral in --accent-ink, which is the only
- * place a bare number is allowed to carry meaning.
+ * An `index` renders as the section numeral in the accent, which is the only
+ * place a bare number is allowed to carry meaning. It carries `.accent-mark`
+ * rather than a colour utility, so that inside a loud slab it picks up that
+ * slab's ink instead of vanishing into the ground.
  */
 interface EyebrowProps {
   children: React.ReactNode;
@@ -18,7 +20,7 @@ export default function Eyebrow({ children, index, className = '' }: EyebrowProp
     <span className={`label ${className}`.trim()}>
       {index && (
         <>
-          <span className="text-accent-ink">{index}</span>
+          <span className="accent-mark">{index}</span>
           {' '}
         </>
       )}

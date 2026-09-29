@@ -18,8 +18,8 @@ export default function ContactPage() {
             </span>
           </h1>
           <p className="body measure">
-            Questions about membership, events, or partnerships. We reply from
-            sales.club@westernusc.ca.
+            Questions about membership, events, or partnerships. You can also
+            email sales.club@westernusc.ca.
           </p>
         </div>
 

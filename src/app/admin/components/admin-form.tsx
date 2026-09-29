@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import type { FormField } from '../form-config';
 import type { QueryError } from '@/types/database';
 import { getPublicUrl } from '@/lib/supabase/storage';
+import Button from '@/components/ui/button';
+import Slab from '@/components/ui/slab';
 
 interface AdminFormProps {
   fields: FormField[];
@@ -14,6 +17,8 @@ interface AdminFormProps {
   onCancel: () => void;
   saving: boolean;
   error: QueryError | null;
+  /** Keeps field ids unique when more than one form could exist in the DOM. */
+  idPrefix: string;
 }
 
 export default function AdminForm({
@@ -25,6 +30,7 @@ export default function AdminForm({
   onCancel,
   saving,
   error,
+  idPrefix,
 }: AdminFormProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>(() => {
     const data: Record<string, unknown> = {};
@@ -67,164 +73,160 @@ export default function AdminForm({
   const currentImagePath = pathColumn && initialData ? (initialData[pathColumn] as string | null) : null;
   const currentImageUrl = currentImagePath && bucket ? getPublicUrl(bucket, currentImagePath) : null;
 
+  const fieldId = (name: string) => `${idPrefix}-${name}`;
+
   const inputCls =
-    'w-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)] px-3 py-2.5 text-[var(--color-text-primary)] text-sm font-mono placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-border-gold)] transition-colors';
-  const labelCls = 'block text-[var(--color-text-muted)] font-mono text-xs tracking-[0.15em] uppercase mb-2';
+    'w-full bg-page rounded-sm px-[15px] py-[13px] text-ink body font-text';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {fields.map((field) => {
-        if (field.type === 'image') {
-          const inputId = `file-input-${field.name}`;
-          return (
-            <div key={field.name}>
-              <label className={labelCls}>{field.label}</label>
-              {currentImageUrl && !file && (
-                <div className="mb-3">
-                  <img
-                    src={currentImageUrl}
-                    alt="Current"
-                    className="h-16 w-16 object-cover border border-[var(--color-border)]"
-                  />
-                  <p className="text-[var(--color-text-subtle)] font-mono text-xs mt-1.5">
-                    Current image
-                  </p>
-                </div>
-              )}
-              <div
-                className={`border border-dashed p-6 text-center cursor-pointer transition-colors ${
-                  dragActive
-                    ? 'border-[var(--color-gold)] bg-[var(--color-gold-dim)]'
-                    : 'border-[var(--color-border)] hover:border-[var(--color-border-gold)]'
-                }`}
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => !file && document.getElementById(inputId)?.click()}
-              >
-                <input
-                  id={inputId}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  onChange={(e) => processFile(e.target.files?.[0])}
-                  className="hidden"
-                />
-                {file ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-[var(--color-text-secondary)] text-sm font-mono truncate max-w-48">
-                      {file.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFile(null);
-                      }}
-                      className="text-[var(--color-text-muted)] hover:text-[var(--color-gold)] transition-colors font-mono text-xs"
-                    >
-                      ✕ Remove
-                    </button>
+    <Slab tone="sunken" as="div">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        {fields.map((field) => {
+          const id = fieldId(field.name);
+
+          if (field.type === 'image') {
+            return (
+              <div key={field.name}>
+                <label htmlFor={id} className="label mb-2 block">
+                  {field.label}
+                </label>
+                {currentImageUrl && !file && (
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-sm bg-page">
+                      <Image src={currentImageUrl} alt="Current" fill className="object-cover" />
+                    </div>
+                    <p className="meta text-ink-faint">Current image</p>
                   </div>
-                ) : (
-                  <span className="text-[var(--color-text-muted)] text-sm font-mono">
-                    Drop image or click to browse
-                  </span>
                 )}
+                <div
+                  className={`rounded-sm p-6 text-center cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter ${
+                    dragActive ? 'bg-accent-veil' : 'bg-page hover:bg-accent-veil'
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => !file && document.getElementById(id)?.click()}
+                >
+                  <input
+                    id={id}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    onChange={(e) => processFile(e.target.files?.[0])}
+                    className="hidden"
+                  />
+                  {file ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="body-sm text-ink truncate max-w-48">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFile(null);
+                        }}
+                        className="label text-ink-muted hover:text-accent-ink transition-colors duration-[var(--d-hover)] ease-enter cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="body-sm text-ink-muted">Drop image or click to browse</span>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        }
+            );
+          }
 
-        if (field.type === 'select') {
+          if (field.type === 'select') {
+            return (
+              <div key={field.name}>
+                <label htmlFor={id} className="label mb-2 block">
+                  {field.label}
+                </label>
+                <select
+                  id={id}
+                  value={(formData[field.name] as string) || ''}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  required={field.required}
+                  className={inputCls}
+                >
+                  <option value="">Select</option>
+                  {field.options?.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          }
+
+          if (field.type === 'textarea') {
+            return (
+              <div key={field.name}>
+                <label htmlFor={id} className="label mb-2 block">
+                  {field.label}
+                </label>
+                <textarea
+                  id={id}
+                  value={(formData[field.name] as string) || ''}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  rows={4}
+                  className={`${inputCls} resize-y`}
+                />
+              </div>
+            );
+          }
+
+          if (field.type === 'date') {
+            return (
+              <div key={field.name}>
+                <label htmlFor={id} className="label mb-2 block">
+                  {field.label}
+                </label>
+                <input
+                  id={id}
+                  type="date"
+                  value={(formData[field.name] as string) || ''}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  required={field.required}
+                  className={inputCls}
+                />
+              </div>
+            );
+          }
+
           return (
             <div key={field.name}>
-              <label className={labelCls}>{field.label}</label>
-              <select
-                value={(formData[field.name] as string) || ''}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-                required={field.required}
-                className={inputCls}
-              >
-                <option value="">Select…</option>
-                {field.options?.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          );
-        }
-
-        if (field.type === 'textarea') {
-          return (
-            <div key={field.name}>
-              <label className={labelCls}>{field.label}</label>
-              <textarea
+              <label htmlFor={id} className="label mb-2 block">
+                {field.label}
+              </label>
+              <input
+                id={id}
+                type="text"
                 value={(formData[field.name] as string) || ''}
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 required={field.required}
                 placeholder={field.placeholder}
-                rows={4}
-                className={`${inputCls} resize-y`}
-              />
-            </div>
-          );
-        }
-
-        if (field.type === 'date') {
-          return (
-            <div key={field.name}>
-              <label className={labelCls}>{field.label}</label>
-              <input
-                type="date"
-                value={(formData[field.name] as string) || ''}
-                onChange={(e) => handleChange(field.name, e.target.value)}
-                required={field.required}
                 className={inputCls}
               />
             </div>
           );
-        }
+        })}
 
-        return (
-          <div key={field.name}>
-            <label className={labelCls}>{field.label}</label>
-            <input
-              type="text"
-              value={(formData[field.name] as string) || ''}
-              onChange={(e) => handleChange(field.name, e.target.value)}
-              required={field.required}
-              placeholder={field.placeholder}
-              className={inputCls}
-            />
-          </div>
-        );
-      })}
+        {error && <p className="body-sm text-alert">{error.message}</p>}
 
-      {error && (
-        <p className="text-red-400 text-sm font-mono bg-red-950/30 border border-red-900/50 px-3 py-2.5">
-          {error.message}
-        </p>
-      )}
-
-      <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-6 py-2.5 bg-[var(--color-gold)] text-black font-mono text-xs tracking-[0.15em] uppercase hover:bg-[var(--color-gold-muted)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-        >
-          {saving ? 'Saving…' : initialData ? 'Update' : 'Create'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-6 py-2.5 border border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-xs tracking-[0.15em] uppercase hover:border-[var(--color-border-gold)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+        <div className="flex gap-3 pt-2">
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Saving' : initialData ? 'Update' : 'Create'}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Slab>
   );
 }

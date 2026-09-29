@@ -641,21 +641,21 @@ img {
 }
 
 /*
-  Sequence 10: Row Expand. Directory and event rows.
+  Sequence 10: Row Expand. The event ledger.
 
-  Block padding grows, the name shifts right, the --raised fill and --sh-2 come
-  in, and the avatar clips in from the right. Rows sit in one slab separated by
-  4px, never by a line.
+  Block padding grows, the name shifts right, and the --raised fill and --sh-2
+  come in. Rows sit in one slab separated by 4px, never by a line.
 
-  A row is NOT a control here. components.md describes it as one focusable
-  link, which assumes a destination; this site has no exec detail page and no
-  event registration URL, so a row that announced itself as pressable would be
-  a false affordance and a screen reader would read "button" on something that
-  does nothing. The rows are therefore inert, the expand is a pointer-only
-  response to attention, and the avatar is present at rest wherever hover does
-  not exist, so nobody is shown less than anyone else. If exec pages or
-  registration links ever land, make the row a real link and put the avatar
-  back behind hover and focus.
+  The executive roster used to share this and no longer does: it is a grid of
+  people now, because splitting a team into titled tiers made the page about
+  rank. See executive-grid.tsx. The avatar reveal that lived here went with it.
+
+  A row is NOT a control. components.md describes it as one focusable link,
+  which assumes a destination; there is no event registration URL, so a row
+  that announced itself as pressable would be a false affordance and a screen
+  reader would read "button" on something that does nothing. The rows are
+  therefore inert and the expand is a pointer-only response to attention. If
+  registration links ever land, make the row a real link.
 */
 
 .row {
@@ -677,14 +677,6 @@ img {
   transition: transform var(--d-move) var(--e-move);
 }
 
-.row-avatar {
-  opacity: 0;
-  transform: translateX(10px);
-  transition:
-    opacity var(--d-move) var(--e-move),
-    transform var(--d-move) var(--e-move);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .row-live:hover {
     background: var(--raised);
@@ -695,26 +687,12 @@ img {
   .row-live:hover .row-name {
     transform: translateX(10px);
   }
-
-  .row-live:hover .row-avatar {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* No hover means no reveal, so the avatar is simply there. */
-@media (hover: none), (pointer: coarse) {
-  .row-avatar {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 /* Reduced motion: the padding and the offset drop, the fill still applies. */
 @media (prefers-reduced-motion: reduce) {
   .row,
-  .row-name,
-  .row-avatar {
+  .row-name {
     transition: none;
   }
 
@@ -730,11 +708,12 @@ img {
 /*
   Sequence 7: Marquee Drift. The one ambient loop in the system.
 
-  The track translates -50% over --d-drift on linear with its contents
-  duplicated exactly once. On scroll it picks up a skewX up to 4 degrees
-  proportional to scroll velocity, returning over --d-move. It pauses on hover,
-  on focus-within, and on visibilitychange, which the component drives with
-  .is-paused.
+  The track shifts by exactly one group width on linear, forever. It pauses on
+  hover, on focus-within, and on visibilitychange, which the component drives
+  with .is-paused.
+
+  No scroll-velocity skew: motion.md specifies one, but it read as a rendering
+  glitch rather than momentum. Recorded in adoption.md.
 
   Under reduced motion it stops and reflows to a static wrapped row, and the
   duplicate copy is removed rather than left stacked underneath.

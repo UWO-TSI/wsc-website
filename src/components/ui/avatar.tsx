@@ -25,12 +25,27 @@ function initialsOf(name: string) {
 interface AvatarProps {
   name: string;
   src?: string | null;
+  /** Fixed diameter in px. Ignored when `fluid` is set. */
   size?: number;
+  /**
+   * Fill the width of the parent and stay square, for a grid cell whose
+   * column width is set by the grid rather than by the avatar.
+   */
+  fluid?: boolean;
+  /** Required when `fluid`: the rendered width at each breakpoint. */
+  sizes?: string;
   className?: string;
 }
 
-export default function Avatar({ name, src, size = 34, className = '' }: AvatarProps) {
-  const style = { width: size, height: size } as const;
+export default function Avatar({
+  name,
+  src,
+  size = 34,
+  fluid = false,
+  sizes,
+  className = '',
+}: AvatarProps) {
+  const style = fluid ? undefined : ({ width: size, height: size } as const);
 
   /*
     The initials disc is always rendered, and the headshot sits on top of it
@@ -43,9 +58,14 @@ export default function Avatar({ name, src, size = 34, className = '' }: AvatarP
     <span
       aria-hidden="true"
       style={style}
-      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-sunken font-display font-extrabold leading-none text-ink-faint ${className}`.trim()}
+      className={`relative grid place-items-center overflow-hidden rounded-full bg-sunken font-display font-extrabold leading-none text-ink-faint ${
+        fluid ? 'aspect-square w-full' : 'shrink-0'
+      } ${className}`.trim()}
     >
-      <span style={{ fontSize: Math.max(10, Math.round(size * 0.32)) }}>
+      <span
+        className={fluid ? 'text-[clamp(1.1rem,4vw,2rem)]' : undefined}
+        style={fluid ? undefined : { fontSize: Math.max(10, Math.round(size * 0.32)) }}
+      >
         {initialsOf(name)}
       </span>
 
@@ -54,7 +74,7 @@ export default function Avatar({ name, src, size = 34, className = '' }: AvatarP
           src={src}
           alt=""
           fill
-          sizes={`${size}px`}
+          sizes={fluid ? (sizes ?? '25vw') : `${size}px`}
           className="object-cover"
         />
       )}

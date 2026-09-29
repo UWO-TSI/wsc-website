@@ -508,6 +508,18 @@
   @keyframes spin { to { transform: rotate(1turn); } }
   .st .big { font-family: var(--f-display); font-weight: 900; text-transform: uppercase; font-size: clamp(2.4rem, 7vw, 3.6rem); line-height: 0.85; letter-spacing: -0.02em; }
 
+  /* roster grid */
+  .roster { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px 20px; }
+  @media (min-width: 560px) { .roster { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 860px) { .roster { grid-template-columns: repeat(4, 1fr); } }
+  .person { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+  .person .disc {
+    width: 100%; aspect-ratio: 1; border-radius: var(--r-disc); background: var(--sunken);
+    display: grid; place-items: center; font-family: var(--f-display); font-weight: 800;
+    font-size: clamp(1.1rem, 4vw, 2rem); color: var(--ink-faint);
+  }
+  .person .nm { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; font-size: 15px; letter-spacing: 0.005em; }
+
   /* skeleton */
   .sk { position: relative; overflow: hidden; border-radius: var(--r-sm); background: color-mix(in srgb, currentColor 9%, transparent); display: block; }
   .sk::after {
@@ -1060,7 +1072,38 @@
   </section>
 
   <section class="slab">
-    <div class="sechead"><span class="label"><span class="n">14</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
+    <div class="sechead"><span class="label"><span class="n">14</span> &nbsp;Roster</span><span class="meta">Organization conveyed by layout, not by labelled tiers.</span></div>
+    <div class="roster">
+      <div class="person"><span class="disc">PR</span><span><span class="nm">Priya Raman</span><br><span class="meta">President</span></span></div>
+      <div class="person"><span class="disc">DO</span><span><span class="nm">Daniel Osei</span><br><span class="meta">President</span></span></div>
+      <div class="person"><span class="disc">MC</span><span><span class="nm">Mei Chen</span><br><span class="meta">VP Partnerships</span></span></div>
+      <div class="person"><span class="disc">JK</span><span><span class="nm">Jonas Keller</span><br><span class="meta">VP Events</span></span></div>
+      <div class="person"><span class="disc">AB</span><span><span class="nm">Amara Boateng</span><br><span class="meta">VP Marketing</span></span></div>
+      <div class="person"><span class="disc">TL</span><span><span class="nm">Tomas Lind</span><br><span class="meta">AVP Partnerships</span></span></div>
+      <div class="person"><span class="disc">SN</span><span><span class="nm">Sofia Nakamura</span><br><span class="meta">AVP Events</span></span></div>
+      <div class="person"><span class="disc">RM</span><span><span class="nm">Ruth Mbeki</span><br><span class="meta">AVP Marketing</span></span></div>
+    </div>
+    <p class="body-sm" style="margin-top:24px;max-width:62ch">
+      This replaced three labelled bands, one per group, headed Presidents,
+      Vice Presidents and Assistant Vice Presidents. Splitting people into
+      titled tiers made the page about rank rather than about the team.
+      <br><br>
+      The order still carries the structure: presidents first, then vice
+      presidents, then assistant vice presidents, read left to right. Each
+      person's title sits under their name for anyone who wants it. Nothing
+      announces the boundary between groups and no group gets a bigger cell.
+      <br><br>
+      Every cell is identical, and none of them is a card: no fill, no shadow,
+      no border, no hover, no link. These are people, not controls. Headshots
+      are always visible here, unlike on the event ledger, because a profile
+      picture is the content rather than a flourish. A missing one falls back
+      to initials on <b>--sunken</b>, which is a designed state and not a
+      broken frame.
+    </p>
+  </section>
+
+  <section class="slab sunk">
+    <div class="sechead"><span class="label"><span class="n">15</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
     <div class="steps">
       <div class="step"><span class="no">1</span><span class="hd">Look first</span><p>Read this page before writing CSS. Most new components are an existing one re-composed.</p></div>
       <div class="step"><span class="no">2</span><span class="hd">Spend tokens only</span><p>Every colour, radius, shadow, duration and easing comes from a token. No new hex, no new number.</p></div>

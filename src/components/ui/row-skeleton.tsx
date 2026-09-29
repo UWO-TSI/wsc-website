@@ -3,11 +3,11 @@ import Skeleton from '@/components/ui/skeleton';
 /*
   The ledger row, before it has arrived.
 
-  Built to the same anatomy as ExecRow and TimelineEvent (`.row` in
-  globals.css): a 30px index, a name that takes the remaining width, a meta
-  column, and a 34px slot on the right. It sits at the row's rest padding, so
-  the list occupies exactly the height it will occupy once the query resolves
-  and nothing below it moves.
+  Built to the same anatomy as TimelineEvent (`.row` in globals.css): a 30px
+  index, a title that takes the remaining width, a date column, and the status
+  chip on the right. It sits at the row's rest padding, so the list occupies
+  exactly the height it will occupy once the query resolves and nothing below
+  it moves.
 
   The name widths vary down the column, because a stack of identical
   full-width bars reads as a loading graphic rather than as a list of names.
@@ -35,10 +35,9 @@ export default function RowSkeleton({ count = 5 }: { count?: number }) {
               <Skeleton className="h-3 w-24" index={i} />
             </span>
 
-            <Skeleton
-              className="order-3 ml-auto h-[34px] w-[34px] shrink-0 rounded-full"
-              index={i}
-            />
+            {/* The chip slot, not an avatar: the roster moved to a grid and
+                the event ledger is the only thing left on .row. */}
+            <Skeleton className="order-3 ml-auto h-[30px] w-16 shrink-0 rounded-pill" index={i} />
           </div>
         </li>
       ))}

@@ -17,14 +17,16 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |
 | Marquee | `landing/partners-marquee.tsx` | Marquee Drift |
-| ExecRow | `team/executive-row.tsx` | Row Expand |
+| ExecutiveGrid | `team/executive-grid.tsx` | one move on arrival |
 | ThemeToggle | `ui/theme-toggle.tsx` | Theme Wipe |
-| Avatar | `ui/avatar.tsx` | travels with its row |
+| Avatar | `ui/avatar.tsx` | none |
 | Chip | `ui/chip.tsx` | none |
 | TimelineEvent | `events/timeline-event.tsx` | Row Expand |
 | LogoWall | `sponsors/logo-wall.tsx`, `logo-card.tsx` | none |
 | BentoGallery | `about/bento-gallery.tsx` | Clip Reveal |
 | AsyncState | `shared/async-state-wrapper.tsx` | none |
+| Skeleton | `ui/skeleton.tsx`, `ui/row-skeleton.tsx` | sweep |
+| RevealImage | `ui/reveal-image.tsx` | Clip Reveal |
 | CTABand | `landing/cta-section.tsx` | Slab Clip |
 
 ## Nav
@@ -33,7 +35,7 @@ One component, two modes, never two menus.
 
 **Desktop, 1024 and up.** A floating pill: glyph, wordmark, links inline, and a `--r-pill` `--accent` indicator that slides between items on `layoutId`. No hamburger.
 
-**Mobile.** The same pill with the hamburger on the right. It expands downward into a panel — see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, and on a click outside. There is no drawer and no scrim.
+**Mobile.** The same pill with the hamburger on the right. It expands downward into a panel: see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, and on a click outside. There is no drawer and no scrim.
 
 The theme toggle lives in the bar at every breakpoint, outside the panel, so it is reachable without opening the menu.
 
@@ -76,17 +78,23 @@ Adjacent slabs never share a tone, the two loud tones never touch, one loud slab
 
 Never put a shadow above `--sh-1` on a slab. A slab is the page, not a thing floating above it.
 
-## ExecRow and TimelineEvent
+## ExecutiveGrid
 
-Ledger rows inside one slab, separated by 4px, never by a line. At rest a directory is pure type: index in `.label`, name in `.title-sm`, role in `.meta`. That is the point — a wall of names in Archivo caps reads as a roster of operators, not a club page.
+The roster is one grid read left to right, not a stack of titled tiers.
 
-Row Expand on hover and keyboard focus, identical states, **where the row has a destination**.
+It used to be three labelled bands, Presidents then Vice Presidents then Assistant Vice Presidents, each a group of ledger rows. Splitting people into named ranks made the page about status rather than about the team, which is not what a club roster is for. **Organization is conveyed by layout.** The order still carries the structure, presidents first and so on down, and each person's title sits under their name for anyone who wants it, but nothing announces a boundary and no group gets a bigger cell.
 
-As built, it does not. This site has no exec detail page and no event registration URL, so the row is an inert list item: a `<button>` with no handler announces itself as pressable to a screen reader and then does nothing, which is worse than no affordance at all. The expand is therefore a pointer-only response to attention, and the avatar is present at rest wherever hover does not exist, so a touch or keyboard user is never shown less than a mouse user. If exec pages or registration links ever land, make the row a real link and put the avatar back behind hover and focus, which is what the paragraph above describes.
+Four columns from 1024 up, three from 640, two below. Every cell is identical: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
 
-Headshots are `--r-disc` and appear only on hover, on pointer devices. A missing headshot renders a `--sunken` disc with initials in `--ink-faint` — designed, not a broken frame. Object names only in the DB; call `getPublicUrl(bucket, objectName)` at runtime.
+Headshots are always visible here, unlike on the event ledger. A profile picture is the content, not a flourish. `Avatar` layers the photo over its initials disc rather than swapping, so a missing or slow headshot shows the designed fallback instead of a hole. Object names only in the DB; call `getPublicUrl(bucket, objectName)` at runtime.
 
-Event status is a chip carrying a word: Open, Waitlist, Closed. Never colour alone. Past events drop the chip, take `--ink-muted`, and lose the hover expand, because they are reference and should not look pressable.
+## TimelineEvent
+
+Ledger rows inside one slab, separated by 4px, never by a line. At rest the ledger is pure type: index in `.label`, title in `.title-sm`, date in `.meta`. A wall of titles in Archivo caps reads as a schedule, not a list of cards.
+
+Row Expand on hover, **where the row has a destination**. As built it does not: there is no event registration URL, so the row is an inert list item. A `<button>` with no handler announces itself as pressable to a screen reader and then does nothing, which is worse than no affordance at all. The expand is therefore a pointer-only response to attention. If registration links ever land, make the row a real link.
+
+Status is a chip carrying a word, never colour alone. The `events` table has no status column and `supabase/` is off limits, so it is derived from `date`: future or today is `ok` "Open". Past events drop the chip, take `--ink-muted` and lose the expand entirely, because they are reference and should not look pressable. They render as a different element, not just a differently styled one.
 
 ## StatFigure
 
@@ -104,7 +112,7 @@ As built there is exactly **one** tier group, labelled Partners: the `sponsors` 
 
 Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile behind each one. A per-logo panel on a light slab read as a grid of stickers. Same treatment for the landing page marquee.
 
-Sponsors grouped by tier, `--gold` for the tier bar and label — the explicit mark, not `--accent`, because a sponsor's tier must look the same in both themes. Tile scale carries the hierarchy, not a border.
+Sponsors grouped by tier, `--gold` for the tier bar and label, the explicit mark rather than `--accent`, because a sponsor's tier must look the same in both themes. Tile scale carries the hierarchy, not a border.
 
 Never redraw a sponsor's mark. Use their file. Where there is none, set the name in `--f-display` weight 700 in the same tile. Logos sit on `--sunken` so a single-ink mark has a predictable ground.
 

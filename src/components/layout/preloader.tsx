@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { easing } from "@/lib/motion";
+import { easing } from "@/lib/motion-legacy";
 
 const CRITICAL_IMAGES = [
   "/shark-white.png",

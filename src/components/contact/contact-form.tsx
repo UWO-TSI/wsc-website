@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, type FormEvent, type ChangeEvent } from 'r
 import emailjs from '@emailjs/browser';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/button';
-import { easing } from '@/lib/motion';
+import { easing } from '@/lib/motion-legacy';
 
 interface FormData {
   name: string;

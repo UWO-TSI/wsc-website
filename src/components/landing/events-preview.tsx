@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { Event, QueryError } from '@/types/database';
 import Eyebrow from '@/components/ui/eyebrow';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
-import { revealVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, viewportConfig } from '@/lib/motion-legacy';
 
 /** Events preview uses 0.1s stagger per spec §8.1 */
 const eventsContainerVariant: Variants = {

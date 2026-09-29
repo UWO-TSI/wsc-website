@@ -4,7 +4,7 @@ import type { Sponsor, QueryError } from '@/types/database';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import LogoCard from '@/components/sponsors/logo-card';
 import { motion } from 'framer-motion';
-import { containerVariant, revealVariant, viewportConfig } from '@/lib/motion';
+import { containerVariant, revealVariant, viewportConfig } from '@/lib/motion-legacy';
 
 interface LogoWallProps {
   sponsors: Sponsor[];

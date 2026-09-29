@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { revealVariant, delayedRevealVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, delayedRevealVariant, viewportConfig } from '@/lib/motion-legacy';
 
 const sectionGap = 'clamp(5rem, 10vw, 9rem)';
 

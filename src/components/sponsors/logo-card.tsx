@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Sponsor } from '@/types/database';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { easing } from '@/lib/motion';
+import { easing } from '@/lib/motion-legacy';
 
 interface LogoCardProps {
   sponsor: Sponsor;

@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { revealVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, viewportConfig } from '@/lib/motion-legacy';
 import Eyebrow from '@/components/ui/eyebrow';
 import StorySection from '@/components/about/story-section';
 import BentoGallery from '@/components/about/bento-gallery';

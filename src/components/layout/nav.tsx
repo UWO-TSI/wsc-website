@@ -11,7 +11,7 @@ import {
   useScroll,
 } from "framer-motion";
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import { easing } from "@/lib/motion";
+import { easing } from "@/lib/motion-legacy";
 
 /* ────────────────────────────────────────────
    Nav items — shared between desktop & mobile

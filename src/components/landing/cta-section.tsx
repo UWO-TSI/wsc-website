@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Eyebrow from '@/components/ui/eyebrow';
 import Button from '@/components/ui/button';
-import { revealVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, viewportConfig } from '@/lib/motion-legacy';
 import type { Variants } from 'framer-motion';
 
 const ctaButtonReveal: Variants = {

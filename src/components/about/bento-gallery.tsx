@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { containerVariant, revealVariant, easing, viewportConfig } from '@/lib/motion';
+import { containerVariant, revealVariant, easing, viewportConfig } from '@/lib/motion-legacy';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import Eyebrow from '@/components/ui/eyebrow';
 import type { QueryError } from '@/types/database';

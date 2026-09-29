@@ -2,7 +2,7 @@
 
 import { motion, type Variants } from 'framer-motion';
 import type { Executive } from '@/types/database';
-import { viewportConfig } from '@/lib/motion';
+import { viewportConfig } from '@/lib/motion-legacy';
 
 /** Executive rows use 0.07s stagger per spec §8.3 */
 const execContainerVariant: Variants = {

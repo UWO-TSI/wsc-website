@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
-import { easing } from '@/lib/motion';
+import { easing } from '@/lib/motion-legacy';
 import type { Event } from '@/types/database';
 
 interface TimelineEventProps {

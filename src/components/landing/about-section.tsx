@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Eyebrow from '@/components/ui/eyebrow';
-import { revealVariant, delayedRevealVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, delayedRevealVariant, viewportConfig } from '@/lib/motion-legacy';
 
 const stats = [
   { number: '150+', label: 'Members' },

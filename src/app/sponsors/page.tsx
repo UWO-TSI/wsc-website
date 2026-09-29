@@ -5,7 +5,7 @@ import type { Sponsor } from '@/types/database';
 import Eyebrow from '@/components/ui/eyebrow';
 import LogoWall from '@/components/sponsors/logo-wall';
 import { motion } from 'framer-motion';
-import { revealVariant, containerVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, containerVariant, viewportConfig } from '@/lib/motion-legacy';
 
 export default function SponsorsPage() {
   const { data: sponsors, loading, error, refetch } = useSupabaseQuery<Sponsor>('sponsors');

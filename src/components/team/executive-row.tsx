@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { easing } from '@/lib/motion';
+import { easing } from '@/lib/motion-legacy';
 import type { Executive } from '@/types/database';
 
 interface ExecutiveRowProps {

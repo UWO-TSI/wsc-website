@@ -14,11 +14,30 @@
 
 ---
 
+## Design System — read before ANY UI work
+
+The site is being rebuilt on **WSC Floor**, which lives in `design-system/`.
+
+| File | What |
+| ---- | ---- |
+| `design-system/floor.html` | The live visual reference. **Open it in a browser first.** Palette in both themes, type, corners, elevation, all twelve motion sequences running, a card per component. |
+| `design-system/README.md` | The five rules, colour, type, corners, elevation, layout, and the protocol for extending the system. |
+| `design-system/tokens.css` | What the app consumes. Replaces the `@theme` block in `src/app/globals.css`. |
+| `design-system/motion.md` | The twelve named motion sequences with code. |
+| `design-system/components.md` | Component inventory, mapped to the files in `src/components/`. |
+| `design-system/adoption.md` | **Start here for code.** What the app already provides: token utilities, the primitives in `src/components/ui/`, how to run a sequence, and the data decisions taken during adoption. |
+
+**Never design a component freehand.** When something you need is not in the system: compose it from existing components, spend only existing tokens, reuse one of the twelve sequences, then add its card to `floor.html` in the same change. Do not invent a colour, a radius, a duration, or a one-off animation. Do not add a border to separate anything.
+
+Headline rules: no borders anywhere (the focus ring is the only outline), the accent flips with the theme (velvet in Showroom, gold in Afterhours), four type roles only, every title is Archivo all-caps, and motion arrives and stops.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
-| ----- | ---------- |r
-| Framework | Next.js 15 (App Router) |
+| ----- | ---------- |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript (strict mode) |
 | Styling | Tailwind CSS v4 — CSS-first `@theme` in `globals.css`, **no `tailwind.config.js`** |
 | Animation | Framer Motion + GSAP + ScrollTrigger + Lenis |
@@ -30,18 +49,28 @@
 
 ## Design Language
 
-- **Dark luxury, agency-meets-academic** — editorial, not startup
-- **No cards or containers** — free-flowing, open, full-width layouts
-- **Motion is earned** — purposeful only, never decorative
-- **Minimal text** — big bold titles, short copy
-- **Fully responsive** — every breakpoint, every device
+WSC Floor. The full rules are in `design-system/README.md`; this is the enforceable summary.
 
-| Token | Value |
-| ----- | ----- |
-| Gold | `#D4A843` → `var(--color-gold)` |
-| Display font | Cormorant Garamond |
-| Body font | DM Sans |
-| Label/date font | DM Mono |
+- **Two themes, shipped together.** Showroom is white with a deep velvet accent, Afterhours is
+  near-black with gold. The accent flips with the theme, so components reference `--accent`,
+  `--accent-ink` and `--on-accent`, never a literal purple or gold. `--velvet` and `--gold` are
+  the two fixed marks: the Western affiliation lockup and sponsor tiers.
+- **There are no borders.** Things are divided by a change in surface tone, by the gap between
+  them, and by shadow. The focus ring is the only outline and is never removed.
+- **Four type roles, nothing between them.** Title, subtitle, body, label. Every title is
+  Archivo, all caps. A page of medium-sized headings is the failure mode this system prevents.
+- **Slabs are the divider.** A page is a stack of slabs on `--page`, inset by the page gutter,
+  separated by 24px of visible page ground. Adjacent slabs never share a tone, one loud slab
+  per page, and the hero plus at least one section per page sit bare.
+- **Motion arrives and stops.** Twelve named sequences, no thirteenth. Everything uses
+  `--e-enter` unless it is leaving. Nothing floats, bounces or loops except the marquee.
+- **Legible at rest.** Nothing is parked at `opacity: 0` waiting on an observer.
+
+| Role | Face | Job |
+| ---- | ---- | --- |
+| `--f-display` | Archivo 800 to 900 | Every title, always uppercase |
+| `--f-text` | Instrument Sans | Running copy and UI labels |
+| `--f-data` | Geist Mono | Dates, counts, field labels, eyebrows |
 
 ---
 

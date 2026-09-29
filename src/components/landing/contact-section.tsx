@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Eyebrow from '@/components/ui/eyebrow';
 import ContactForm from '@/components/contact/contact-form';
-import { revealVariant, viewportConfig } from '@/lib/motion';
+import { revealVariant, viewportConfig } from '@/lib/motion-legacy';
 
 export default function ContactSection() {
   return (

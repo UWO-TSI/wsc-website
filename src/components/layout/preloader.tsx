@@ -1,80 +1,67 @@
 "use client";
 
-import { useEffect } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { easing } from "@/lib/motion-legacy";
+import { curtain } from "@/lib/motion";
 
-const CRITICAL_IMAGES = [
-  "/shark-white.png",
-  "/UC-HILL.avif",
-  "/TORONTO.avif",
-  "/MIDDLESEX.avif",
-];
+/*
+  The Curtain. A fixed --inverse panel at --layer-curtain with the wordmark
+  and a 2px progress rail that fills over 900ms, then the panel exits
+  translateY(-101%) over --d-arrive on --e-exit.
 
-const TIMEOUT_MS = 3000;
+  Under reduced motion it does not render at all: onLoadComplete fires
+  immediately and the panel never paints.
+
+  design-system/motion.md → Curtain.
+*/
+
+const RAIL_FILL_MS = 900;
 
 interface PreloaderProps {
   onLoadComplete: () => void;
 }
 
 export default function Preloader({ onLoadComplete }: PreloaderProps) {
+  const [reduced] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+
   useEffect(() => {
-    const imagePromises = CRITICAL_IMAGES.map(
-      (src) =>
-        new Promise<void>((resolve) => {
-          const img = new window.Image();
-          img.src = src;
-          img.onload = () => resolve();
-          img.onerror = () => resolve(); // proceed even on failure
-        })
-    );
-
-    const timeout = new Promise<void>((resolve) =>
-      setTimeout(resolve, TIMEOUT_MS)
-    );
-
-    Promise.race([Promise.all(imagePromises), timeout]).then(() => {
+    if (reduced) {
       onLoadComplete();
-    });
-  }, [onLoadComplete]);
+      return;
+    }
+    const timer = setTimeout(onLoadComplete, RAIL_FILL_MS);
+    return () => clearTimeout(timer);
+  }, [reduced, onLoadComplete]);
+
+  if (reduced) return null;
 
   return (
     <motion.div
-      className="fixed inset-0 flex items-center justify-center"
-      style={{
-        zIndex: 9999,
-        background: "var(--color-bg-base)",
-      }}
-      exit={{
-        y: "-100vh",
-        opacity: 0,
-        transition: {
-          duration: 0.85,
-          ease: easing.easeInOutQuart,
-        },
-      }}
+      className="fixed inset-0 z-[var(--layer-curtain)] grid place-items-center bg-inverse text-on-inverse"
+      variants={curtain}
+      initial="show"
+      animate="show"
+      exit="exit"
     >
-      <motion.div
-        animate={{
-          scale: [1, 1.06, 1],
-          opacity: [0.8, 1, 0.8],
-        }}
-        transition={{
-          duration: 1.8,
-          ease: "easeInOut",
-          repeat: Infinity,
-        }}
+      <span className="font-display text-[15px] font-black uppercase tracking-[0.22em]">
+        WSC
+      </span>
+      <span
+        className="absolute bottom-[26px] left-[26px] right-[26px] h-[2px] overflow-hidden rounded-pill"
+        style={{ background: "color-mix(in srgb, var(--on-inverse) 18%, transparent)" }}
       >
-        <Image
-          src="/shark-white.png"
-          alt="Western Sales Club"
-          width={80}
-          height={80}
-          priority
-          className="object-contain"
+        <motion.i
+          className="block h-full rounded-pill bg-accent"
+          style={{ fontStyle: "normal" }}
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ duration: RAIL_FILL_MS / 1000, ease: "linear" }}
         />
-      </motion.div>
+      </span>
     </motion.div>
   );
 }

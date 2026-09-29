@@ -1,373 +1,303 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import { motion } from "framer-motion";
+import ThemeToggle from "@/components/ui/theme-toggle";
 import {
-  motion,
-  AnimatePresence,
-  useMotionValueEvent,
-  useScroll,
-} from "framer-motion";
-import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import { easing } from "@/lib/motion-legacy";
+  indicatorTransition,
+  navItem,
+  navPanelTransition,
+  NAV_CLOSED_RADIUS,
+} from "@/lib/motion";
 
-/* ────────────────────────────────────────────
-   Nav items — shared between desktop & mobile
-   ──────────────────────────────────────────── */
+/*
+  Nav — one component, two modes, never two menus.
+
+  Desktop, 1024 and up: a floating pill with the links inline and a sliding
+  --accent indicator on layoutId. No hamburger.
+
+  Mobile: the same pill, hamburger on the right, growing downward into a
+  panel — sequence 12, Nav Expand. There is no drawer and no scrim.
+
+  design-system/components.md → Nav. design-system/motion.md → sequence 12.
+*/
+
 const NAV_ITEMS = [
+  { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/executive-team", label: "Executive Team" },
+  { href: "/executive-team", label: "Team" },
   { href: "/events", label: "Events" },
   { href: "/sponsors", label: "Partners" },
   { href: "/contact-us", label: "Contact" },
 ] as const;
 
-/* ────────────────────────────────────────────
-   Animation variants
-   ──────────────────────────────────────────── */
-const drawerVariants = {
-  closed: {
-    x: "100%",
-    transition: { duration: 0.4, ease: easing.easeInOutQuart },
-  },
-  open: {
-    x: 0,
-    transition: { duration: 0.45, ease: easing.easeInOutQuart },
-  },
-};
+const PILL_BACKGROUND = "color-mix(in srgb, var(--page) 88%, transparent)";
 
-const backdropVariants = {
-  closed: { opacity: 0 },
-  open: { opacity: 1 },
-};
-
-const mobileNavContainerVariants = {
-  closed: {},
-  open: {
-    transition: {
-      staggerChildren: easing.staggerNav,
-      delayChildren: 0.15,
-    },
-  },
-};
-
-const mobileNavItemVariants = {
-  closed: {
-    opacity: 0,
-    x: 40,
-    transition: { duration: 0.25, ease: easing.easeOutQuart },
-  },
-  open: {
-    opacity: 1,
-    x: 0,
-    transition: { duration: 0.5, ease: easing.easeOutExpo },
-  },
-};
-
-const mobileSocialVariants = {
-  closed: { opacity: 0, y: 16 },
-  open: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, ease: easing.easeOutExpo, delay: 0.35 },
-  },
-};
-
-/* ────────────────────────────────────────────
-   Active link underline (gold, animates in)
-   ──────────────────────────────────────────── */
-function ActiveUnderline() {
+function Glyph() {
   return (
-    <motion.span
-      layoutId="nav-underline"
-      className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gold"
-      initial={{ scaleX: 0, transformOrigin: "left" }}
-      animate={{ scaleX: 1 }}
-      transition={{ duration: 0.4, delay: 0.4, ease: easing.easeOutExpo }}
-    />
+    <span className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full bg-accent font-display text-[10px] font-black text-on-accent">
+      WSC
+    </span>
   );
 }
 
-/* ────────────────────────────────────────────
-   Nav component
-   ──────────────────────────────────────────── */
 export default function Nav() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const scrollPositionRef = useRef(0);
+  const panelId = useId();
+  const navRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  const { scrollY } = useScroll();
+  const [open, setOpen] = useState(false);
+  const [panelHeight, setPanelHeight] = useState(0);
 
-  // Track scroll position for header style change
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    setScrolled(latest > 50);
-  });
+  // Reset the mobile panel when the route changes, derived during render
+  // rather than in an effect: react-hooks/set-state-in-effect.
+  const [renderedPathname, setRenderedPathname] = useState(pathname);
+  if (pathname !== renderedPathname) {
+    setRenderedPathname(pathname);
+    setOpen(false);
+  }
 
-  // Close drawer on route change
+  const isActive = useCallback(
+    (href: string) => pathname === href,
+    [pathname]
+  );
+
+  const close = useCallback(() => setOpen(false), []);
+
+  const toggleOpen = useCallback(() => {
+    setOpen((prev) => {
+      const next = !prev;
+      if (next && panelRef.current) {
+        setPanelHeight(panelRef.current.scrollHeight);
+      }
+      return next;
+    });
+  }, []);
+
+  // Escape closes the panel.
   useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
-
-  // Body scroll lock when mobile drawer is open
-  useEffect(() => {
-    if (isOpen) {
-      scrollPositionRef.current = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollPositionRef.current}px`;
-      document.body.style.width = "100%";
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflow = "";
-      window.scrollTo(0, scrollPositionRef.current);
-    }
-
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      document.body.style.overflow = "";
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
     };
-  }, [isOpen]);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, close]);
 
-  // Close drawer on Escape key
+  // A pointerdown outside the pill collapses it. There is no scrim to catch this.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        close();
       }
     };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open, close]);
 
-  const toggleMenu = useCallback(() => setIsOpen((prev) => !prev), []);
-  const closeMenu = useCallback(() => setIsOpen(false), []);
-  const isActive = (href: string) => pathname === href;
+  // Re-measure the panel while open, and drop it if the viewport crosses into
+  // the desktop breakpoint, where the panel does not exist.
+  useEffect(() => {
+    if (!open) return;
+    const onResize = () => {
+      if (panelRef.current) setPanelHeight(panelRef.current.scrollHeight);
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onDesktop = (e: MediaQueryListEvent) => {
+      if (e.matches) close();
+    };
+    desktop.addEventListener("change", onDesktop);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      desktop.removeEventListener("change", onDesktop);
+    };
+  }, [open, close]);
 
   return (
-    <>
-      {/* ── Header bar ── */}
-      <motion.header
-        className="fixed top-0 left-0 w-full z-50"
-        initial={false}
-        animate={{
-          backgroundColor: scrolled
-            ? "rgba(10, 10, 10, 0.85)"
-            : "rgba(10, 10, 10, 0)",
-          borderBottomColor: scrolled
-            ? "rgba(255, 255, 255, 0.08)"
-            : "rgba(255, 255, 255, 0)",
-          height: scrolled ? 60 : 72,
-        }}
-        transition={{ duration: 0.3, ease: easing.easeOutQuart }}
-        style={{
-          backdropFilter: scrolled ? "blur(20px)" : "blur(0px)",
-          WebkitBackdropFilter: scrolled ? "blur(20px)" : "blur(0px)",
-          borderBottomWidth: 1,
-          borderBottomStyle: "solid",
-        }}
-      >
-        <div className="flex h-full items-center justify-between px-[clamp(1.5rem,5vw,6rem)]">
-          {/* ── Logo ── */}
-          <Link
-            href="/"
-            className="flex items-center gap-3 no-underline"
-            data-cursor="hover"
-          >
-            <Image
-              src="/shark-white.png"
-              alt="Western Sales Club logo"
-              width={28}
-              height={28}
-              className="h-7 w-7 object-contain"
-              priority
-            />
-            <span className="font-body text-md italic tracking-[0.04em] text-text-primary">
-              Western Sales Club
-            </span>
-          </Link>
-
-          {/* ── Desktop nav (Radix NavigationMenu) ── */}
-          <NavigationMenu.Root className="hidden md:block">
-            <NavigationMenu.List className="flex items-center gap-8 list-none m-0 p-0">
-              {NAV_ITEMS.map(({ href, label }) => (
-                <NavigationMenu.Item key={href}>
-                  <NavigationMenu.Link asChild>
-                    <Link
-                      href={href}
-                      data-cursor="hover"
-                      className={`
-                        relative inline-flex items-center min-h-[2.75rem]
-                        font-body text-[0.8125rem] font-medium
-                        uppercase tracking-[0.08em] no-underline
-                        transition-colors duration-250 ease-out
-                        ${
-                          isActive(href)
-                            ? "text-text-primary"
-                            : "text-text-muted hover:text-text-primary active:text-text-primary"
-                        }
-                      `}
-                    >
-                      {label}
-                      {isActive(href) && <ActiveUnderline />}
-                    </Link>
-                  </NavigationMenu.Link>
-                </NavigationMenu.Item>
-              ))}
-            </NavigationMenu.List>
-          </NavigationMenu.Root>
-
-          {/* ── Mobile hamburger ── */}
-          <button
-            className="relative z-[60] flex md:hidden h-12 w-12 flex-col items-center justify-center gap-[5px] bg-transparent border-none"
-            onClick={toggleMenu}
-            aria-label={isOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isOpen}
-            data-cursor="hover"
-          >
-            <motion.span
-              className="block h-[1.5px] w-[1.4rem] bg-text-primary origin-center"
-              animate={
-                isOpen
-                  ? { rotate: 45, y: 6.5 }
-                  : { rotate: 0, y: 0 }
-              }
-              transition={{ duration: 0.3, ease: easing.easeOutQuart }}
-            />
-            <motion.span
-              className="block h-[1.5px] w-[1.4rem] bg-text-primary origin-center"
-              animate={isOpen ? { opacity: 0 } : { opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            />
-            <motion.span
-              className="block h-[1.5px] w-[1.4rem] bg-text-primary origin-center"
-              animate={
-                isOpen
-                  ? { rotate: -45, y: -6.5 }
-                  : { rotate: 0, y: 0 }
-              }
-              transition={{ duration: 0.3, ease: easing.easeOutQuart }}
-            />
-          </button>
-        </div>
-      </motion.header>
-
-      {/* ── Mobile drawer + backdrop ── */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="nav-backdrop"
-              className="fixed inset-0 z-[51] bg-black/40 md:hidden"
-              variants={backdropVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-              transition={{ duration: 0.35 }}
-              onClick={closeMenu}
-              aria-hidden="true"
-            />
-
-            {/* Drawer */}
-            <motion.nav
-              key="nav-drawer"
-              className="fixed top-0 right-0 z-[55] flex h-dvh w-[min(85vw,380px)] flex-col md:hidden"
-              style={{
-                background: "rgba(10, 10, 10, 0.97)",
-                backdropFilter: "blur(30px)",
-                WebkitBackdropFilter: "blur(30px)",
-              }}
-              variants={drawerVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
+    <header className="fixed inset-x-0 top-0 z-[var(--layer-nav)] flex justify-center px-[var(--gut)] pt-3">
+      <nav ref={navRef} className="w-full max-w-3xl">
+        <div
+          className="overflow-hidden transition-[border-radius,box-shadow] duration-[var(--d-move)] ease-move"
+          style={{
+            background: PILL_BACKGROUND,
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            borderRadius: open ? "var(--r-xl)" : `${NAV_CLOSED_RADIUS}px`,
+            boxShadow: open ? "var(--sh-3)" : "var(--sh-2)",
+          }}
+        >
+          <div className="flex min-h-[50px] items-center gap-2 py-[7px] pl-[14px] pr-[7px]">
+            <Link
+              href="/"
+              className="mr-auto flex min-w-0 items-center gap-[9px] no-underline"
+              data-cursor="hover"
             >
-              {/* Links */}
-              <motion.ul
-                className="flex flex-1 flex-col justify-center gap-6 list-none px-10 m-0"
-                variants={mobileNavContainerVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-              >
-                {NAV_ITEMS.map(({ href, label }) => (
-                  <motion.li key={href} variants={mobileNavItemVariants}>
-                    <Link
-                      href={href}
-                      onClick={closeMenu}
-                      data-cursor="hover"
-                      className={`
-                        block min-h-[3rem] font-display font-medium no-underline
-                        text-[clamp(2.2rem,6vw,3.2rem)] leading-tight
-                        transition-colors duration-250
-                        ${
-                          isActive(href)
-                            ? "text-gold"
-                            : "text-text-primary hover:text-gold active:text-gold"
-                        }
-                      `}
-                    >
-                      {label}
-                    </Link>
-                  </motion.li>
-                ))}
-              </motion.ul>
+              <Glyph />
+              <span className="truncate font-display text-[12px] font-black uppercase tracking-[0.07em] text-ink">
+                Western Sales Club
+              </span>
+            </Link>
 
-              {/* Gold separator + social icons */}
-              <motion.div
-                className="px-10 pb-12"
-                variants={mobileSocialVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
+            {/* Desktop links, 1024 and up. No hamburger at this breakpoint. */}
+            <div className="relative hidden items-center gap-0.5 lg:flex">
+              {NAV_ITEMS.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    data-cursor="hover"
+                    className="label relative z-10 whitespace-nowrap rounded-pill px-3 py-[9px] no-underline transition-colors duration-[var(--d-hover)] ease-enter"
+                    style={{
+                      color: active ? "var(--on-accent)" : undefined,
+                      fontWeight: active ? 700 : 500,
+                    }}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="nav-indicator"
+                        className="absolute inset-0 -z-10 rounded-pill bg-accent shadow-1"
+                        transition={indicatorTransition}
+                      />
+                    )}
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            <ThemeToggle />
+
+            {/* Hamburger, hidden at 1024 and up. Cross-fades to an X. */}
+            <button
+              type="button"
+              onClick={toggleOpen}
+              aria-expanded={open}
+              aria-controls={panelId}
+              aria-label={open ? "Close menu" : "Open menu"}
+              data-cursor="hover"
+              className="grid h-9 w-9 flex-none place-items-center rounded-pill transition-colors duration-[var(--d-hover)] ease-enter lg:hidden"
+              style={{ background: open ? "var(--accent)" : "var(--sunken)" }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+                className="h-[22px] w-[22px] overflow-visible"
               >
-                <div className="mb-6 h-px w-full bg-gold/30" />
-                <div className="flex items-center gap-3">
-                  <a
-                    href="https://www.instagram.com/westernsalesclub/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Instagram"
-                    data-cursor="hover"
-                    className="flex h-11 w-11 items-center justify-center text-text-muted transition-colors duration-250 hover:text-gold active:text-gold"
+                <g
+                  className="origin-center transition-[opacity,transform] duration-[var(--d-move)] ease-enter"
+                  style={{
+                    opacity: open ? 0 : 1,
+                    transform: open ? "scale(0.8)" : "scale(1)",
+                  }}
+                >
+                  <line
+                    x1="4.5"
+                    y1="7"
+                    x2="19.5"
+                    y2="7"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    style={{ stroke: "var(--ink)" }}
+                  />
+                  <line
+                    x1="4.5"
+                    y1="12"
+                    x2="19.5"
+                    y2="12"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    style={{ stroke: "var(--ink)" }}
+                  />
+                  <line
+                    x1="4.5"
+                    y1="17"
+                    x2="19.5"
+                    y2="17"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    style={{ stroke: "var(--ink)" }}
+                  />
+                </g>
+                <g
+                  className="origin-center transition-[opacity,transform] duration-[var(--d-move)] ease-enter"
+                  style={{
+                    opacity: open ? 1 : 0,
+                    transform: open ? "scale(1)" : "scale(0.8)",
+                  }}
+                >
+                  <line
+                    x1="6.8"
+                    y1="6.8"
+                    x2="17.2"
+                    y2="17.2"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    style={{ stroke: "var(--on-accent)" }}
+                  />
+                  <line
+                    x1="17.2"
+                    y1="6.8"
+                    x2="6.8"
+                    y2="17.2"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    style={{ stroke: "var(--on-accent)" }}
+                  />
+                </g>
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile panel. JS-measured height, the one documented exception
+              to transform-and-opacity only. */}
+          <motion.div
+            id={panelId}
+            className="overflow-hidden lg:hidden"
+            animate={{ height: open ? panelHeight : 0 }}
+            transition={navPanelTransition}
+            aria-hidden={!open}
+          >
+            <div ref={panelRef} className="flex flex-col gap-1 px-[10px] pb-[14px] pt-1">
+              {NAV_ITEMS.map((item, i) => {
+                const active = isActive(item.href);
+                return (
+                  <motion.div
+                    key={item.href}
+                    custom={i}
+                    variants={navItem}
+                    initial="hidden"
+                    animate={open ? "show" : "hidden"}
                   >
-                    <Image
-                      src="/Instagram.svg"
-                      alt="Instagram"
-                      width={22}
-                      height={22}
-                      className="opacity-60 hover:opacity-100 active:opacity-100 transition-opacity duration-250"
-                    />
-                  </a>
-                  <a
-                    href="https://www.linkedin.com/company/western-sales-club/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="LinkedIn"
-                    data-cursor="hover"
-                    className="flex h-11 w-11 items-center justify-center text-text-muted transition-colors duration-250 hover:text-gold active:text-gold"
-                  >
-                    <Image
-                      src="/Linkedin.svg"
-                      alt="LinkedIn"
-                      width={22}
-                      height={22}
-                      className="opacity-60 hover:opacity-100 active:opacity-100 transition-opacity duration-250"
-                    />
-                  </a>
-                </div>
-              </motion.div>
-            </motion.nav>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      onClick={close}
+                      data-cursor="hover"
+                      tabIndex={open ? 0 : -1}
+                      className="flex items-center justify-between rounded-md px-3 py-[11px] font-display text-[17px] font-black uppercase tracking-[0.01em] no-underline transition-colors duration-[var(--d-hover)] ease-enter"
+                      style={{
+                        color: active ? "var(--on-accent)" : "var(--ink)",
+                        background: active ? "var(--accent)" : "transparent",
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        </div>
+      </nav>
+    </header>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, createContext, useContext, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore, createContext, useContext, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 import { gsap } from 'gsap';
@@ -14,15 +14,31 @@ export function useLenis() {
   return useContext(LenisContext);
 }
 
+function getServerSnapshot() {
+  return null;
+}
+
 export function LenisProvider({ children }: { children: ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
+  const listenersRef = useRef(new Set<() => void>());
   const pathname = usePathname();
+
+  // The instance itself lives on a ref, since it is created and destroyed by
+  // an effect rather than derived from props or state. useSyncExternalStore
+  // is what lets the context value track it without reading `.current`
+  // during render, which is not allowed outside effects and handlers.
+  const subscribe = useCallback((onChange: () => void) => {
+    listenersRef.current.add(onChange);
+    return () => listenersRef.current.delete(onChange);
+  }, []);
+  const getSnapshot = useCallback(() => lenisRef.current, []);
+  const lenis = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   // Scroll to top on route change — Lenis manages scroll, so we must reset it explicitly
   useEffect(() => {
-    const lenis = lenisRef.current;
-    if (lenis) {
-      lenis.scrollTo(0, { immediate: true });
+    const current = lenisRef.current;
+    if (current) {
+      current.scrollTo(0, { immediate: true });
     } else {
       window.scrollTo(0, 0);
     }
@@ -34,32 +50,39 @@ export function LenisProvider({ children }: { children: ReactNode }) {
       history.scrollRestoration = 'manual';
     }
 
-    // Disable on touch devices
+    // Disable on touch devices and entirely under reduced motion.
     const isTouch = window.matchMedia('(pointer: coarse)').matches;
-    if (isTouch) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (isTouch || reduced) return;
 
-    const lenis = new Lenis({
+    const listeners = listenersRef.current;
+
+    const instance = new Lenis({
       lerp: 0.1,
       smoothWheel: true,
     });
-    lenisRef.current = lenis;
+    lenisRef.current = instance;
+    listeners.forEach((onChange) => onChange());
 
     // Integrate with GSAP ScrollTrigger
-    lenis.on('scroll', ScrollTrigger.update);
+    instance.on('scroll', ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
-      lenis.raf(time * 1000);
-    });
+    const raf = (time: number) => {
+      instance.raf(time * 1000);
+    };
+    gsap.ticker.add(raf);
     gsap.ticker.lagSmoothing(0);
 
     return () => {
-      lenis.destroy();
+      gsap.ticker.remove(raf);
+      instance.destroy();
       lenisRef.current = null;
+      listeners.forEach((onChange) => onChange());
     };
   }, []);
 
   return (
-    <LenisContext.Provider value={lenisRef.current}>
+    <LenisContext.Provider value={lenis}>
       {children}
     </LenisContext.Provider>
   );

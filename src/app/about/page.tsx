@@ -1,15 +1,20 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { revealVariant, viewportConfig } from '@/lib/motion-legacy';
 import Eyebrow from '@/components/ui/eyebrow';
+import { useReveal } from '@/lib/reveal';
 import StorySection from '@/components/about/story-section';
 import BentoGallery from '@/components/about/bento-gallery';
 import type { GalleryPhoto } from '@/types/database';
 
+/*
+  A page is a stack of slabs on --page, inset by the gutter. The title block
+  sits bare on --page (design-system/README.md, Layout). StorySection is also
+  bare: it pins full width for Scroll Scrub, which a slab's padding would
+  fight.
+*/
 export default function AboutPage() {
   const {
     data: photos,
@@ -17,6 +22,7 @@ export default function AboutPage() {
     error,
     refetch,
   } = useSupabaseQuery<GalleryPhoto>('gallery_photos');
+  const titleRef = useReveal<HTMLDivElement>();
 
   const galleryItems = useMemo(
     () =>
@@ -30,42 +36,32 @@ export default function AboutPage() {
   );
 
   return (
-    <section
+    <main
       style={{
-        paddingTop: 'clamp(6rem, 10vw, 10rem)',
-        paddingBottom: 'clamp(5rem, 10vw, 9rem)',
-        paddingLeft: 'clamp(1.5rem, 5vw, 6rem)',
-        paddingRight: 'clamp(1.5rem, 5vw, 6rem)',
+        paddingInline: 'var(--gut)',
+        paddingTop: 'clamp(6rem, 10vw, 9rem)',
+        paddingBottom: 'clamp(4rem, 8vw, 7rem)',
       }}
     >
-      {/* Page title block */}
-      <motion.div
-        variants={revealVariant}
-        initial="hidden"
-        whileInView="visible"
-        viewport={viewportConfig}
-        style={{ marginBottom: 'var(--space-16)' }}
-      >
-        <Eyebrow className="mb-4 block">ABOUT WSC</Eyebrow>
-        <h1
-          className="font-display font-semibold text-[var(--color-text-primary)]"
-          style={{
-            fontSize: 'var(--text-display)',
-            lineHeight: 1.1,
-          }}
-        >
-          Who we are.
+      <div ref={titleRef} className="mb-10">
+        <Eyebrow className="mb-3 block">About</Eyebrow>
+        <h1 className="title">
+          <span className="ln">
+            <i>What Western Sales Club does.</i>
+          </span>
         </h1>
-      </motion.div>
+      </div>
 
-      <StorySection />
+      <div className="stack">
+        <StorySection />
 
-      <BentoGallery
-        photos={galleryItems}
-        loading={loading}
-        error={error}
-        onRetry={refetch}
-      />
-    </section>
+        <BentoGallery
+          photos={galleryItems}
+          loading={loading}
+          error={error}
+          onRetry={refetch}
+        />
+      </div>
+    </main>
   );
 }

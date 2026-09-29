@@ -92,13 +92,9 @@ export default function AdminForm({
                 </label>
                 {currentImageUrl && !file && (
                   <div className="mb-3 flex items-center gap-3">
-                    <Image
-                      src={currentImageUrl}
-                      alt="Current"
-                      width={64}
-                      height={64}
-                      className="h-16 w-16 rounded-sm object-cover"
-                    />
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-sm bg-page">
+                      <Image src={currentImageUrl} alt="Current" fill className="object-cover" />
+                    </div>
                     <p className="meta text-ink-faint">Current image</p>
                   </div>
                 )}

@@ -38,10 +38,29 @@ const PANELS: Panel[] = [
     title: 'How we run',
     body: [
       'A student exec team runs the club: presidents, vice presidents, and assistant vice presidents.',
-      'Industry partners back the club and connect members with mentors working in the field.',
+      'The roster is on the executive team page, and it turns over every year.',
+    ],
+  },
+  {
+    title: 'Who backs us',
+    body: [
+      'Industry partners support the club and connect members with people working in the field.',
+      'They are listed on the partners page, and the club works with five of them.',
+    ],
+  },
+  {
+    title: 'How to join',
+    body: [
+      'Membership is sold through the Western USC store, and the club runs about ten events a year for its members.',
+      'Questions go to sales.club@westernusc.ca.',
     ],
   },
 ];
+
+/* One viewport of scroll per panel, so the pin covers a real distance rather
+   than snapping through the whole track in half a screen. */
+const PANEL_COUNT = PANELS.length;
+const TRACK_TRAVEL = -(100 * (PANEL_COUNT - 1)) / PANEL_COUNT;
 
 function Panel({ panel }: { panel: Panel }) {
   return (
@@ -109,7 +128,7 @@ export default function StorySection() {
 
       const context = gsap.context(() => {
         gsap.to(track, {
-          xPercent: -50,
+          xPercent: TRACK_TRAVEL,
           ease: 'none',
           scrollTrigger: {
             trigger: wrapper,
@@ -144,7 +163,7 @@ export default function StorySection() {
   }
 
   return (
-    <div ref={wrapperRef} style={{ height: '200vh' }}>
+    <div ref={wrapperRef} style={{ height: `${PANEL_COUNT * 100}vh` }}>
       <div
         ref={stickyRef}
         style={{
@@ -157,11 +176,18 @@ export default function StorySection() {
           zIndex: 'var(--layer-sticky)',
         }}
       >
-        <div ref={trackRef} style={{ display: 'flex', width: '200%', willChange: 'transform' }}>
+        <div
+          ref={trackRef}
+          style={{ display: 'flex', width: `${PANEL_COUNT * 100}%`, willChange: 'transform' }}
+        >
           {PANELS.map((panel) => (
             <div
               key={panel.title}
-              style={{ width: '50%', flex: 'none', paddingInline: 'clamp(1.5rem, 6vw, 6rem)' }}
+              style={{
+                width: `${100 / PANEL_COUNT}%`,
+                flex: 'none',
+                paddingInline: 'clamp(1.5rem, 6vw, 6rem)',
+              }}
             >
               <Panel panel={panel} />
             </div>

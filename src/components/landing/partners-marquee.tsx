@@ -91,21 +91,26 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                 <div key={copy} className="mq-group" aria-hidden={copy === 1}>
                   {active.map((sponsor) => {
                     const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
+                    /*
+                      Same constant dark ground as the partners page: these are
+                      supplied marks, mostly light-on-transparent, and they
+                      wash out on the Showroom ground.
+                    */
                     return (
                       <div
                         key={`${copy}-${sponsor.id}`}
-                        className="relative h-12 w-32 shrink-0 sm:h-16 sm:w-40"
+                        className="relative flex h-16 w-36 shrink-0 items-center justify-center overflow-hidden rounded-md bg-logo-ground p-3 shadow-1 sm:h-20 sm:w-48"
                       >
                         {logoUrl ? (
                           <Image
                             src={logoUrl}
                             alt={sponsor.name}
                             fill
-                            sizes="160px"
-                            className="object-contain"
+                            sizes="192px"
+                            className="object-contain p-3"
                           />
                         ) : (
-                          <span className="flex h-full w-full items-center justify-center text-center font-display text-base font-bold uppercase text-ink sm:text-lg">
+                          <span className="text-center font-display text-base font-bold uppercase text-on-logo-ground sm:text-lg">
                             {sponsor.name}
                           </span>
                         )}

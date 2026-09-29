@@ -130,10 +130,21 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
  * is what the 40ms stagger reads.
  */
 export function cascade(text: string) {
-  return text.split(' ').map((word, i) => (
-    <span key={`${word}-${i}`} style={{ '--i': i } as React.CSSProperties}>
-      {i > 0 ? ' ' : ''}
-      {word}
-    </span>
-  ));
+  /*
+    The separating space is a text node BETWEEN the spans, not inside them.
+    Each span is display:inline-block so it can be transformed, and a leading
+    space inside an inline-block is trimmed rather than rendered, which ran
+    every word together.
+  */
+  return text.split(' ').flatMap((word, i) => {
+    const span = (
+      <span key={`${word}-${i}`} style={{ '--i': i } as React.CSSProperties}>
+        {word}
+      </span>
+    );
+    /* A bare string, not an element: a separator <span> would itself match
+       `.cascade > span`, become inline-block, and trim the very space it is
+       there to provide. */
+    return i === 0 ? [span] : [' ', span];
+  });
 }

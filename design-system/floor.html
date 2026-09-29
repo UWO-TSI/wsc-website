@@ -42,6 +42,11 @@
     --on-accent: #f4f0f8;
     --velvet: #3a1a57;
     --gold: #8a6a1c;
+    /* The third fixed mark. Declared once and never redefined per theme:
+       supplied logos are artwork we may not redraw and most are
+       light-on-transparent, so they need a constant dark ground. */
+    --logo-ground: #0a0a09;
+    --on-logo-ground: #f7f4ee;
     --ok: #1a6b47;
     --warn: #8a5a00;
     --alert: #a8241a;
@@ -467,15 +472,16 @@
   .lw .lead { grid-column: span 2; }
   .lw .lt {
     display: flex; aspect-ratio: 3 / 2; align-items: center; justify-content: center;
-    background: var(--sunken); border-radius: var(--r-md); box-shadow: var(--sh-1);
+    background: var(--logo-ground); color: var(--on-logo-ground);
+    border-radius: var(--r-md); box-shadow: var(--sh-1);
     padding: 16px; text-decoration: none; color: inherit;
     transition: box-shadow var(--d-hover) var(--e-enter);
   }
   .lw a.lt:hover { box-shadow: var(--sh-2); }
   /* the fallback when a sponsor has no file: their name, set in the display face */
-  .lw .set { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; text-align: center; font-size: 13px; letter-spacing: 0.02em; color: var(--ink); }
+  .lw .set { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; text-align: center; font-size: 13px; letter-spacing: 0.02em; color: var(--on-logo-ground); }
   /* stand-in marks, since a reference page has no sponsor files to use */
-  .lw .fake { display: flex; align-items: center; gap: 8px; color: var(--ink); }
+  .lw .fake { display: flex; align-items: center; gap: 8px; color: var(--on-logo-ground); }
   .lw .fake .d { width: 18px; height: 18px; border-radius: var(--r-disc); background: currentColor; }
   .lw .fake .b { width: 16px; height: 16px; background: currentColor; }
   .lw .fake .t { font-family: var(--f-text); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
@@ -574,6 +580,7 @@
           <div class="sw"><div class="chip" style="background:var(--accent-ink)"></div><span class="label nm">accent ink</span><span class="hx" data-hex="--accent-ink"></span></div>
           <div class="sw"><div class="chip" style="background:var(--velvet)"></div><span class="label nm">velvet</span><span class="hx" data-hex="--velvet"></span></div>
           <div class="sw"><div class="chip" style="background:var(--gold)"></div><span class="label nm">gold</span><span class="hx" data-hex="--gold"></span></div>
+          <div class="sw"><div class="chip" style="background:var(--logo-ground)"></div><span class="label nm">logo ground &middot; fixed</span><span class="hx" data-hex="--logo-ground"></span></div>
         </div>
       </div>
       <div>
@@ -992,11 +999,16 @@
       One tier group, because the sponsors table has no tier column and
       supabase/ is off limits. The bar and label are <b>--gold</b>, not
       <b>--accent</b>: a sponsor's standing has to read the same in both themes.
-      Scale comes from display_order, the lead tile spanning two columns. Logos
-      sit on <b>--sunken</b> so a single-ink mark has a predictable ground, and
-      a sponsor with no file gets their name set in the display face in the same
-      tile rather than a redrawn mark or an empty frame. A sponsor with a link
-      is an anchor and takes <b>--sh-2</b> on hover; one without is inert.
+      Scale comes from display_order, the lead tile spanning two columns.
+      Logos sit on <b>--logo-ground</b>, the third fixed mark, which does not
+      flip with the theme. A sponsor's logo is supplied artwork we may not
+      redraw and most of them are light-on-transparent, so on the Showroom
+      ground they washed out; one constant dark ground gives every mark a
+      predictable backing in both themes. Ink on it is <b>--on-logo-ground</b>,
+      never <b>--on-inverse</b>, which flips. A sponsor with no file gets their
+      name set in the display face in the same tile rather than a redrawn mark
+      or an empty frame. A sponsor with a link is an anchor and takes
+      <b>--sh-2</b> on hover; one without is inert.
     </p>
   </section>
 

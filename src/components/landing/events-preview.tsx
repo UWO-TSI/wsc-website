@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { format } from 'date-fns';
 
 import type { Event, QueryError } from '@/types/database';
@@ -42,27 +43,46 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
 
   return (
     <section ref={ref} className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
-      <div className="mx-auto flex max-w-[1100px] flex-col gap-10">
-        <SectionHead eyebrow="Events" index="02" id="events-heading" title={['On the', 'calendar']} />
+      {/*
+        Asymmetric on purpose: the list carries the information and takes the
+        wider column, the photo is support and takes the narrower one. A 50/50
+        split would give the image equal billing with the calendar. Below the
+        lg breakpoint the image drops under the list rather than squeezing.
+      */}
+      <div className="mx-auto grid max-w-[1100px] grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-14">
+        <div className="flex flex-col gap-10">
+          <SectionHead eyebrow="Events" index="02" id="events-heading" title={['On the', 'calendar']} />
 
-        <AsyncStateWrapper
-          loading={loading}
-          error={error}
-          data={upcoming}
-          emptyMessage="No events on the calendar yet."
-        >
-          <div className="arrive flex flex-col gap-1">
-            {upcoming.map((event) => (
-              <EventRow key={event.id} event={event} />
-            ))}
+          <AsyncStateWrapper
+            loading={loading}
+            error={error}
+            data={upcoming}
+            emptyMessage="No events on the calendar yet."
+          >
+            <div className="arrive flex flex-col gap-1">
+              {upcoming.map((event) => (
+                <EventRow key={event.id} event={event} />
+              ))}
+            </div>
+          </AsyncStateWrapper>
+
+          <div>
+            <Button href="/events" variant="secondary" arrow>
+              See all events
+            </Button>
           </div>
-        </AsyncStateWrapper>
-
-        <div>
-          <Button href="/events" variant="secondary" arrow>
-            See all events
-          </Button>
         </div>
+
+        {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
+        <figure className="clip-cell relative m-0 aspect-[3/4] w-full overflow-hidden rounded-md lg:sticky lg:top-28">
+          <Image
+            src="/College-Pro.jpeg"
+            alt="Western Sales Club members at a College Pro event"
+            fill
+            sizes="(max-width: 1024px) 100vw, 420px"
+            className="clip-inner object-cover"
+          />
+        </figure>
       </div>
     </section>
   );

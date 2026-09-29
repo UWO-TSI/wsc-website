@@ -42,8 +42,14 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
   const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
   const scale = scaleFor(rank, total);
 
+  /*
+    Logos sit on --logo-ground, which does not flip with the theme. A sponsor's
+    mark is supplied artwork we are not allowed to redraw, and most of them are
+    light-on-transparent, so on the Showroom ground they were washing out. One
+    constant dark ground gives every mark a predictable backing in both themes.
+  */
   const tileClass = [
-    'flex aspect-[3/2] items-center justify-center rounded-md bg-sunken p-4 shadow-1',
+    'flex aspect-[3/2] items-center justify-center rounded-md bg-logo-ground p-4 shadow-1',
     'transition-shadow duration-[var(--d-hover)] ease-enter',
     sponsor.link ? 'hover:shadow-2' : '',
     spanClass[scale],
@@ -64,7 +70,7 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
       />
     </div>
   ) : (
-    <span className="text-center font-display font-bold uppercase text-ink">
+    <span className="text-center font-display font-bold uppercase text-on-logo-ground">
       {sponsor.name}
     </span>
   );

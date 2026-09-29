@@ -15,7 +15,7 @@ import { useReveal, cascade } from '@/lib/reveal';
 /* Titles are Archivo all caps by the type role, so these carry the words and
    not the casing. The org name at hero scale is the homepage's title, which is
    also what floor.html's own hero card demonstrates. */
-const TITLE_LINES = ['Western', 'Sales', 'Club'];
+const TITLE_LINES = ['Welcome to', 'Western Sales', 'Community'];
 
 export default function Hero() {
   const { complete } = usePreloader();

@@ -40,6 +40,25 @@
   --velvet: #3a1a57;
   --gold: #8a6a1c;
 
+  /*
+    The one surface that does not flip with the theme, and the third fixed
+    mark alongside --velvet and --gold.
+
+    Sponsor and affiliate logos are supplied artwork we are not allowed to
+    redraw, and most of them are light-on-transparent. On the Showroom page
+    ground they disappear. Every logo therefore sits on this constant dark
+    ground in both themes, which is the same value as the Afterhours page
+    ground rather than a new colour.
+  */
+  --logo-ground: #0a0a09;
+
+  /*
+    Ink for the one surface that does not flip. --on-inverse is wrong here
+    because it flips with the theme and would put dark text on this dark
+    ground in Afterhours. Same value as the Afterhours ink.
+  */
+  --on-logo-ground: #f7f4ee;
+
   /* status: always shipped with a word, never hue alone */
   --ok: #1a6b47;
   --warn: #8a5a00;
@@ -184,6 +203,8 @@
   --color-on-accent: var(--on-accent);
   --color-velvet: var(--velvet);
   --color-gold: var(--gold);
+  --color-logo-ground: var(--logo-ground);
+  --color-on-logo-ground: var(--on-logo-ground);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-alert: var(--alert);
@@ -780,6 +801,64 @@ img {
 @keyframes wsc-spin {
   to {
     transform: rotate(1turn);
+  }
+}
+
+/*
+  ── Monochrome marks ──
+
+  The club shark and the two social glyphs are white-on-transparent artwork, so
+  they vanish on the Showroom ground. Rather than ship a second copy of each in
+  the opposite colour, the file is used as a mask and filled with currentColor,
+  which makes one asset correct in both themes and lets it take --accent on
+  hover like any other coloured thing.
+
+  This is only for our own single-ink marks. A sponsor's logo is never
+  recoloured: it goes on --logo-ground untouched.
+*/
+
+.mark-mask {
+  display: block;
+  flex: none;
+  background-color: currentColor;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/*
+  ── Nav shell ──
+
+  Radius lives here rather than inline because it has to satisfy two rules at
+  once. On mobile it is the Nav Expand radius: a literal 25px, half the closed
+  height, never --r-pill, because 999px re-clamps to half the width as the
+  panel grows and bulges the box into a stadium. From 1024 up the bar spans the
+  page and is a slab edge, so it takes --r-xl at rest and the panel never opens.
+*/
+
+.navshell {
+  border-radius: 25px;
+  transition:
+    border-radius var(--d-move) var(--e-move),
+    box-shadow var(--d-move) var(--e-move);
+}
+
+.navshell.is-open {
+  border-radius: var(--r-xl);
+}
+
+@media (min-width: 1024px) {
+  .navshell {
+    border-radius: var(--r-xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navshell {
+    transition: none;
   }
 }
 

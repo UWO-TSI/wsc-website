@@ -27,7 +27,16 @@ export default function EventsPage() {
           onRetry={refetch}
           emptyMessage="No events are on the calendar yet."
         >
-          <Slab tone="sunken">
+          {/*
+            The rows only exist once the client-side query resolves, so
+            without this they appeared fully formed at whatever moment the
+            fetch landed while the title above had already animated in. The
+            slab clips in and the ledger arrives with it, which is exactly what
+            Slab Clip is for: it says where the boundary is. One move for the
+            section, not a stagger per row, because a calendar runs well past
+            the five-element stagger budget.
+          */}
+          <Slab tone="sunken" clip>
             <Timeline events={events} />
           </Slab>
         </AsyncStateWrapper>

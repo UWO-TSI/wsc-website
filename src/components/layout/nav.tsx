@@ -5,12 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import ThemeToggle from "@/components/ui/theme-toggle";
-import {
-  indicatorTransition,
-  navItem,
-  navPanelTransition,
-  NAV_CLOSED_RADIUS,
-} from "@/lib/motion";
+import { indicatorTransition, navItem, navPanelTransition } from "@/lib/motion";
 
 /*
   Nav: one component, two modes, never two menus.
@@ -35,11 +30,21 @@ const NAV_ITEMS = [
 
 const PILL_BACKGROUND = "color-mix(in srgb, var(--page) 88%, transparent)";
 
+/*
+  The club shark, filled with currentColor through a mask so the one white
+  asset reads correctly on both the Showroom and Afterhours grounds. See
+  .mark-mask in globals.css.
+*/
 function Glyph() {
   return (
-    <span className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full bg-accent font-display text-[10px] font-black text-on-accent">
-      WSC
-    </span>
+    <span
+      aria-hidden="true"
+      className="mark-mask h-[26px] w-[26px] text-ink"
+      style={{
+        WebkitMaskImage: 'url("/shark-white.png")',
+        maskImage: 'url("/shark-white.png")',
+      }}
+    />
   );
 }
 
@@ -121,18 +126,18 @@ export default function Nav() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-[var(--layer-nav)] flex justify-center px-[var(--gut)] pt-3">
-      <nav ref={navRef} className="w-full max-w-3xl">
+      {/* A floating pill up to 1024, then a full-width bar across the page. */}
+      <nav ref={navRef} className="w-full max-w-3xl lg:max-w-none">
         <div
-          className="overflow-hidden transition-[border-radius,box-shadow] duration-[var(--d-move)] ease-move"
+          className={`navshell overflow-hidden ${open ? "is-open" : ""}`}
           style={{
             background: PILL_BACKGROUND,
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
-            borderRadius: open ? "var(--r-xl)" : `${NAV_CLOSED_RADIUS}px`,
             boxShadow: open ? "var(--sh-3)" : "var(--sh-2)",
           }}
         >
-          <div className="flex min-h-[50px] items-center gap-2 py-[7px] pl-[14px] pr-[7px]">
+          <div className="flex min-h-[50px] items-center gap-2 py-[7px] pl-[14px] pr-[7px] lg:min-h-[58px] lg:pl-6 lg:pr-3">
             <Link
               href="/"
               className="mr-auto flex min-w-0 items-center gap-[9px] no-underline"

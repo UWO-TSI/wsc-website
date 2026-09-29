@@ -27,6 +27,15 @@ and gold in Afterhours:
 - Surfaces: `bg-page`, `bg-raised`, `bg-sunken`, `bg-inverse`, `bg-accent`, `bg-accent-veil`
 - Ink: `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-on-inverse`, `text-on-accent`, `text-accent-ink`
 - Fixed marks: `text-velvet`, `text-gold`, `bg-gold`: the Western lockup and sponsor tiers only
+- Logo ground: `bg-logo-ground` with `text-on-logo-ground`, the third fixed mark and the one
+  surface that does **not** flip with the theme. Every supplied logo sits on it: sponsor tiles on
+  the partners page and in the landing marquee, and the TSI lockup in the footer. A sponsor's mark
+  is artwork we may not redraw and most are light-on-transparent, so they wash out on the Showroom
+  ground. Ink on it is `--on-logo-ground`, never `--on-inverse`, which flips and would put dark
+  text on a dark ground in Afterhours.
+- Our own single-ink marks (the club shark, the two social glyphs) are the opposite case: they are
+  masked and filled with `currentColor` via `.mark-mask`, so one white asset reads correctly in
+  both themes and can take `--accent` on hover. Never recolour a sponsor's mark this way.
 - Status: `text-ok`, `text-warn`, `text-alert`, always with a word
 - Corners: `rounded-xs|sm|md|lg|xl|pill`, `rounded-full` for a disc
 - Elevation: `shadow-1`, `shadow-2`, `shadow-3`

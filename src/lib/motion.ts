@@ -136,6 +136,13 @@ export const clipInner: Variants = {
    from --r-pill: 999px re-clamps to half the width as the box grows and
    bulges it into a stadium. */
 
+/**
+ * Half the closed height of the mobile pill, and therefore a true pill at rest.
+ * The nav consumes this through the `.navshell` class in globals.css rather
+ * than inline, because the same element also has to take --r-xl from 1024 up,
+ * where the bar spans the page. Never animate from --r-pill here: 999px
+ * re-clamps to half the width as the panel grows and bulges it into a stadium.
+ */
 export const NAV_CLOSED_RADIUS = 25;
 
 export const navPanelTransition: Transition = { duration: D.move, ease: E.move };

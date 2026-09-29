@@ -45,14 +45,19 @@ export default function Footer() {
     <Slab
       as="footer"
       tone="sunken"
-      className="mx-[var(--gut)] mb-6 flex flex-col gap-5"
+      className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="flex flex-col gap-[10px]">
           <Link href="/" className="flex items-center gap-[9px] no-underline" data-cursor="hover">
-            <span className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full bg-accent font-display text-[10px] font-black text-on-accent">
-              WSC
-            </span>
+            <span
+              aria-hidden="true"
+              className="mark-mask h-[26px] w-[26px] text-ink"
+              style={{
+                WebkitMaskImage: 'url("/shark-white.png")',
+                maskImage: 'url("/shark-white.png")',
+              }}
+            />
             <span className="font-display text-[12px] font-black uppercase tracking-[0.07em] text-ink">
               Western Sales Club
             </span>
@@ -68,12 +73,19 @@ export default function Footer() {
                 data-cursor="hover"
                 className="grid h-[34px] w-[34px] place-items-center rounded-full bg-page text-ink-muted transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent hover:text-on-accent"
               >
-                <Image
-                  src={social.icon}
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="opacity-70"
+                {/*
+                  Both social SVGs are hardcoded fill="#ffffff", so rendering
+                  them as images put a white glyph on the Showroom ground and
+                  they disappeared. Masked and filled with currentColor they
+                  inherit the link's own colour and flip with the theme.
+                */}
+                <span
+                  aria-hidden="true"
+                  className="mark-mask h-4 w-4"
+                  style={{
+                    WebkitMaskImage: `url("${social.icon}")`,
+                    maskImage: `url("${social.icon}")`,
+                  }}
                 />
               </a>
             ))}
@@ -107,8 +119,18 @@ export default function Footer() {
           data-cursor="hover"
           className="flex flex-none items-center gap-[10px] no-underline"
         >
-          <span className="grid h-10 w-10 place-items-center rounded-sm bg-page font-display text-[11px] font-black tracking-[0.04em] text-ink shadow-1">
-            TSI
+          {/*
+            A supplied logo we do not redraw, so it sits on --logo-ground:
+            the one surface that stays dark in both themes.
+          */}
+          <span className="relative h-10 w-10 flex-none overflow-hidden rounded-sm bg-logo-ground shadow-1">
+            <Image
+              src="/TSI.avif"
+              alt=""
+              fill
+              sizes="40px"
+              className="object-contain p-[5px]"
+            />
           </span>
           <span className="meta">A TSI initiative</span>
         </a>

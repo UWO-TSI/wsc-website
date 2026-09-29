@@ -42,7 +42,7 @@ export default function ExecutiveTeamPage() {
   return (
     <main className="pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
       <div className="mb-16 px-[var(--gut)]">
-        <SectionHead eyebrow="Team" title={['The people running it']} />
+        <SectionHead eyebrow="Team" title={['Meet our', 'executive team']} />
       </div>
 
       {/* Slab outside the async wrapper: the bed paints immediately and only

@@ -24,14 +24,26 @@ import type { Executive } from '@/types/database';
 */
 
 const GRID = 'grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4';
-const AVATAR_SIZES = '(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px';
+
+/*
+  The headshot is capped rather than filling its column, and the cap is set so
+  the disc lands at roughly the width of the name under it.
+
+  Filling the column put it near 290px on a wide screen, which made the page a
+  wall of faces with the names as an afterthought. The first cap overcorrected
+  and left the photos looking like tiny tokens. This sits between the two: the
+  disc reads as a portrait and the name still holds its own beneath it.
+*/
+const AVATAR_WIDTH = 'w-[clamp(104px,18vw,176px)]';
+const AVATAR_SIZES = '(max-width: 640px) 128px, 176px';
 
 export function ExecutiveGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div className={GRID}>
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex flex-col items-center gap-4">
-          <Skeleton index={i} className="aspect-square w-full rounded-full" />
+          {/* Same cap as the real avatar, or the grid would reflow on load. */}
+          <Skeleton index={i} className={`aspect-square rounded-full ${AVATAR_WIDTH}`} />
           <Skeleton index={i} className="h-[19px] w-3/4" />
           <Skeleton index={i} className="h-3 w-1/2" />
         </div>
@@ -45,12 +57,17 @@ export default function ExecutiveGrid({ executives }: { executives: Executive[] 
     <ul className={`m-0 list-none p-0 ${GRID}`}>
       {executives.map((executive) => (
         <li key={executive.id} className="flex flex-col items-center gap-4 text-center">
-          <Avatar
-            name={executive.name}
-            src={getPublicUrl('headshots', executive.headshot_path)}
-            fluid
-            sizes={AVATAR_SIZES}
-          />
+          {/* The cap lives on a wrapper, not on the Avatar. Passing a width
+              class to a component that already sets w-full leaves the winner
+              to Tailwind's output order rather than to intent. */}
+          <span className={AVATAR_WIDTH}>
+            <Avatar
+              name={executive.name}
+              src={getPublicUrl('headshots', executive.headshot_path)}
+              fluid
+              sizes={AVATAR_SIZES}
+            />
+          </span>
 
           <div className="flex flex-col gap-1">
             <span className="title-sm">{executive.name}</span>

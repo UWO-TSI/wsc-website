@@ -25,13 +25,13 @@ export default function LandingPage() {
   } = useSupabaseQuery<Sponsor>('sponsors');
 
   return (
-    <>
+    <div className="stack">
       <Hero />
       <AboutSection />
       <EventsPreview events={events} loading={eventsLoading} error={eventsError} />
       <PartnersMarquee sponsors={sponsors} loading={sponsorsLoading} />
       <ContactSection />
       <CTASection />
-    </>
+    </div>
   );
 }

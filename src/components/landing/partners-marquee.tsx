@@ -1,87 +1,178 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 import type { Sponsor } from '@/types/database';
-import Eyebrow from '@/components/ui/eyebrow';
+import Button from '@/components/ui/button';
+import Slab from '@/components/ui/slab';
+import SectionHead from '@/components/ui/section-head';
 import { getPublicUrl } from '@/lib/supabase/storage';
 
+/*
+  Partners marquee — sequence 7, Marquee Drift. The track loops on --d-drift,
+  linear, contents duplicated exactly once. It picks up a skew proportional to
+  scroll velocity, returning over --d-move. It pauses on hover, on
+  focus-within (CSS, in the scoped styles below) and on visibilitychange.
+
+  Reduced motion stops the loop and drops the duplicate copy so the track
+  reflows to a single static wrapped row.
+
+  There is no marquee entry in globals.css yet (that file is off-limits to
+  this stream), so the sequence's CSS lives scoped to this component.
+*/
 interface PartnersMarqueeProps {
   sponsors: Sponsor[];
   loading: boolean;
 }
 
 export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueeProps) {
-  const [paused, setPaused] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const lastY = useRef(0);
+  const lastT = useRef(0);
+  const decay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hidden, setHidden] = useState(false);
 
-  // Graceful empty state — render nothing if loading or no sponsors
-  if (loading || sponsors.length === 0) return null;
+  const active = sponsors.filter((sponsor) => sponsor.active);
+
+  useEffect(() => {
+    const onVisibility = () => setHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    lastY.current = window.scrollY;
+    lastT.current = performance.now();
+
+    const onScroll = () => {
+      const el = viewportRef.current;
+      if (!el) return;
+
+      const y = window.scrollY;
+      const t = performance.now();
+      const dt = Math.max(1, t - lastT.current);
+      const velocity = (y - lastY.current) / dt;
+      lastY.current = y;
+      lastT.current = t;
+
+      const skew = Math.max(-4, Math.min(4, velocity * 12));
+      el.style.setProperty('--mq-skew', `${skew}deg`);
+
+      if (decay.current) clearTimeout(decay.current);
+      decay.current = setTimeout(() => el.style.setProperty('--mq-skew', '0deg'), 80);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (decay.current) clearTimeout(decay.current);
+    };
+  }, []);
+
+  if (loading || active.length === 0) return null;
 
   return (
-    <section
-      className="bg-[var(--color-bg-elevated)] py-[clamp(5rem,10vw,9rem)]"
-      aria-label="Our partners"
-    >
-      {/* Eyebrow */}
-      <div className="mb-[var(--space-8)] text-center">
-        <Eyebrow>OUR PARTNERS</Eyebrow>
-      </div>
+    <Slab tone="sunken" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
+      <div className="flex flex-col gap-8">
+        <SectionHead
+          eyebrow="Partners"
+          index="03"
+          id="partners-heading"
+          title={['WHO WE WORK', 'WITH']}
+        />
 
-      {/* Marquee band — overflow-x-clip prevents page-level horizontal scroll */}
-      <div
-        className="marquee-wrapper overflow-x-clip"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        onClick={() => setPaused((prev) => !prev)}
-      >
-        <div
-          className={`marquee-track flex w-max items-center gap-[clamp(2.5rem,6vw,5rem)] ${paused ? '[animation-play-state:paused]' : ''}`}
-        >
-          {/* Two copies for seamless loop */}
-          {[0, 1].map((copy) => (
-            <div
-              key={copy}
-              className="flex shrink-0 items-center gap-[clamp(2.5rem,6vw,5rem)]"
-            >
-              {sponsors.map((sponsor) => {
-                const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
-                if (!logoUrl) return null;
-
-                return (
-                  <div
-                    key={`${copy}-${sponsor.id}`}
-                    className="group relative h-[clamp(3rem,7vw,6rem)] w-[clamp(7rem,18vw,13rem)] shrink-0"
-                    data-cursor="hover"
-                  >
-                    <Image
-                      src={logoUrl}
-                      alt={sponsor.name}
-                      fill
-                      className="object-contain object-center opacity-45 grayscale-[0.5] transition-all duration-300 group-hover:scale-[1.08] group-hover:opacity-100 group-hover:grayscale-0 group-active:scale-[1.08] group-active:opacity-100 group-active:grayscale-0"
-                      sizes="(max-width: 768px) 28vw, 208px"
-                    />
-                  </div>
-                );
-              })}
+        <div className="wsc-marquee overflow-hidden">
+          <div
+            ref={viewportRef}
+            className={`wsc-marquee-vp ${hidden ? 'is-paused' : ''}`}
+          >
+            <div className="wsc-marquee-track">
+              {[0, 1].map((copy) => (
+                <div key={copy} className="wsc-marquee-group" aria-hidden={copy === 1}>
+                  {active.map((sponsor) => {
+                    const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
+                    return (
+                      <div
+                        key={`${copy}-${sponsor.id}`}
+                        className="relative h-12 w-32 shrink-0 sm:h-16 sm:w-40"
+                      >
+                        {logoUrl ? (
+                          <Image
+                            src={logoUrl}
+                            alt={sponsor.name}
+                            fill
+                            sizes="160px"
+                            className="object-contain"
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-center font-display text-base font-bold uppercase text-ink sm:text-lg">
+                            {sponsor.name}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </div>
+
+        <div>
+          <Button href="/sponsors" variant="tertiary" arrow>
+            See all partners
+          </Button>
         </div>
       </div>
 
-      {/* See all partners link */}
-      <div className="mt-[var(--space-8)] text-center">
-        <Link
-          href="/sponsors"
-          className="inline-flex min-h-[2.75rem] items-center font-mono text-[length:var(--text-mono)] text-[var(--color-gold)] transition-opacity duration-250 hover:underline hover:underline-offset-4 active:underline active:underline-offset-4"
-          data-cursor="hover"
-        >
-          See all partners &rarr;
-        </Link>
-      </div>
-
-      {/* Marquee keyframes defined in globals.css */}
-    </section>
+      <style jsx global>{`
+        .wsc-marquee-vp {
+          transition: transform var(--d-move) var(--e-move);
+          transform: skewX(var(--mq-skew, 0deg));
+        }
+        .wsc-marquee-track {
+          display: flex;
+          width: max-content;
+          gap: clamp(2.5rem, 6vw, 5rem);
+          animation: wsc-marquee-drift var(--d-drift) var(--e-drift) infinite;
+        }
+        .wsc-marquee-vp.is-paused .wsc-marquee-track,
+        .wsc-marquee:hover .wsc-marquee-track,
+        .wsc-marquee:focus-within .wsc-marquee-track {
+          animation-play-state: paused;
+        }
+        .wsc-marquee-group {
+          display: flex;
+          flex-shrink: 0;
+          align-items: center;
+          gap: clamp(2.5rem, 6vw, 5rem);
+        }
+        @keyframes wsc-marquee-drift {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .wsc-marquee-track {
+            animation: none;
+            flex-wrap: wrap;
+            width: 100%;
+          }
+          .wsc-marquee-vp {
+            transition: none;
+            transform: none;
+          }
+          .wsc-marquee-group[aria-hidden='true'] {
+            display: none;
+          }
+        }
+      `}</style>
+    </Slab>
   );
 }

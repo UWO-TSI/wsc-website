@@ -1,77 +1,46 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Eyebrow from '@/components/ui/eyebrow';
 import Button from '@/components/ui/button';
-import { revealVariant, viewportConfig } from '@/lib/motion-legacy';
-import type { Variants } from 'framer-motion';
+import Slab from '@/components/ui/slab';
+import SectionHead from '@/components/ui/section-head';
 
-const ctaButtonReveal: Variants = {
-  hidden: { opacity: 0, y: 36 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: 0.2 },
-  },
-};
-
+/*
+  CTABand — sequence 3, Slab Clip. The page's one loud slab: --accent, the
+  only place --accent and --page ever touch on this page. A primary Button on
+  an --accent slab takes onAccent, because it has nowhere to go otherwise.
+*/
 export default function CTASection() {
   return (
-    <section
-      id="join-section"
-      className="relative w-full overflow-hidden"
-      style={{ padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 5vw, 6rem)' }}
+    <Slab
+      tone="accent"
+      clip
+      overflowHidden
+      className="mx-[var(--gut)]"
+      aria-labelledby="cta-heading"
     >
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/MIDDLESEX.avif')" }}
-        aria-hidden="true"
-      />
+      <div className="flex flex-col items-start gap-6">
+        <SectionHead
+          eyebrow="Join"
+          index="05"
+          id="cta-heading"
+          title={['SELL FOR REAL', 'COMPANIES']}
+        />
 
-      {/* Overlay */}
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(10, 10, 10, 0.80)' }}
-        aria-hidden="true"
-      />
+        <p className="subtitle measure">
+          Apply now to train on live accounts, work the floor with a team, and
+          compete for a spot at nationals.
+        </p>
 
-      {/* Content */}
-      <div className="relative z-10 mx-auto max-w-[700px] text-center flex flex-col items-center">
-        <motion.div
-          variants={revealVariant}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
+        <Button
+          href="https://westernusc.store/product/western-sales-club/"
+          target="_blank"
+          rel="noopener noreferrer"
+          onAccent
+          arrow
         >
-          <Eyebrow>JOIN OUR TEAM</Eyebrow>
-
-          <h2
-            className="mt-[var(--space-3)] font-display font-semibold text-[var(--color-text-primary)] leading-[1.1]"
-            style={{ fontSize: 'var(--text-display)' }}
-          >
-            Ready to make your mark?
-          </h2>
-
-          <p
-            className="mt-[var(--space-4)] max-w-[75ch] font-body font-normal text-[var(--color-text-muted)] leading-[1.7]"
-            style={{ fontSize: 'var(--text-body-lg)' }}
-          >
-            Connect with industry leaders, work on real sales challenges, and
-            build a career worth talking about.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="mt-[var(--space-8)]"
-          variants={ctaButtonReveal}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
-        >
-          <Button href="https://westernusc.store/product/western-sales-club/" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">Join Western Sales Club</Button>
-        </motion.div>
+          Apply to join
+        </Button>
       </div>
-    </section>
+    </Slab>
   );
 }

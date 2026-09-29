@@ -22,13 +22,13 @@ export function useAdminAuth(): AdminAuthContextValue {
 }
 
 /**
- * AdminAuthProvider — 3-phase gate for /admin routes.
+ * AdminAuthProvider: 3-phase gate for /admin routes.
  *
  * Phases: checking_auth → checking_admin → authorized | denied
  *
- * Only a neutral spinner is shown during the loading phases —
- * no dashboard skeleton or content hints are rendered before
- * is_admin() confirms authorization.
+ * Only a neutral spinner is shown during the loading phases. No dashboard
+ * skeleton or content hints are rendered before is_admin() confirms
+ * authorization.
  */
 export default function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AdminState>('checking_auth');

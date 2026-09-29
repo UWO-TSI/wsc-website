@@ -13,13 +13,13 @@ import {
 } from "@/lib/motion";
 
 /*
-  Nav — one component, two modes, never two menus.
+  Nav: one component, two modes, never two menus.
 
   Desktop, 1024 and up: a floating pill with the links inline and a sliding
   --accent indicator on layoutId. No hamburger.
 
   Mobile: the same pill, hamburger on the right, growing downward into a
-  panel — sequence 12, Nav Expand. There is no drawer and no scrim.
+  panel: sequence 12, Nav Expand. There is no drawer and no scrim.
 
   design-system/components.md → Nav. design-system/motion.md → sequence 12.
 */

@@ -5,7 +5,7 @@ import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
 
 /*
-  CTABand — sequence 3, Slab Clip. The page's one loud slab: --accent, the
+  CTABand: sequence 3, Slab Clip. The page's one loud slab: --accent, the
   only place --accent and --page ever touch on this page. A primary Button on
   an --accent slab takes onAccent, because it has nowhere to go otherwise.
 */
@@ -23,12 +23,11 @@ export default function CTASection() {
           eyebrow="Join"
           index="05"
           id="cta-heading"
-          title={['SELL FOR REAL', 'COMPANIES']}
+          title={['Apply to join']}
         />
 
         <p className="subtitle measure">
-          Apply now to train on live accounts, work the floor with a team, and
-          compete for a spot at nationals.
+          Membership is sold through the Western USC store.
         </p>
 
         <Button

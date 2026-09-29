@@ -4,7 +4,7 @@ import Eyebrow from '@/components/ui/eyebrow';
 import { useReveal } from '@/lib/reveal';
 
 /*
-  SectionHead — an eyebrow, a masked title and an optional line of meta.
+  SectionHead: an eyebrow, a masked title and an optional line of meta.
 
   `title` is an authored array, one entry per visual line, never one string
   left to wrap: the Line Mask Reveal needs to know where the lines are. Two or

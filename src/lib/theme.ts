@@ -1,5 +1,5 @@
 /**
- * Theme — Showroom (light, velvet accent) and Afterhours (dark, gold accent).
+ * Theme: Showroom (light, velvet accent) and Afterhours (dark, gold accent).
  *
  * The accent flips with the theme, so this is the most visible interaction on
  * the site. Sequence 11, Theme Wipe, in design-system/motion.md.
@@ -62,7 +62,7 @@ type ViewTransitionDocument = Document & {
 };
 
 /**
- * Sequence 11 — Theme Wipe. A circle expands from the toggle's own centre to
+ * Sequence 11: Theme Wipe. A circle expands from the toggle's own centre to
  * cover the viewport, revealing the new theme underneath.
  *
  * `origin` is the toggle element. Unsupported browsers, and reduced-motion

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { MAGNET_RANGE } from '@/lib/motion';
 
 /**
- * Sequence 6 — Magnetic Pull. Up to 6px toward the pointer, taken at --d-tap
+ * Sequence 6: Magnetic Pull. Up to 6px toward the pointer, taken at --d-tap
  * and released over --d-move.
  *
  * Gated behind (hover: hover) and (pointer: fine): never on touch, where it

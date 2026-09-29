@@ -6,7 +6,7 @@ import SectionHead from '@/components/ui/section-head';
 import StatFigure from '@/components/ui/stat-figure';
 
 /*
-  About — a SectionHead, running copy at the measure, and the three
+  About: a SectionHead, running copy at the measure, and the three
   StatFigures. These numbers are the club's own existing claims
   (design-system/adoption.md, "Data decisions taken during adoption"): do not
   add a fourth, do not invent one.
@@ -19,13 +19,13 @@ export default function AboutSection() {
           eyebrow="About"
           index="01"
           id="about-heading"
-          title={['A SALES FLOOR', 'RUN BY STUDENTS']}
+          title={['A sales floor', 'run by students']}
         />
 
         <p className="body measure">
-          Western Sales Club runs an outbound sales program for Western University
-          students. Members cold call, pitch, and close for real partner companies,
-          then compete in case-based sales competitions against other schools.
+          Western Sales Club is a student-run organization at Western University.
+          We run workshops and events through the year, and connect members with
+          people who sell for a living.
         </p>
 
         <div className="flex flex-wrap gap-10 sm:gap-16">

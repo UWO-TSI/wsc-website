@@ -5,14 +5,17 @@ import { usePreloader } from '@/providers/preloader-provider';
 import { useReveal, cascade } from '@/lib/reveal';
 
 /*
-  KineticHeadline — the one orchestrated moment on the page. Sequence 1, Line
+  KineticHeadline: the one orchestrated moment on the page. Sequence 1, Line
   Mask Reveal, on the title; sequence 2, Word Cascade, on the subtitle.
 
   Lines are an authored array, never one string left to wrap. The hero holds
   its reveal until the Curtain lifts: design-system/adoption.md, "The
   preloader handoff".
 */
-const TITLE_LINES = ['COLD CALLS.', 'LIVE DEALS.', 'REAL QUOTA.'];
+/* Titles are Archivo all caps by the type role, so these carry the words and
+   not the casing. The org name at hero scale is the homepage's title, which is
+   also what floor.html's own hero card demonstrates. */
+const TITLE_LINES = ['Western', 'Sales', 'Club'];
 
 export default function Hero() {
   const { complete } = usePreloader();
@@ -32,9 +35,7 @@ export default function Hero() {
       </h1>
 
       <p className="subtitle cascade measure">
-        {cascade(
-          'Western students book meetings, run demos, and close deals for real partner companies before they graduate.'
-        )}
+        {cascade('A student-run sales organization at Western University.')}
       </p>
 
       <div>

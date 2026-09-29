@@ -1,5 +1,5 @@
 /**
- * DEPRECATED — the pre-Floor motion vocabulary.
+ * DEPRECATED: the pre-Floor motion vocabulary.
  *
  * This file exists only so the tree keeps compiling while the redesign lands
  * one workstream at a time. Every importer of it is a component that has not

@@ -1,14 +1,19 @@
-import { format, parseISO, isBefore, startOfDay } from 'date-fns';
+import { format, isBefore, parseISO, startOfDay } from 'date-fns';
 import Chip from '@/components/ui/chip';
 import type { Event } from '@/types/database';
 
 /*
-  TimelineEvent — Row Expand, sequence 10, shared with ExecRow.
+  TimelineEvent: sequence 10, Row Expand, shared with ExecRow. The `.row`
+  classes are in globals.css.
 
-  Status has no column in the events table, so it is derived from date: future
-  or today is "Open". A past event is reference, not an offer, so it drops the
-  chip, takes --ink-muted and is rendered as a plain div rather than a button:
-  it never gets the hover expand.
+  The events table has no status column and supabase/ is off limits, so status
+  is derived from the date: future or today is "Open". A past event is
+  reference rather than an offer, so it drops the chip, takes --ink-muted and
+  loses the expand entirely, because it should not look pressable.
+
+  Like ExecRow, a live row is inert: there is no registration URL to link to,
+  and the expand is a pointer-only response to attention rather than an
+  affordance.
 */
 
 interface TimelineEventProps {
@@ -17,60 +22,38 @@ interface TimelineEventProps {
 }
 
 export default function TimelineEvent({ event, index }: TimelineEventProps) {
-  const parsedDate = parseISO(event.date);
-  const isPast = isBefore(startOfDay(parsedDate), startOfDay(new Date()));
-  const dateLabel = format(parsedDate, 'MMM d, yyyy');
-  const ix = String(index).padStart(2, '0');
-
-  const summary = (
-    <div className="flex w-full flex-wrap items-center gap-x-[14px] gap-y-1">
-      <span className={`label w-[30px] shrink-0 ${isPast ? '' : 'text-ink-faint'}`}>{ix}</span>
-      <span
-        className={`title-sm order-1 flex-1 basis-40 ${
-          isPast
-            ? 'text-ink-muted'
-            : 'transition-transform duration-[var(--d-move)] ease-move group-hover:translate-x-[10px] group-focus-visible:translate-x-[10px] motion-reduce:group-hover:translate-x-0 motion-reduce:group-focus-visible:translate-x-0'
-        }`}
-      >
-        {event.title}
-      </span>
-      <time dateTime={event.date} className="meta order-2 shrink-0 pl-[44px] sm:pl-0">
-        {dateLabel}
-        {event.time ? ` · ${event.time}` : ''}
-      </time>
-      {!isPast && (
-        <span className="order-3 ml-auto shrink-0">
-          <Chip status="ok">Open</Chip>
-        </span>
-      )}
-    </div>
-  );
-
-  const details = (event.location || event.description) && (
-    <div className="flex flex-col gap-1 pl-[44px]">
-      {event.location && <p className="meta">{event.location}</p>}
-      {event.description && (
-        <p className={`body-sm measure ${isPast ? 'text-ink-muted' : ''}`}>{event.description}</p>
-      )}
-    </div>
-  );
-
-  if (isPast) {
-    return (
-      <div className="flex w-full flex-col gap-2 rounded-md px-[14px] py-[14px] text-ink-muted">
-        {summary}
-        {details}
-      </div>
-    );
-  }
+  const date = parseISO(event.date);
+  const isPast = isBefore(startOfDay(date), startOfDay(new Date()));
 
   return (
-    <button
-      type="button"
-      className="group flex w-full flex-col gap-2 rounded-md bg-transparent px-[14px] py-[14px] text-left shadow-none transition-[padding,background-color,box-shadow] duration-[var(--d-move)] ease-move hover:bg-raised hover:py-[22px] hover:shadow-2 focus-visible:bg-raised focus-visible:py-[22px] focus-visible:shadow-2 motion-reduce:hover:py-[14px] motion-reduce:focus-visible:py-[14px]"
-    >
-      {summary}
-      {details}
-    </button>
+    <li className={`row ${isPast ? 'text-ink-muted' : 'row-live'}`}>
+      <div className="flex w-full flex-wrap items-center gap-x-[14px] gap-y-1">
+        <span className={`label w-[30px] shrink-0 ${isPast ? '' : 'text-ink-faint'}`}>
+          {String(index).padStart(2, '0')}
+        </span>
+
+        <span className={`title-sm order-1 flex-1 basis-40 ${isPast ? '' : 'row-name'}`}>
+          {event.title}
+        </span>
+
+        <time dateTime={event.date} className="meta order-2 shrink-0 pl-[44px] sm:pl-0">
+          {format(date, 'MMM d, yyyy')}
+          {event.time ? ` · ${event.time}` : ''}
+        </time>
+
+        {!isPast && (
+          <span className="order-3 ml-auto shrink-0">
+            <Chip status="ok">Open</Chip>
+          </span>
+        )}
+      </div>
+
+      {(event.location || event.description) && (
+        <div className="flex flex-col gap-1 pl-[44px]">
+          {event.location && <p className="meta">{event.location}</p>}
+          {event.description && <p className="body-sm measure">{event.description}</p>}
+        </div>
+      )}
+    </li>
   );
 }

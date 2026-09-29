@@ -5,7 +5,7 @@ import Button from '@/components/ui/button';
 import type { QueryError } from '@/types/database';
 
 /*
-  AsyncState — four states, and none of them is a blank screen: loading, error
+  AsyncState. Four states, and none of them is a blank screen: loading, error
   with a retry, empty, and 404.
 
   The spinner is a masked conic gradient (the .spin class in globals.css), not

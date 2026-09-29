@@ -14,7 +14,7 @@ Open `floor.html` in a browser first. Nothing in here substitutes for that.
 | Theme stamp | `src/app/layout.tsx` | Blocking script reads `localStorage['wsc-theme']`, falls back to `prefers-color-scheme`, writes `data-theme` on `<html>` before paint. |
 | Theme state | `src/providers/theme-provider.tsx` | `useTheme()` → `{ theme, setTheme, toggleTheme }`. Reads the stamped attribute through `useSyncExternalStore`; do not mirror it in state anywhere else. |
 | Theme Wipe | `src/lib/theme.ts` | Sequence 11. Pass the toggle element as `origin`. |
-| Reveals | `src/lib/reveal.tsx` | `useReveal()` — one shared IntersectionObserver per threshold. |
+| Reveals | `src/lib/reveal.tsx` | `useReveal()`: one shared IntersectionObserver per threshold. |
 | Framer variants | `src/lib/motion.ts` | `E`, `D`, `STAGGER`, and the variants CSS cannot express. |
 
 ## The token vocabulary
@@ -26,7 +26,7 @@ and gold in Afterhours:
 
 - Surfaces: `bg-page`, `bg-raised`, `bg-sunken`, `bg-inverse`, `bg-accent`, `bg-accent-veil`
 - Ink: `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-on-inverse`, `text-on-accent`, `text-accent-ink`
-- Fixed marks: `text-velvet`, `text-gold`, `bg-gold` — the Western lockup and sponsor tiers only
+- Fixed marks: `text-velvet`, `text-gold`, `bg-gold`: the Western lockup and sponsor tiers only
 - Status: `text-ok`, `text-warn`, `text-alert`, always with a word
 - Corners: `rounded-xs|sm|md|lg|xl|pill`, `rounded-full` for a disc
 - Elevation: `shadow-1`, `shadow-2`, `shadow-3`

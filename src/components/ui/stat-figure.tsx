@@ -5,7 +5,7 @@ import { useBeforePaint, useReveal } from '@/lib/reveal';
 import { D } from '@/lib/motion';
 
 /*
-  StatFigure — sequence 5, Counter Roll.
+  StatFigure: sequence 5, Counter Roll.
 
   Counts zero to value over --d-seq on --e-enter, starting at 70 percent
   visible. tabular-nums is mandatory or the row reflows every frame. The suffix

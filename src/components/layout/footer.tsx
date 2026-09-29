@@ -5,7 +5,7 @@ import Image from "next/image";
 import Slab from "@/components/ui/slab";
 
 /*
-  Footer — a --sunken slab, flat elevation, no shadow. Wordmark, the nav
+  Footer: a --sunken slab, flat elevation, no shadow. Wordmark, the nav
   links inline with dot separators, social links as --r-disc --sunken icon
   buttons that go --accent on hover, and the TSI affiliation lockup.
 

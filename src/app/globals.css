@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
-  WSC Floor — design tokens.
+  WSC Floor: design tokens.
 
   Source of truth: design-system/floor.html (open it in a browser).
   Spec: design-system/README.md, motion.md, components.md.
@@ -21,7 +21,7 @@
   --sunken: #ececed;
   --inverse: #150920;
 
-  /* accent — velvet in Showroom, gold in Afterhours */
+  /* accent: velvet in Showroom, gold in Afterhours */
   --accent: #3a1a57;
   --accent-deep: #23102f;
   --accent-ink: #3a1a57;
@@ -40,14 +40,14 @@
   --velvet: #3a1a57;
   --gold: #8a6a1c;
 
-  /* status — always shipped with a word, never hue alone */
+  /* status: always shipped with a word, never hue alone */
   --ok: #1a6b47;
   --warn: #8a5a00;
   --alert: #a8241a;
 
   --focus: #3a1a57;
 
-  /* elevation — shadows make the layers, there are no borders */
+  /* elevation: shadows make the layers, there are no borders */
   --sh-1: 0 1px 2px rgba(20, 16, 26, 0.05), 0 5px 14px -8px rgba(20, 16, 26, 0.1);
   --sh-2: 0 2px 4px rgba(20, 16, 26, 0.06), 0 12px 26px -12px rgba(20, 16, 26, 0.16);
   --sh-3: 0 4px 8px rgba(20, 16, 26, 0.07), 0 28px 56px -22px rgba(20, 16, 26, 0.24);
@@ -75,7 +75,7 @@
   --e-snap: cubic-bezier(0.22, 1.2, 0.36, 1);
   --e-drift: linear;
 
-  /* stacking — never write a raw z-index */
+  /* stacking: never write a raw z-index */
   --layer-base: 0;
   --layer-sticky: 20;
   --layer-nav: 60;
@@ -83,12 +83,12 @@
   --layer-curtain: 95;
   --layer-cursor: 100;
 
-  /* families — the next/font variables are declared on <html> in layout.tsx */
+  /* families: the next/font variables are declared on <html> in layout.tsx */
   --f-display: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
   --f-text: var(--font-instrument), system-ui, -apple-system, sans-serif;
   --f-data: var(--font-geist-mono), ui-monospace, Menlo, monospace;
 
-  /* fluid type — 4 roles, nothing between them */
+  /* fluid type: 4 roles, nothing between them */
   --t-title-hero: clamp(2.6rem, 11.5vw, 9rem);
   --t-title: clamp(1.75rem, 5vw, 3.25rem);
   --t-title-sm: 19px;
@@ -98,7 +98,7 @@
   --t-label: 11px;
   --t-meta: 13px;
 
-  /* page gutter — the slab inset, and the only horizontal page padding */
+  /* page gutter: the slab inset, and the only horizontal page padding */
   --gut: 16px;
 }
 
@@ -423,7 +423,7 @@ img {
   See src/lib/reveal.tsx.
 */
 
-/* Sequence 1 — Line Mask Reveal. Stagger 60ms between lines. */
+/* Sequence 1: Line Mask Reveal. Stagger 60ms between lines. */
 [data-run="off"] .ln > i {
   transform: translateY(112%);
 }
@@ -454,7 +454,7 @@ img {
   }
 }
 
-/* Sequence 2 — Word Cascade. Hero subtitle only, 40ms apart. */
+/* Sequence 2: Word Cascade. Hero subtitle only, 40ms apart. */
 .cascade > span {
   display: inline-block;
 }
@@ -480,7 +480,7 @@ img {
   }
 }
 
-/* Sequence 3 — Slab Clip. The `round` value appears in both keyframes or the
+/* Sequence 3: Slab Clip. The `round` value appears in both keyframes or the
    corner pops square mid-animation. At most four per page. */
 [data-run="off"] .clip-slab {
   clip-path: inset(0 0 100% 0 round var(--r-lg));
@@ -516,7 +516,7 @@ img {
   }
 }
 
-/* Sequence 9 — Clip Reveal. Frame and content arrive at different rates:
+/* Sequence 9: Clip Reveal. Frame and content arrive at different rates:
    the cell unclips while the image settles from scale(1.06). Cells stagger
    60ms in reading order via --i. */
 [data-run="off"] .clip-cell {
@@ -552,6 +552,161 @@ img {
   }
   to {
     transform: none;
+  }
+}
+
+/*
+  Sequence 10: Row Expand. Directory and event rows.
+
+  Block padding grows, the name shifts right, the --raised fill and --sh-2 come
+  in, and the avatar clips in from the right. Rows sit in one slab separated by
+  4px, never by a line.
+
+  A row is NOT a control here. components.md describes it as one focusable
+  link, which assumes a destination; this site has no exec detail page and no
+  event registration URL, so a row that announced itself as pressable would be
+  a false affordance and a screen reader would read "button" on something that
+  does nothing. The rows are therefore inert, the expand is a pointer-only
+  response to attention, and the avatar is present at rest wherever hover does
+  not exist, so nobody is shown less than anyone else. If exec pages or
+  registration links ever land, make the row a real link and put the avatar
+  back behind hover and focus.
+*/
+
+.row {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: var(--r-md);
+  padding: 14px;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    padding var(--d-move) var(--e-move),
+    background-color var(--d-move) var(--e-move),
+    box-shadow var(--d-move) var(--e-move);
+}
+
+.row-name {
+  transition: transform var(--d-move) var(--e-move);
+}
+
+.row-avatar {
+  opacity: 0;
+  transform: translateX(10px);
+  transition:
+    opacity var(--d-move) var(--e-move),
+    transform var(--d-move) var(--e-move);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row-live:hover {
+    background: var(--raised);
+    padding-block: 22px;
+    box-shadow: var(--sh-2);
+  }
+
+  .row-live:hover .row-name {
+    transform: translateX(10px);
+  }
+
+  .row-live:hover .row-avatar {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* No hover means no reveal, so the avatar is simply there. */
+@media (hover: none), (pointer: coarse) {
+  .row-avatar {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion: the padding and the offset drop, the fill still applies. */
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .row-name,
+  .row-avatar {
+    transition: none;
+  }
+
+  .row-live:hover {
+    padding-block: 14px;
+  }
+
+  .row-live:hover .row-name {
+    transform: none;
+  }
+}
+
+/*
+  Sequence 7: Marquee Drift. The one ambient loop in the system.
+
+  The track translates -50% over --d-drift on linear with its contents
+  duplicated exactly once. On scroll it picks up a skewX up to 4 degrees
+  proportional to scroll velocity, returning over --d-move. It pauses on hover,
+  on focus-within, and on visibilitychange, which the component drives with
+  .is-paused.
+
+  Under reduced motion it stops and reflows to a static wrapped row, and the
+  duplicate copy is removed rather than left stacked underneath.
+*/
+
+.mq {
+  overflow: hidden;
+}
+
+.mq-vp {
+  transform: skewX(var(--mq-skew, 0deg));
+  transition: transform var(--d-move) var(--e-move);
+}
+
+.mq-track {
+  display: flex;
+  width: max-content;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  animation: wsc-drift var(--d-drift) var(--e-drift) infinite;
+}
+
+.mq-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 5rem);
+}
+
+.mq:hover .mq-track,
+.mq:focus-within .mq-track,
+.mq-vp.is-paused .mq-track {
+  animation-play-state: paused;
+}
+
+@keyframes wsc-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mq-track {
+    animation: none;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .mq-vp {
+    transform: none;
+    transition: none;
+  }
+
+  .mq-group[aria-hidden='true'] {
+    display: none;
   }
 }
 

@@ -3,7 +3,7 @@
 import { useReveal } from '@/lib/reveal';
 
 /*
-  Slab — the only divider.
+  Slab: the only divider.
 
   Inset from the viewport by the page gutter, --r-xl from tablet up and --r-lg
   below, separated from its neighbours by 24px of visible --page. That gap plus

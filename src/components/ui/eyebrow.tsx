@@ -1,5 +1,5 @@
 /**
- * Eyebrow — the `.label` role: Geist Mono 11px, 0.16em tracking, upper case.
+ * Eyebrow. The `.label` type role: Geist Mono 11px, 0.16em tracking, upper case.
  *
  * It travels with its title rather than animating on its own, so it belongs
  * inside whatever wrapper owns the reveal.

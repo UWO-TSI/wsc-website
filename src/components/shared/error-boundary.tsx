@@ -12,7 +12,7 @@ interface ErrorBoundaryState {
 }
 
 /**
- * ErrorBoundary — catches RENDER-TIME React errors only.
+ * ErrorBoundary: catches RENDER-TIME React errors only.
  *
  * Does NOT catch: async errors, event handler errors, or errors
  * inside setTimeout/Promise callbacks. Those are handled by

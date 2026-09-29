@@ -16,7 +16,7 @@ export default function EventsPage() {
   return (
     <main className="pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
       <div className="mb-16 px-[var(--gut)]">
-        <SectionHead eyebrow="EVENTS" title={['What we run']} />
+        <SectionHead eyebrow="Events" title={['What we run']} />
       </div>
 
       <div className="px-[var(--gut)]">

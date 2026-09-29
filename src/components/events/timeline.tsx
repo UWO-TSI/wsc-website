@@ -11,10 +11,10 @@ interface TimelineProps {
 
 export default function Timeline({ events }: TimelineProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <ul className="flex list-none flex-col gap-1 p-0">
       {events.map((event, index) => (
         <TimelineEvent key={event.id} event={event} index={index + 1} />
       ))}
-    </div>
+    </ul>
   );
 }

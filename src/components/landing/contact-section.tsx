@@ -5,7 +5,7 @@ import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
 
 /*
-  Contact — a short section pointing at the contact page. The form itself
+  Contact: a short section pointing at the contact page. The form itself
   belongs to another agent's stream, so this only ever links out.
 */
 export default function ContactSection() {
@@ -16,12 +16,11 @@ export default function ContactSection() {
           eyebrow="Contact"
           index="04"
           id="contact-heading"
-          title={['HAVE A', 'QUESTION?']}
+          title={['Get in touch']}
         />
 
         <p className="body measure">
           Reach out about partnerships, speaking at an event, or joining the club.
-          We read every message and reply within a few days.
         </p>
 
         <div>

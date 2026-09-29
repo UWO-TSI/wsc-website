@@ -16,11 +16,11 @@ export default function ExecutiveList({ title, executives, startIndex }: Executi
   return (
     <div className="flex flex-col gap-3">
       <p className="label">{title}</p>
-      <div className="flex flex-col gap-1">
+      <ul className="flex list-none flex-col gap-1 p-0">
         {executives.map((executive, i) => (
           <ExecutiveRow key={executive.id} executive={executive} index={startIndex + i} />
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

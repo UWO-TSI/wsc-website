@@ -6,7 +6,7 @@ import { useCursor } from "@/hooks/use-cursor";
 import { D, E } from "@/lib/motion";
 
 /*
-  Cursor — sequence 6, Magnetic Pull's companion. Dot tracks exactly, ring
+  Cursor: sequence 6, Magnetic Pull's companion. Dot tracks exactly, ring
   lags behind on a lerp. Four states: default 38px, hover 46, view 62,
   text 12. The ring is one of only two strokes in the system, alongside the
   focus ring, so it is an inset box-shadow rather than a border.

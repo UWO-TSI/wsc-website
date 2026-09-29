@@ -34,7 +34,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
   const getSnapshot = useCallback(() => lenisRef.current, []);
   const lenis = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Scroll to top on route change — Lenis manages scroll, so we must reset it explicitly
+  // Scroll to top on route change: Lenis manages scroll, so we must reset it explicitly
   useEffect(() => {
     const current = lenisRef.current;
     if (current) {
@@ -45,7 +45,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    // Prevent browser from restoring scroll position on navigation — we handle it ourselves
+    // Prevent browser from restoring scroll position on navigation: we handle it ourselves
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }

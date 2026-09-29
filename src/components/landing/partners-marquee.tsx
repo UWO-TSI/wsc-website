@@ -10,16 +10,16 @@ import SectionHead from '@/components/ui/section-head';
 import { getPublicUrl } from '@/lib/supabase/storage';
 
 /*
-  Partners marquee — sequence 7, Marquee Drift. The track loops on --d-drift,
+  Partners marquee: sequence 7, Marquee Drift. The track loops on --d-drift,
   linear, contents duplicated exactly once. It picks up a skew proportional to
-  scroll velocity, returning over --d-move. It pauses on hover, on
-  focus-within (CSS, in the scoped styles below) and on visibilitychange.
+  scroll velocity, returning over --d-move. It pauses on hover and on
+  focus-within (both in CSS) and on visibilitychange (the .is-paused flag).
 
   Reduced motion stops the loop and drops the duplicate copy so the track
   reflows to a single static wrapped row.
 
-  There is no marquee entry in globals.css yet (that file is off-limits to
-  this stream), so the sequence's CSS lives scoped to this component.
+  The sequence's CSS is part of the system and lives in globals.css alongside
+  the other sequences: .mq, .mq-vp, .mq-track, .mq-group.
 */
 interface PartnersMarqueeProps {
   sponsors: Sponsor[];
@@ -81,17 +81,14 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
           eyebrow="Partners"
           index="03"
           id="partners-heading"
-          title={['WHO WE WORK', 'WITH']}
+          title={['Who we work with']}
         />
 
-        <div className="wsc-marquee overflow-hidden">
-          <div
-            ref={viewportRef}
-            className={`wsc-marquee-vp ${hidden ? 'is-paused' : ''}`}
-          >
-            <div className="wsc-marquee-track">
+        <div className="mq">
+          <div ref={viewportRef} className={`mq-vp ${hidden ? 'is-paused' : ''}`}>
+            <div className="mq-track">
               {[0, 1].map((copy) => (
-                <div key={copy} className="wsc-marquee-group" aria-hidden={copy === 1}>
+                <div key={copy} className="mq-group" aria-hidden={copy === 1}>
                   {active.map((sponsor) => {
                     const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
                     return (
@@ -128,51 +125,6 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
         </div>
       </div>
 
-      <style jsx global>{`
-        .wsc-marquee-vp {
-          transition: transform var(--d-move) var(--e-move);
-          transform: skewX(var(--mq-skew, 0deg));
-        }
-        .wsc-marquee-track {
-          display: flex;
-          width: max-content;
-          gap: clamp(2.5rem, 6vw, 5rem);
-          animation: wsc-marquee-drift var(--d-drift) var(--e-drift) infinite;
-        }
-        .wsc-marquee-vp.is-paused .wsc-marquee-track,
-        .wsc-marquee:hover .wsc-marquee-track,
-        .wsc-marquee:focus-within .wsc-marquee-track {
-          animation-play-state: paused;
-        }
-        .wsc-marquee-group {
-          display: flex;
-          flex-shrink: 0;
-          align-items: center;
-          gap: clamp(2.5rem, 6vw, 5rem);
-        }
-        @keyframes wsc-marquee-drift {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-50%);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .wsc-marquee-track {
-            animation: none;
-            flex-wrap: wrap;
-            width: 100%;
-          }
-          .wsc-marquee-vp {
-            transition: none;
-            transform: none;
-          }
-          .wsc-marquee-group[aria-hidden='true'] {
-            display: none;
-          }
-        }
-      `}</style>
     </Slab>
   );
 }

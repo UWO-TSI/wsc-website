@@ -1,5 +1,5 @@
 /*
-  Chip — a status mark that always carries a word.
+  Chip: a status mark that always carries a word.
 
   In Showroom --ok and --alert sit at nearly the same lightness, so hue alone
   never carries the meaning. The dot is decoration; the label is the signal.

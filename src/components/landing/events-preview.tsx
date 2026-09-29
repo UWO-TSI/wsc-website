@@ -10,7 +10,7 @@ import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import { useReveal } from '@/lib/reveal';
 
 /*
-  Events preview — rows, not cards. `events` has no status column, so Open is
+  Events preview: rows, not cards. `events` has no status column, so Open is
   derived from the date (design-system/adoption.md). Past events drop the
   chip, take --ink-muted, and lose the hover treatment, because they are
   reference and should not look pressable.
@@ -43,7 +43,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
   return (
     <section ref={ref} className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
       <div className="mx-auto flex max-w-[1100px] flex-col gap-10">
-        <SectionHead eyebrow="Events" index="02" id="events-heading" title={['ON THE', 'CALENDAR']} />
+        <SectionHead eyebrow="Events" index="02" id="events-heading" title={['On the', 'calendar']} />
 
         <AsyncStateWrapper
           loading={loading}

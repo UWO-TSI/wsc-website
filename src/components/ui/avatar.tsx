@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
 /*
-  Avatar — --r-disc, because avatars and the cursor are the two discs in the
+  Avatar: --r-disc, because avatars and the cursor are the two discs in the
   system.
 
   A missing headshot renders a --sunken disc with initials in --ink-faint:

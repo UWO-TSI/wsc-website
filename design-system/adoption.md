@@ -130,3 +130,18 @@ returns nothing, delete `src/lib/motion-legacy.ts`. Nothing new imports it.
 5. Reduced motion on. Nothing is invisible, nothing loops.
 6. `npx tsc --noEmit` and `npm run lint` clean, `npm run build` passing.
 7. Its card exists in `floor.html`. If it is not in `floor.html`, it does not exist.
+
+## The preloader handoff
+
+`usePreloader()` from `src/providers/preloader-provider.tsx` returns `{ complete, markComplete }`.
+
+Motion law 2 gives the one orchestrated moment to the hero, and it has to start as the Curtain
+leaves rather than play underneath it. So the hero holds its reveal on `complete`:
+
+```tsx
+const { complete } = usePreloader();
+const ref = useReveal<HTMLElement>({ immediate: true, enabled: complete });
+```
+
+Everything below the fold ignores this and uses the observer as usual. On any route with no
+preloader, including `/admin`, `complete` is true from the first render.

@@ -508,6 +508,18 @@
   @keyframes spin { to { transform: rotate(1turn); } }
   .st .big { font-family: var(--f-display); font-weight: 900; text-transform: uppercase; font-size: clamp(2.4rem, 7vw, 3.6rem); line-height: 0.85; letter-spacing: -0.02em; }
 
+  /* skeleton */
+  .sk { position: relative; overflow: hidden; border-radius: var(--r-sm); background: color-mix(in srgb, currentColor 9%, transparent); display: block; }
+  .sk::after {
+    content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, currentColor 8%, transparent), transparent);
+    animation: sweep 1.4s linear infinite; animation-delay: var(--sd, 0ms);
+  }
+  @keyframes sweep { to { transform: translateX(100%); } }
+  .skrow { display: grid; grid-template-columns: 30px 1fr auto 34px; gap: 14px; align-items: center; padding: 14px; }
+  .skrows { display: flex; flex-direction: column; gap: 4px; }
+  @media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+
   /* extend */
   .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
   .step { background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-1); padding: 20px 18px; display: flex; flex-direction: column; gap: 9px; }
@@ -1018,7 +1030,37 @@
   </section>
 
   <section class="slab sunk">
-    <div class="sechead"><span class="label"><span class="n">13</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
+    <div class="sechead"><span class="label"><span class="n">13</span> &nbsp;Skeletons</span><span class="meta">A thing that has to load reserves its own space and fills in.</span></div>
+    <div class="skrows" style="background:var(--page);border-radius:var(--r-lg);padding:8px">
+      <div class="skrow"><span class="sk" style="height:12px"></span><span class="sk" style="height:19px;width:62%"></span><span class="sk" style="height:12px;width:96px"></span><span class="sk" style="height:34px;width:34px;border-radius:var(--r-disc)"></span></div>
+      <div class="skrow"><span class="sk" style="height:12px;--sd:90ms"></span><span class="sk" style="height:19px;width:48%;--sd:90ms"></span><span class="sk" style="height:12px;width:96px;--sd:90ms"></span><span class="sk" style="height:34px;width:34px;border-radius:var(--r-disc);--sd:90ms"></span></div>
+      <div class="skrow"><span class="sk" style="height:12px;--sd:180ms"></span><span class="sk" style="height:19px;width:71%;--sd:180ms"></span><span class="sk" style="height:12px;width:96px;--sd:180ms"></span><span class="sk" style="height:34px;width:34px;border-radius:var(--r-disc);--sd:180ms"></span></div>
+    </div>
+    <p class="body-sm" style="margin-top:20px;max-width:62ch">
+      A skeleton is built to the shape of the thing it stands in for, not to a
+      generic box. That is the whole point: a centred spinner has a different
+      shape from the content that replaces it, so the page jumps the moment the
+      query resolves. Here the row skeleton carries the same 30px index, name,
+      meta and 34px avatar slot as a real ledger row, at the same rest padding,
+      so the list occupies its final height from the first paint.
+      <br><br>
+      The fill is derived from <b>currentColor</b>, so one rule is correct on
+      every slab tone without a variant per ground. Widths vary down a column,
+      because identical bars read as a loading graphic rather than as names.
+      The sweep is the one thing in the system that animates at rest, and it is
+      deliberate: a static grey block reads as broken layout. It stops under
+      reduced motion, and once the content behind it has loaded.
+      <br><br>
+      An image frame goes further: it holds its aspect ratio from the first
+      paint, keeps the skeleton mounted behind the picture, and waits for the
+      bytes before running Clip Reveal. Unmounting the skeleton on load leaves
+      one frame where it is gone and the image is still clipped, which shows as
+      a flash of empty.
+    </p>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label"><span class="n">14</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
     <div class="steps">
       <div class="step"><span class="no">1</span><span class="hd">Look first</span><p>Read this page before writing CSS. Most new components are an existing one re-composed.</p></div>
       <div class="step"><span class="no">2</span><span class="hd">Spend tokens only</span><p>Every colour, radius, shadow, duration and easing comes from a token. No new hex, no new number.</p></div>

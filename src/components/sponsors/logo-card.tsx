@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import RevealImage from '@/components/ui/reveal-image';
 import type { Sponsor } from '@/types/database';
 import { getPublicUrl } from '@/lib/supabase/storage';
 
@@ -60,15 +60,14 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
   // Never redraw a sponsor's mark: use their file, or fall back to the name
   // set in the display face, in the same tile.
   const content = logoUrl ? (
-    <div className={`relative w-full ${logoHeights[scale]}`}>
-      <Image
-        src={logoUrl}
-        alt={`${sponsor.name} logo`}
-        fill
-        className="object-contain"
-        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
-      />
-    </div>
+    <RevealImage
+      src={logoUrl}
+      alt={`${sponsor.name} logo`}
+      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
+      className={`w-full ${logoHeights[scale]}`}
+      fit="contain"
+      sequence="fade"
+    />
   ) : (
     <span className="text-center font-display font-bold uppercase text-on-logo-ground">
       {sponsor.name}

@@ -29,6 +29,14 @@ interface AsyncStateWrapperProps {
   onRetry?: () => void;
   /** Names what is missing, e.g. "No events on the calendar yet." */
   emptyMessage?: string;
+  /**
+   * The shape of the content, rendered while loading. Always pass this for a
+   * list or a grid. The spinner fallback is a different shape from whatever
+   * replaces it, so the page reflows the moment the query resolves, which is
+   * exactly the jump the skeleton exists to prevent. The spinner is only right
+   * where the content genuinely has no predictable shape.
+   */
+  skeleton?: ReactNode;
   children: ReactNode;
 }
 
@@ -38,9 +46,18 @@ export default function AsyncStateWrapper({
   data,
   onRetry,
   emptyMessage = 'Nothing here yet.',
+  skeleton,
   children,
 }: AsyncStateWrapperProps) {
   if (loading) {
+    if (skeleton) {
+      return (
+        <div role="status" aria-busy="true" aria-label="Loading">
+          {skeleton}
+        </div>
+      );
+    }
+
     return (
       <Bed>
         <span className="spin" role="status" aria-label="Loading" />

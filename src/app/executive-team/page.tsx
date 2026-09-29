@@ -7,6 +7,7 @@ import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import SectionHead from '@/components/ui/section-head';
 import Slab from '@/components/ui/slab';
 import ExecutiveList from '@/components/team/executive-list';
+import RowSkeleton from '@/components/ui/row-skeleton';
 
 export default function ExecutiveTeamPage() {
   const {
@@ -37,34 +38,39 @@ export default function ExecutiveTeamPage() {
         <SectionHead eyebrow="Team" title={['The people running it']} />
       </div>
 
+      {/* Slab outside the async wrapper: the band paints immediately and only
+          the roster inside fills in. */}
       <div className="px-[var(--gut)]">
-        <AsyncStateWrapper
-          loading={loading}
-          error={error}
-          data={executives}
-          onRetry={refetch}
-          emptyMessage="No executives are published yet."
-        >
-          <Slab tone="sunken" className="flex flex-col gap-8">
-            {presidents.length > 0 && (
-              <ExecutiveList title="Presidents" executives={presidents} startIndex={1} />
-            )}
-            {vicePresidents.length > 0 && (
-              <ExecutiveList
-                title="Vice Presidents"
-                executives={vicePresidents}
-                startIndex={1 + presidents.length}
-              />
-            )}
-            {assistantVicePresidents.length > 0 && (
-              <ExecutiveList
-                title="Assistant Vice Presidents"
-                executives={assistantVicePresidents}
-                startIndex={1 + presidents.length + vicePresidents.length}
-              />
-            )}
-          </Slab>
-        </AsyncStateWrapper>
+        <Slab tone="sunken" className="flex flex-col gap-8">
+          <AsyncStateWrapper
+            loading={loading}
+            error={error}
+            data={executives}
+            onRetry={refetch}
+            emptyMessage="No executives are published yet."
+            skeleton={<RowSkeleton count={7} />}
+          >
+            <>
+              {presidents.length > 0 && (
+                <ExecutiveList title="Presidents" executives={presidents} startIndex={1} />
+              )}
+              {vicePresidents.length > 0 && (
+                <ExecutiveList
+                  title="Vice Presidents"
+                  executives={vicePresidents}
+                  startIndex={1 + presidents.length}
+                />
+              )}
+              {assistantVicePresidents.length > 0 && (
+                <ExecutiveList
+                  title="Assistant Vice Presidents"
+                  executives={assistantVicePresidents}
+                  startIndex={1 + presidents.length + vicePresidents.length}
+                />
+              )}
+            </>
+          </AsyncStateWrapper>
+        </Slab>
       </div>
     </main>
   );

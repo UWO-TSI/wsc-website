@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 
 /**
  * useLayoutEffect does nothing on the server and React says so loudly, so the
@@ -58,6 +58,13 @@ interface RevealOptions {
   immediate?: boolean;
   /** Pass false to leave the element at rest, e.g. while the preloader is up. */
   enabled?: boolean;
+  /**
+   * Gate the sequence on the content being there. Arriving and being visible
+   * are two different things: an image that is in view but still decoding
+   * would otherwise run its reveal over an empty box and then pop in when the
+   * bytes land. Pass the loaded flag and the sequence waits for both.
+   */
+  ready?: boolean;
 }
 
 /**
@@ -68,8 +75,17 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
   threshold = 0.15,
   immediate = false,
   enabled = true,
+  ready = true,
 }: RevealOptions = {}) {
   const ref = useRef<T>(null);
+
+  /*
+    Arrival and readiness are tracked separately and the sequence needs both.
+    They are refs, not state, because flipping either one must not re-render
+    the component that owns the element.
+  */
+  const arrived = useRef(false);
+  const isReady = useRef(ready);
 
   /*
     Before paint, not after: this must land before the first paint or the
@@ -82,6 +98,21 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
     if (!el.hasAttribute('data-run')) el.setAttribute('data-run', 'off');
   }, [enabled]);
 
+  const start = useCallback(() => {
+    const el = ref.current;
+    if (!el || !arrived.current || !isReady.current) return;
+    if (el.getAttribute('data-run') === 'on') return;
+    el.style.willChange = 'transform';
+    el.setAttribute('data-run', 'on');
+  }, []);
+
+  /* Readiness can land after the element is already on screen, which is the
+     normal case for an image below the fold on a slow connection. */
+  useEffect(() => {
+    isReady.current = ready;
+    if (ready) start();
+  }, [ready, start]);
+
   useEffect(() => {
     const el = ref.current;
     if (!el || !enabled) return;
@@ -91,11 +122,6 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
       return;
     }
 
-    const run = () => {
-      el.style.willChange = 'transform';
-      el.setAttribute('data-run', 'on');
-    };
-
     /* will-change is a promise to the compositor, not a decoration: drop it
        the moment the sequence is over. */
     const settle = () => {
@@ -103,8 +129,13 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
     };
     el.addEventListener('animationend', settle);
 
+    const arrive = () => {
+      arrived.current = true;
+      start();
+    };
+
     if (immediate) {
-      const frame = requestAnimationFrame(run);
+      const frame = requestAnimationFrame(arrive);
       return () => {
         cancelAnimationFrame(frame);
         el.removeEventListener('animationend', settle);
@@ -112,7 +143,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
     }
 
     const observer = observerFor(threshold);
-    triggers.set(el, run);
+    triggers.set(el, arrive);
     observer.observe(el);
 
     return () => {
@@ -120,7 +151,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
       observer.unobserve(el);
       el.removeEventListener('animationend', settle);
     };
-  }, [enabled, immediate, threshold]);
+  }, [enabled, immediate, threshold, start]);
 
   return ref;
 }

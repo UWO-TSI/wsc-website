@@ -5,6 +5,7 @@ import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import SectionHead from '@/components/ui/section-head';
 import Slab from '@/components/ui/slab';
 import Timeline from '@/components/events/timeline';
+import RowSkeleton from '@/components/ui/row-skeleton';
 import type { Event } from '@/types/database';
 
 export default function EventsPage() {
@@ -19,27 +20,26 @@ export default function EventsPage() {
         <SectionHead eyebrow="Events" title={['What we run']} />
       </div>
 
+      {/*
+        The slab is outside the async wrapper on purpose. The band, its tone
+        and its corner are known before the query resolves, so they paint
+        immediately and only the ledger inside fills in. With the wrapper on
+        the outside there was no slab at all while loading, and the whole
+        section appeared at once the moment the data landed.
+      */}
       <div className="px-[var(--gut)]">
-        <AsyncStateWrapper
-          loading={loading}
-          error={error}
-          data={events}
-          onRetry={refetch}
-          emptyMessage="No events are on the calendar yet."
-        >
-          {/*
-            The rows only exist once the client-side query resolves, so
-            without this they appeared fully formed at whatever moment the
-            fetch landed while the title above had already animated in. The
-            slab clips in and the ledger arrives with it, which is exactly what
-            Slab Clip is for: it says where the boundary is. One move for the
-            section, not a stagger per row, because a calendar runs well past
-            the five-element stagger budget.
-          */}
-          <Slab tone="sunken" clip>
+        <Slab tone="sunken">
+          <AsyncStateWrapper
+            loading={loading}
+            error={error}
+            data={events}
+            onRetry={refetch}
+            emptyMessage="No events are on the calendar yet."
+            skeleton={<RowSkeleton count={6} />}
+          >
             <Timeline events={events} />
-          </Slab>
-        </AsyncStateWrapper>
+          </AsyncStateWrapper>
+        </Slab>
       </div>
     </main>
   );

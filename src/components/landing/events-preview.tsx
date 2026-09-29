@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import RevealImage from '@/components/ui/reveal-image';
 import { format } from 'date-fns';
 
 import type { Event, QueryError } from '@/types/database';
@@ -8,6 +8,7 @@ import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
 import SectionHead from '@/components/ui/section-head';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
+import RowSkeleton from '@/components/ui/row-skeleton';
 import { useReveal } from '@/lib/reveal';
 
 /*
@@ -58,6 +59,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
             error={error}
             data={upcoming}
             emptyMessage="No events on the calendar yet."
+            skeleton={<RowSkeleton count={4} />}
           >
             <div className="arrive flex flex-col gap-1">
               {upcoming.map((event) => (
@@ -74,15 +76,12 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
         </div>
 
         {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
-        <figure className="clip-cell relative m-0 aspect-[3/4] w-full overflow-hidden rounded-md lg:sticky lg:top-28">
-          <Image
-            src="/events/college-pro.avif"
-            alt="Western Sales Club members at a College Pro event"
-            fill
-            sizes="(max-width: 1024px) 100vw, 420px"
-            className="clip-inner object-cover"
-          />
-        </figure>
+        <RevealImage
+          src="/events/college-pro.avif"
+          alt="Western Sales Club members at a College Pro event"
+          sizes="(max-width: 1024px) 100vw, 420px"
+          className="aspect-[3/4] w-full rounded-md lg:sticky lg:top-28"
+        />
       </div>
     </section>
   );

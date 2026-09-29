@@ -1,10 +1,11 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Image from 'next/image';
+import RevealImage from '@/components/ui/reveal-image';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useReveal } from '@/lib/reveal';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
+import Skeleton from '@/components/ui/skeleton';
 import Eyebrow from '@/components/ui/eyebrow';
 import type { QueryError } from '@/types/database';
 
@@ -49,6 +50,22 @@ export default function BentoGallery({ photos, loading, error, onRetry }: BentoG
     setOpenIndex(index);
   };
 
+  /* Same three column grid and the same span pattern as the real bento, so
+     the bed keeps its height and the page below it does not move when the
+     photos arrive. */
+  const skeleton = (
+    <div className="bg-sunken rounded-xl p-3 sm:p-4">
+      <div
+        className="grid grid-cols-3 gap-2"
+        style={{ gridAutoRows: 'clamp(90px, 18vw, 160px)' }}
+      >
+        {cellSpan.map((span, i) => (
+          <Skeleton key={i} index={i} className={`h-full w-full rounded-sm ${span}`} />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <Eyebrow className="mb-6 block">Gallery</Eyebrow>
@@ -59,6 +76,7 @@ export default function BentoGallery({ photos, loading, error, onRetry }: BentoG
         data={photos}
         onRetry={onRetry}
         emptyMessage="No photos yet."
+        skeleton={skeleton}
       >
         <div className="bg-sunken rounded-xl p-3 sm:p-4">
           <div
@@ -76,17 +94,21 @@ export default function BentoGallery({ photos, loading, error, onRetry }: BentoG
                   }}
                   type="button"
                   onClick={() => open(index)}
-                  className={`group relative overflow-hidden rounded-sm ${spanFor(index)} clip-cell`}
-                  style={{ '--i': index } as React.CSSProperties}
+                  className={`group relative overflow-hidden rounded-sm ${spanFor(index)}`}
                   aria-label={photo.caption ? `Open ${photo.caption}` : 'Open gallery photo'}
                 >
-                  <span className="clip-inner absolute inset-0 block">
-                    <Image
+                  {/*
+                    Each cell now owns its own Clip Reveal and waits on its own
+                    bytes, rather than the whole grid clipping in on scroll
+                    while the photos were still decoding behind it.
+                  */}
+                  <span className="absolute inset-0">
+                    <RevealImage
                       src={photo.src as string}
                       alt={altText}
-                      fill
-                      className="object-cover"
                       sizes="(max-width: 768px) 33vw, 25vw"
+                      className="h-full w-full"
+                      index={index}
                     />
                   </span>
 
@@ -144,12 +166,16 @@ export default function BentoGallery({ photos, loading, error, onRetry }: BentoG
 
               {selected?.src && (
                 <div className="relative aspect-video w-full">
-                  <Image
+                  {/* The full-size file is a fresh request even when the
+                      thumbnail is cached, so the lightbox skeletons too rather
+                      than opening onto an empty frame. */}
+                  <RevealImage
                     src={selected.src}
                     alt={selected.alt ?? selected.caption ?? ''}
-                    fill
-                    className="object-contain"
                     sizes="90vw"
+                    className="h-full w-full"
+                    fit="contain"
+                    sequence="fade"
                     priority
                   />
                   {selected.caption && (

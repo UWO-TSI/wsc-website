@@ -880,6 +880,93 @@ img {
   }
 }
 
+/*
+  ── Skeleton ──
+
+  The rule: a thing that has to load reserves its own space from the first
+  paint and fills in, rather than appearing out of nowhere when the data or the
+  image arrives. A spinner in a centred bed is the opposite of that, because
+  the bed is a different shape from the content that replaces it, so the page
+  reflows the moment it resolves.
+
+  The fill is derived from currentColor, so one class is correct on --raised,
+  --sunken, --inverse, --accent and --logo-ground without a variant per ground.
+
+  The sweep is the one place the system animates something at rest, and it is
+  deliberate: a static grey block reads as broken layout rather than as
+  pending. It stops under reduced motion and once the content behind it has
+  loaded.
+*/
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, currentColor 8%, transparent),
+    transparent
+  );
+  /* Delay is a custom property because the animation lives on the
+     pseudo-element, which an inline style on the host cannot reach. */
+  animation: wsc-sweep 1.4s linear infinite;
+  animation-delay: var(--sweep-delay, 0ms);
+}
+
+@keyframes wsc-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/*
+  A frame that holds an image. The skeleton sits behind the image for the whole
+  life of the component rather than being unmounted on load: swapping them in
+  the same commit leaves one frame where the skeleton is gone and the image is
+  still clipped, which shows as a flash of empty. Covered by the image once it
+  reveals, so it is never seen again; the sweep just stops.
+*/
+.reveal-frame[data-loaded] .skeleton::after {
+  animation: none;
+}
+
+/*
+  The quieter of the two image arrivals, for a supplied logo. It has no
+  entrance to coordinate, it just stops being absent once its bytes are there.
+  An opacity shift on --d-hover and --e-enter is the colour-shift line of the
+  motion budget, not a thirteenth sequence.
+*/
+[data-run="off"] .fade-cell {
+  opacity: 0;
+}
+
+[data-run="on"] .fade-cell {
+  opacity: 1;
+  transition: opacity var(--d-hover) var(--e-enter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-run] .fade-cell {
+    opacity: 1 !important;
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
 /* ── AsyncState spinner: a masked conic gradient, because borders are out. ── */
 
 .spin {

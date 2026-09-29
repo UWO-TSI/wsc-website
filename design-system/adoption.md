@@ -116,6 +116,34 @@ Both follow from hard rule 1, never touch `supabase/`. Revisit them only with a 
 - **Stat figures.** The three on the landing page (150 members, 10 annual events, 5 industry
   partners) are the club's own existing claims. Do not add a fourth, and do not invent one.
 
+## Loading
+
+The rule: **a section reserves its own space from the first paint and fills in.** Nothing appears
+out of nowhere when a query resolves or an image decodes.
+
+Three things follow from it, and all three were wrong before:
+
+1. **The slab goes outside the async wrapper, not inside.** The band, its tone and its corner are
+   known before the data is, so they paint immediately and only the contents fill in. With the
+   wrapper outside there is no slab at all while loading, and the whole section arrives at once.
+2. **`AsyncStateWrapper` takes a `skeleton`.** Always pass one for a list or a grid, built to the
+   shape of the real content. The spinner fallback is only right where the content genuinely has
+   no predictable shape, because its bed is a different shape from whatever replaces it and the
+   page reflows when the two swap. `RowSkeleton` covers both ledger directories.
+3. **Images go through `RevealImage`**, never a bare `next/image`, in anything user-facing. It
+   holds its aspect ratio from the first paint, skeletons behind the picture, and gates the reveal
+   on `useReveal`'s `ready` flag so the sequence waits for the bytes rather than just the viewport.
+   `sequence="clip"` is Clip Reveal and is right for photography; `sequence="fade"` is for a
+   supplied logo, which has no meaningful moment of arrival.
+
+A component that already has a designed fallback does not need a skeleton on top of it. `Avatar`
+layers the headshot over its initials disc rather than swapping between them, so the fallback is
+the loading state.
+
+Never return `null` from a section while its query is in flight. That is the worst version of the
+problem: the section does not exist, and then the page grows by a whole band and shoves everything
+below it down.
+
 ## Motion deviations from the spec
 
 Two of the twelve sequences ship differently from `motion.md`. Both were design calls, not

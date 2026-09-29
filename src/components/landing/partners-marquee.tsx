@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
+import RevealImage from '@/components/ui/reveal-image';
 
 import type { Sponsor } from '@/types/database';
 import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
+import Skeleton from '@/components/ui/skeleton';
 import { getPublicUrl } from '@/lib/supabase/storage';
 
 /*
@@ -90,7 +91,14 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     return () => observer.disconnect();
   }, [active.length]);
 
-  if (loading || active.length === 0) return null;
+  /*
+    Only bail once we know there is nothing to show. Returning null while the
+    query is still in flight meant the section did not exist, and then the page
+    grew by a whole band the moment the sponsors landed, shoving everything
+    below it down. Loading renders the slab and a row of skeleton tiles at the
+    real size instead.
+  */
+  if (!loading && active.length === 0) return null;
 
   return (
     <Slab tone="logo" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
@@ -102,56 +110,65 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
           title={['Who we work with']}
         />
 
-        {/* No role and no label: the section is already labelled by its
-            heading, the first group carries the real names, and every
-            duplicate is aria-hidden. role="marquee" would make this a live
-            region and have it announced on every pass for no benefit. */}
-        <div ref={viewportRef} className="mq">
-          <div
-            className={`mq-track ${hidden ? 'is-paused' : ''}`}
-            style={
-              {
-                '--mq-copies': copies,
-                '--mq-duration': `${duration}s`,
-              } as React.CSSProperties
-            }
-          >
-            {Array.from({ length: copies }, (_, copy) => (
-              <div
-                key={copy}
-                ref={copy === 0 ? groupRef : undefined}
-                className="mq-group"
-                aria-hidden={copy > 0}
-              >
-                {active.map((sponsor) => {
-                  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
+        {loading ? (
+          <div className="mq" role="status" aria-busy="true" aria-label="Loading partners">
+            <div className="mq-group">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} index={i} className="h-12 w-36 rounded-md sm:h-14 sm:w-44" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* No role and no label: the section is already labelled by its
+             heading, the first group carries the real names, and every
+             duplicate is aria-hidden. role="marquee" would make this a live
+             region and have it announced on every pass for no benefit. */
+          <div ref={viewportRef} className="mq">
+            <div
+              className={`mq-track ${hidden ? 'is-paused' : ''}`}
+              style={
+                {
+                  '--mq-copies': copies,
+                  '--mq-duration': `${duration}s`,
+                } as React.CSSProperties
+              }
+            >
+              {Array.from({ length: copies }, (_, copy) => (
+                <div
+                  key={copy}
+                  ref={copy === 0 ? groupRef : undefined}
+                  className="mq-group"
+                  aria-hidden={copy > 0}
+                >
+                  {active.map((sponsor) => {
+                    const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
 
-                  return (
-                    <div key={`${copy}-${sponsor.id}`} className="mq-item h-12 w-36 sm:h-14 sm:w-44">
-                      {logoUrl ? (
-                        <span className="relative block h-full w-full">
-                          <Image
+                    return (
+                      <div key={`${copy}-${sponsor.id}`} className="mq-item h-12 w-36 sm:h-14 sm:w-44">
+                        {logoUrl ? (
+                          <RevealImage
                             src={logoUrl}
                             alt={sponsor.name}
-                            fill
                             sizes="176px"
-                            className="object-contain"
+                            className="h-full w-full"
+                            fit="contain"
+                            sequence="fade"
                           />
-                        </span>
-                      ) : (
-                        /* Never redraw a sponsor's mark. With no file, their
-                           name set in the display face stands in for it. */
-                        <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
-                          {sponsor.name}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                        ) : (
+                          /* Never redraw a sponsor's mark. With no file, their
+                             name set in the display face stands in for it. */
+                          <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
+                            {sponsor.name}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div>
           <Button href="/sponsors" variant="tertiary" arrow>

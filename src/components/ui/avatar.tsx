@@ -32,28 +32,32 @@ interface AvatarProps {
 export default function Avatar({ name, src, size = 34, className = '' }: AvatarProps) {
   const style = { width: size, height: size } as const;
 
-  if (!src) {
-    return (
-      <span
-        aria-hidden="true"
-        style={style}
-        className={`grid shrink-0 place-items-center rounded-full bg-sunken font-display text-[0.34em] font-extrabold leading-none text-ink-faint ${className}`.trim()}
-      >
-        <span style={{ fontSize: Math.max(10, Math.round(size * 0.32)) }}>
-          {initialsOf(name)}
-        </span>
-      </span>
-    );
-  }
-
+  /*
+    The initials disc is always rendered, and the headshot sits on top of it
+    rather than replacing it. Swapping them left an empty circle for as long
+    as the file took to arrive; layered, the designed fallback IS the loading
+    state, and the photo covers it when it lands. Nothing to skeleton, because
+    there is already something correct to show.
+  */
   return (
-    <Image
-      src={src}
-      alt=""
-      width={size}
-      height={size}
+    <span
+      aria-hidden="true"
       style={style}
-      className={`shrink-0 rounded-full object-cover ${className}`.trim()}
-    />
+      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-sunken font-display font-extrabold leading-none text-ink-faint ${className}`.trim()}
+    >
+      <span style={{ fontSize: Math.max(10, Math.round(size * 0.32)) }}>
+        {initialsOf(name)}
+      </span>
+
+      {src && (
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes={`${size}px`}
+          className="object-cover"
+        />
+      )}
+    </span>
   );
 }

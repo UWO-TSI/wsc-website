@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import RevealImage from '@/components/ui/reveal-image';
 import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
@@ -55,19 +55,14 @@ export default function AboutSection() {
         */}
         <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3">
           {PHOTOS.map((photo, i) => (
-            <li key={photo.src} className="contents">
-              <figure
-                style={{ '--i': i } as React.CSSProperties}
-                className="clip-cell relative m-0 aspect-[4/3] overflow-hidden rounded-md"
-              >
-                <Image
-                  src={photo.src}
-                  alt={photo.alt}
-                  fill
-                  sizes="(max-width: 700px) 33vw, 280px"
-                  className="clip-inner object-cover"
-                />
-              </figure>
+            <li key={photo.src} className="m-0">
+              <RevealImage
+                src={photo.src}
+                alt={photo.alt}
+                sizes="(max-width: 700px) 33vw, 280px"
+                className="aspect-[4/3] w-full rounded-md"
+                index={i}
+              />
             </li>
           ))}
         </ul>

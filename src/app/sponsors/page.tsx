@@ -3,37 +3,38 @@
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { Sponsor } from '@/types/database';
 import Eyebrow from '@/components/ui/eyebrow';
+import { useReveal } from '@/lib/reveal';
 import LogoWall from '@/components/sponsors/logo-wall';
-import { motion } from 'framer-motion';
-import { revealVariant, containerVariant, viewportConfig } from '@/lib/motion-legacy';
 
+/*
+  A page is a stack of slabs on --page, inset by the gutter. The title block
+  sits bare on --page, which is what keeps the stack from reading as a list
+  of cards (design-system/README.md, Layout).
+*/
 export default function SponsorsPage() {
   const { data: sponsors, loading, error, refetch } = useSupabaseQuery<Sponsor>('sponsors');
+  const titleRef = useReveal<HTMLDivElement>();
 
   return (
     <main
-      className="min-h-screen px-[clamp(1.5rem,5vw,6rem)] pt-[clamp(6rem,10vw,10rem)]"
-      style={{ background: 'var(--color-bg-base)' }}
+      style={{
+        paddingInline: 'var(--gut)',
+        paddingTop: 'clamp(6rem, 10vw, 9rem)',
+        paddingBottom: 'clamp(4rem, 8vw, 7rem)',
+      }}
     >
-      <motion.div
-        className="mb-[var(--space-16)]"
-        variants={containerVariant}
-        initial="hidden"
-        whileInView="visible"
-        viewport={viewportConfig}
-      >
-        <motion.div variants={revealVariant}>
-          <Eyebrow>OUR PARTNERS</Eyebrow>
-        </motion.div>
-        <motion.h1
-          variants={revealVariant}
-          className="mt-[var(--space-3)] font-display text-[length:var(--text-display)] font-semibold leading-[1.1] text-[var(--color-text-primary)]"
-        >
-          Organizations empowering sales at Western.
-        </motion.h1>
-      </motion.div>
+      <div ref={titleRef} className="mb-10">
+        <Eyebrow className="mb-3 block">Partners</Eyebrow>
+        <h1 className="title">
+          <span className="ln">
+            <i>The businesses that support Western Sales Club.</i>
+          </span>
+        </h1>
+      </div>
 
-      <LogoWall sponsors={sponsors} loading={loading} error={error} onRetry={refetch} />
+      <div className="stack">
+        <LogoWall sponsors={sponsors} loading={loading} error={error} onRetry={refetch} />
+      </div>
     </main>
   );
 }

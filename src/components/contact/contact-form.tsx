@@ -124,7 +124,7 @@ export default function ContactForm() {
         <Chip status="ok">Sent</Chip>
         <p className="title-sm">Message sent</p>
         <p className="body-sm measure">
-          We reply from sales.club@westernusc.ca, usually within a few days.
+          It went to sales.club@westernusc.ca.
         </p>
         <Button
           variant="tertiary"

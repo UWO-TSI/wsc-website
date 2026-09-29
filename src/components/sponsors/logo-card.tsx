@@ -43,15 +43,15 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
   const scale = scaleFor(rank, total);
 
   /*
-    Logos sit on --logo-ground, which does not flip with the theme. A sponsor's
-    mark is supplied artwork we are not allowed to redraw, and most of them are
-    light-on-transparent, so on the Showroom ground they were washing out. One
-    constant dark ground gives every mark a predictable backing in both themes.
+    No tile behind the mark. The whole wall is already on --logo-ground, so a
+    per-logo panel would just be a darker rectangle on a dark ground. The marks
+    sit directly on the section, separated by the grid gap, which is the same
+    way everything else in this system is divided.
   */
   const tileClass = [
-    'flex aspect-[3/2] items-center justify-center rounded-md bg-logo-ground p-4 shadow-1',
-    'transition-shadow duration-[var(--d-hover)] ease-enter',
-    sponsor.link ? 'hover:shadow-2' : '',
+    'flex aspect-[3/2] items-center justify-center rounded-md p-4',
+    'transition-transform duration-[var(--d-hover)] ease-enter',
+    sponsor.link ? 'hover:scale-[1.04]' : '',
     spanClass[scale],
   ]
     .filter(Boolean)

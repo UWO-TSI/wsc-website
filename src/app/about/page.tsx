@@ -11,9 +11,8 @@ import type { GalleryPhoto } from '@/types/database';
 
 /*
   A page is a stack of slabs on --page, inset by the gutter. The title block
-  sits bare on --page (design-system/README.md, Layout). StorySection is also
-  bare: it pins full width for Scroll Scrub, which a slab's padding would
-  fight.
+  sits bare on --page (design-system/README.md, Layout). StorySection brings
+  its own asymmetric grid and its own slabs, so it is not wrapped in one here.
 */
 export default function AboutPage() {
   const {

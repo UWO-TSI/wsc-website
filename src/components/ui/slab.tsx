@@ -18,13 +18,16 @@ import { useReveal } from '@/lib/reveal';
   floating above it.
 */
 
-export type SlabTone = 'raised' | 'sunken' | 'inverse' | 'accent';
+export type SlabTone = 'raised' | 'sunken' | 'inverse' | 'accent' | 'logo';
 
 const tones: Record<SlabTone, string> = {
   raised: '',
   sunken: 'slab-sunk',
   inverse: 'slab-inv',
   accent: 'slab-acc',
+  /* The constant dark ground, for a section built around supplied logos.
+     Unlike the other four it does not flip with the theme. */
+  logo: 'slab-logo',
 };
 
 interface SlabProps {

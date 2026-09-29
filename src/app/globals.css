@@ -409,6 +409,29 @@ img {
   box-shadow: var(--sh-2);
 }
 
+/*
+  A slab on the constant logo ground, for a section built entirely around
+  supplied marks. The whole panel is dark in both themes rather than each tile
+  carrying its own dark patch, which read as a grid of stickers.
+
+  In Afterhours this tone equals --page, so the slab stops reading as a raised
+  surface and the section sits bare on the page ground. That is allowed and is
+  in fact the rule: at least one section per page sits bare. The shadow keeps
+  the edge legible where the tones do coincide.
+*/
+.slab-logo {
+  background: var(--logo-ground);
+  color: var(--on-logo-ground);
+  box-shadow: var(--sh-1);
+}
+
+.slab-logo .label,
+.slab-logo .subtitle,
+.slab-logo .meta,
+.slab-logo .body-sm {
+  color: color-mix(in srgb, var(--on-logo-ground) 70%, transparent);
+}
+
 .slab-acc .label,
 .slab-acc .subtitle,
 .slab-acc .meta,
@@ -678,18 +701,44 @@ img {
 
 .mq {
   overflow: hidden;
+  /*
+    Edge fade instead of a hard cut. In a system with no borders the track
+    should dissolve at the boundary rather than be clipped by an invisible
+    line. The mask is geometry, not colour, so it costs no token and works on
+    whatever ground the section happens to sit on.
+  */
+  --mq-fade: clamp(24px, 7%, 96px);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--mq-fade),
+    #000 calc(100% - var(--mq-fade)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--mq-fade),
+    #000 calc(100% - var(--mq-fade)),
+    transparent
+  );
 }
 
-.mq-vp {
-  transform: skewX(var(--mq-skew, 0deg));
-  transition: transform var(--d-move) var(--e-move);
-}
+/*
+  --mq-copies and --mq-duration are measured and set by the component.
 
+  Copies: the track has to be at least one viewport wider than the viewport or
+  the loop shows a gap, and with only a handful of sponsors two copies is not
+  enough. The component counts how many it needs from the real rendered width.
+
+  Duration: derived from one group's width at a fixed px/sec, so the marquee
+  travels at the same speed whether there are three sponsors or thirty. A flat
+  duration would make a short track crawl and a long one sprint.
+*/
 .mq-track {
   display: flex;
   width: max-content;
-  gap: clamp(2.5rem, 6vw, 5rem);
-  animation: wsc-drift var(--d-drift) var(--e-drift) infinite;
+  animation: wsc-drift var(--mq-duration, var(--d-drift)) var(--e-drift) infinite;
 }
 
 .mq-group {
@@ -697,21 +746,35 @@ img {
   flex-shrink: 0;
   align-items: center;
   gap: clamp(2.5rem, 6vw, 5rem);
+  padding-right: clamp(2.5rem, 6vw, 5rem);
 }
 
 .mq:hover .mq-track,
 .mq:focus-within .mq-track,
-.mq-vp.is-paused .mq-track {
+.mq-track.is-paused {
   animation-play-state: paused;
 }
 
+/* One group width, whatever the copy count, so the seam never shows. */
 @keyframes wsc-drift {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translate3d(calc(-100% / var(--mq-copies, 2)), 0, 0);
   }
+}
+
+.mq-item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--d-hover) var(--e-enter);
+}
+
+.mq-item:hover {
+  transform: scale(1.06);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -721,9 +784,12 @@ img {
     flex-wrap: wrap;
   }
 
-  .mq-vp {
-    transform: none;
+  .mq-item {
     transition: none;
+  }
+
+  .mq-item:hover {
+    transform: none;
   }
 
   .mq-group[aria-hidden='true'] {

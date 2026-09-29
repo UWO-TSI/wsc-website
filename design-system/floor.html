@@ -470,14 +470,17 @@
   .lw { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   @media (min-width: 760px) { .lw { grid-template-columns: repeat(4, 1fr); } }
   .lw .lead { grid-column: span 2; }
+  /* The whole wall is the dark ground; the marks sit directly on it. */
+  .lw-wall {
+    background: var(--logo-ground); color: var(--on-logo-ground);
+    border-radius: var(--r-lg); padding: 22px; box-shadow: var(--sh-1);
+  }
   .lw .lt {
     display: flex; aspect-ratio: 3 / 2; align-items: center; justify-content: center;
-    background: var(--logo-ground); color: var(--on-logo-ground);
-    border-radius: var(--r-md); box-shadow: var(--sh-1);
-    padding: 16px; text-decoration: none; color: inherit;
-    transition: box-shadow var(--d-hover) var(--e-enter);
+    border-radius: var(--r-md); padding: 16px; text-decoration: none; color: inherit;
+    transition: transform var(--d-hover) var(--e-enter);
   }
-  .lw a.lt:hover { box-shadow: var(--sh-2); }
+  .lw a.lt:hover { transform: scale(1.04); }
   /* the fallback when a sponsor has no file: their name, set in the display face */
   .lw .set { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; text-align: center; font-size: 13px; letter-spacing: 0.02em; color: var(--on-logo-ground); }
   /* stand-in marks, since a reference page has no sponsor files to use */
@@ -985,6 +988,7 @@
   -->
   <section class="slab">
     <div class="sechead"><span class="label"><span class="n">12</span> &nbsp;Sponsors</span><span class="meta">Tier bar in gold. Tile scale carries the hierarchy, not a border.</span></div>
+    <div class="lw-wall">
     <div class="lw-bar"><i></i><span class="label">Partners</span></div>
     <div class="lw">
       <a class="lt lead" href="#lw"><span class="fake"><span class="d"></span><span class="t">Northbound</span></span></a>
@@ -995,20 +999,21 @@
       <a class="lt" href="#lw"><span class="fake"><span class="d"></span><span class="t">Hale</span></span></a>
       <span class="lt"><span class="set">Stratton &amp; Co</span></span>
     </div>
+    </div>
     <p class="body-sm" style="margin-top:20px;max-width:62ch">
       One tier group, because the sponsors table has no tier column and
       supabase/ is off limits. The bar and label are <b>--gold</b>, not
       <b>--accent</b>: a sponsor's standing has to read the same in both themes.
       Scale comes from display_order, the lead tile spanning two columns.
-      Logos sit on <b>--logo-ground</b>, the third fixed mark, which does not
-      flip with the theme. A sponsor's logo is supplied artwork we may not
+      The whole wall is <b>--logo-ground</b>, the third fixed mark, which does
+      not flip with the theme. A sponsor's logo is supplied artwork we may not
       redraw and most of them are light-on-transparent, so on the Showroom
-      ground they washed out; one constant dark ground gives every mark a
-      predictable backing in both themes. Ink on it is <b>--on-logo-ground</b>,
-      never <b>--on-inverse</b>, which flips. A sponsor with no file gets their
-      name set in the display face in the same tile rather than a redrawn mark
-      or an empty frame. A sponsor with a link is an anchor and takes
-      <b>--sh-2</b> on hover; one without is inert.
+      ground they washed out. The ground is the panel, not a patch behind each
+      mark: per-logo tiles read as a grid of stickers. Ink on it is
+      <b>--on-logo-ground</b>, never <b>--on-inverse</b>, which flips. A
+      sponsor with no file gets their name set in the display face in the same
+      cell rather than a redrawn mark or an empty frame. A sponsor with a link
+      is an anchor and scales slightly on hover; one without is inert.
     </p>
   </section>
 

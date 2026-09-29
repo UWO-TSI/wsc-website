@@ -111,6 +111,40 @@ Both follow from hard rule 1, never touch `supabase/`. Revisit them only with a 
 - **Stat figures.** The three on the landing page (150 members, 10 annual events, 5 industry
   partners) are the club's own existing claims. Do not add a fourth, and do not invent one.
 
+## Motion deviations from the spec
+
+Two of the twelve sequences ship differently from `motion.md`. Both were design calls, not
+oversights, and both are reversible.
+
+- **Sequence 7, Marquee Drift, has no scroll skew.** The spec gives the track a `skewX` up to 4
+  degrees proportional to scroll velocity. Built and shipped, it read as a rendering glitch rather
+  than as momentum, so it was cut under motion law 3: a move either carries meaning or it does not
+  ship. Everything else in the sequence stands, and the marquee gained two things the spec does not
+  describe: it counts how many copies it needs from the real rendered width instead of hardcoding
+  two (with few sponsors, two copies can be narrower than the viewport and the loop shows a gap),
+  and its duration is derived from one group's width at a constant px/sec so the speed does not
+  change with the number of partners.
+- **Sequence 8, Scroll Scrub, is not used anywhere.** It existed only on the about page's story
+  section, over two panels and 200vh, which meant the pin grabbed the page and released it inside
+  half a screen. That section is now four statically laid out panels on an asymmetric grid. The
+  sequence remains part of the system and its card is still in `floor.html`; nothing on the site
+  currently spends it. **GSAP is therefore imported by no component**, so if you reintroduce Scroll
+  Scrub, import it dynamically inside that route's component and subscribe ScrollTrigger to Lenis
+  there through `useLenis()`, never in `LenisProvider`, which is mounted everywhere.
+
+## Images
+
+Photographs live in `public/web/` as AVIF with a WebP alongside, capped at 1600px. The
+camera-resolution originals are archived in `assets/originals/`, which is outside `public/` and so
+is never deployed.
+
+`node scripts/optimize-photos.mjs` does the pass: drop new photos into `public/`, add a line to its
+`PHOTOS` map, and run it. It is idempotent, so re-running after adding a few more is safe.
+
+Do not point a component at a bare `public/` photo. The only files that belong at the root of
+`public/` are the ones that are not photographs: the shark mark, the TSI mark, the two social SVGs,
+`robots.txt`, and the two README screenshots.
+
 ## Copy
 
 Literal, grounded, confident, concise. Benchmark is Stripe and Cloudflare, not a student club

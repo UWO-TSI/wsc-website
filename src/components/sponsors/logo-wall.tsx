@@ -29,7 +29,12 @@ export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWall
       onRetry={onRetry}
       emptyMessage="No partners listed yet."
     >
-      <Slab>
+      {/*
+        The whole wall sits on --logo-ground with light ink, rather than each
+        tile carrying its own dark patch on a light slab, which read as a grid
+        of stickers. The marks now sit directly on the section ground.
+      */}
+      <Slab tone="logo">
         <div className="mb-6 flex items-center gap-3">
           <span className="h-1 w-10 rounded-pill bg-gold" aria-hidden="true" />
           <span className="label text-gold">Partners</span>

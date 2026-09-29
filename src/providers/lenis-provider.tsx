@@ -10,9 +10,12 @@ import Lenis from 'lenis';
   motion.md is explicit that GSAP loads only on the routes that use Scroll
   Scrub, and a static `import { gsap }` here put the whole library plus
   ScrollTrigger into the shared bundle for every page. Lenis is driven by a
-  plain requestAnimationFrame loop instead, and the one route that does use
-  ScrollTrigger subscribes itself with useLenis(): see
-  src/components/about/story-section.tsx.
+  plain requestAnimationFrame loop instead.
+
+  As of the about page rework nothing on the site uses Scroll Scrub at all, so
+  GSAP is not imported anywhere. If a route ever needs it again, import it
+  dynamically inside that component and subscribe ScrollTrigger to Lenis there
+  through useLenis(), not here.
 */
 
 const LenisContext = createContext<Lenis | null>(null);

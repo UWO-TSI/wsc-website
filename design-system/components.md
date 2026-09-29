@@ -102,6 +102,8 @@ Four states, and none of them is a blank screen: loading, error with a retry, em
 
 As built there is exactly **one** tier group, labelled Partners: the `sponsors` table has no `tier` column and `supabase/` is off limits, so scale comes from `display_order` (the lead tile spans two columns) rather than an invented tier. The paragraph below is what to build the day a `tier` column exists.
 
+Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile behind each one. A per-logo panel on a light slab read as a grid of stickers. Same treatment for the landing page marquee.
+
 Sponsors grouped by tier, `--gold` for the tier bar and label — the explicit mark, not `--accent`, because a sponsor's tier must look the same in both themes. Tile scale carries the hierarchy, not a border.
 
 Never redraw a sponsor's mark. Use their file. Where there is none, set the name in `--f-display` weight 700 in the same tile. Logos sit on `--sunken` so a single-ink mark has a predictable ground.

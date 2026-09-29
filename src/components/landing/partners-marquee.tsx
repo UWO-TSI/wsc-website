@@ -10,17 +10,39 @@ import SectionHead from '@/components/ui/section-head';
 import { getPublicUrl } from '@/lib/supabase/storage';
 
 /*
-  Partners marquee: sequence 7, Marquee Drift. The track loops on --d-drift,
-  linear, contents duplicated exactly once. It picks up a skew proportional to
-  scroll velocity, returning over --d-move. It pauses on hover and on
-  focus-within (both in CSS) and on visibilitychange (the .is-paused flag).
+  Partners marquee: sequence 7, Marquee Drift. The one ambient loop in the
+  system.
 
-  Reduced motion stops the loop and drops the duplicate copy so the track
-  reflows to a single static wrapped row.
+  Structure borrowed from the ReactBits LogoLoop, reduced to the parts that
+  actually matter here:
 
-  The sequence's CSS is part of the system and lives in globals.css alongside
-  the other sequences: .mq, .mq-vp, .mq-track, .mq-group.
+  - Enough copies to overflow the viewport, counted from the real rendered
+    width rather than hardcoded at two. With a handful of sponsors two copies
+    can be narrower than the screen, and the loop then shows a visible gap on
+    every pass. This was the actual bug behind the track looking wrong.
+  - A constant px/sec speed, so the marquee travels at the same rate whether
+    the club has three partners or thirty. The duration is derived from one
+    group's width instead of being a flat 48s.
+  - An edge fade, so the track dissolves at the boundary instead of being cut
+    by an invisible line, which is the right move in a system with no borders.
+  - A small scale on hover for the logo under the pointer.
+
+  Dropped from the earlier version: the scroll-velocity skew. motion.md does
+  specify it, but in practice it read as a rendering glitch rather than as
+  momentum, and motion law 3 says a move either carries meaning or it does not
+  ship. Recorded as a deliberate deviation.
+
+  The whole section sits on --logo-ground with light ink: the sponsor marks are
+  supplied artwork, mostly light-on-transparent, and they need a dark ground.
+  The logos themselves sit directly on it with no tile behind them.
+
+  Pauses on hover, on focus-within, and on visibilitychange. Under reduced
+  motion the loop stops and the track reflows to a static wrapped row.
 */
+
+/** Pixels per second. Slow enough to read a mark as it passes. */
+const SPEED = 40;
+
 interface PartnersMarqueeProps {
   sponsors: Sponsor[];
   loading: boolean;
@@ -28,9 +50,9 @@ interface PartnersMarqueeProps {
 
 export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueeProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const lastY = useRef(0);
-  const lastT = useRef(0);
-  const decay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
+  const [copies, setCopies] = useState(2);
+  const [duration, setDuration] = useState(48);
   const [hidden, setHidden] = useState(false);
 
   const active = sponsors.filter((sponsor) => sponsor.active);
@@ -42,40 +64,36 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
   }, []);
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const viewport = viewportRef.current;
+    const group = groupRef.current;
+    if (!viewport || !group) return;
 
-    lastY.current = window.scrollY;
-    lastT.current = performance.now();
+    /*
+      Measured only from the ResizeObserver callback, never synchronously in
+      the effect body: the observer fires once on observe with the initial
+      size, so this still lands on the first frame without a setState during
+      the effect.
+    */
+    const observer = new ResizeObserver(() => {
+      const groupWidth = group.getBoundingClientRect().width;
+      if (!groupWidth) return;
 
-    const onScroll = () => {
-      const el = viewportRef.current;
-      if (!el) return;
+      const viewportWidth = viewport.getBoundingClientRect().width;
+      /* One spare copy beyond what fills the viewport, so the seam is always
+         off screen at the moment the animation wraps. */
+      setCopies(Math.max(2, Math.ceil(viewportWidth / groupWidth) + 1));
+      setDuration(Math.max(12, groupWidth / SPEED));
+    });
 
-      const y = window.scrollY;
-      const t = performance.now();
-      const dt = Math.max(1, t - lastT.current);
-      const velocity = (y - lastY.current) / dt;
-      lastY.current = y;
-      lastT.current = t;
-
-      const skew = Math.max(-4, Math.min(4, velocity * 12));
-      el.style.setProperty('--mq-skew', `${skew}deg`);
-
-      if (decay.current) clearTimeout(decay.current);
-      decay.current = setTimeout(() => el.style.setProperty('--mq-skew', '0deg'), 80);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (decay.current) clearTimeout(decay.current);
-    };
-  }, []);
+    observer.observe(viewport);
+    observer.observe(group);
+    return () => observer.disconnect();
+  }, [active.length]);
 
   if (loading || active.length === 0) return null;
 
   return (
-    <Slab tone="sunken" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
+    <Slab tone="logo" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
       <div className="flex flex-col gap-8">
         <SectionHead
           eyebrow="Partners"
@@ -84,42 +102,54 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
           title={['Who we work with']}
         />
 
-        <div className="mq">
-          <div ref={viewportRef} className={`mq-vp ${hidden ? 'is-paused' : ''}`}>
-            <div className="mq-track">
-              {[0, 1].map((copy) => (
-                <div key={copy} className="mq-group" aria-hidden={copy === 1}>
-                  {active.map((sponsor) => {
-                    const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
-                    /*
-                      Same constant dark ground as the partners page: these are
-                      supplied marks, mostly light-on-transparent, and they
-                      wash out on the Showroom ground.
-                    */
-                    return (
-                      <div
-                        key={`${copy}-${sponsor.id}`}
-                        className="relative flex h-16 w-36 shrink-0 items-center justify-center overflow-hidden rounded-md bg-logo-ground p-3 shadow-1 sm:h-20 sm:w-48"
-                      >
-                        {logoUrl ? (
+        {/* No role and no label: the section is already labelled by its
+            heading, the first group carries the real names, and every
+            duplicate is aria-hidden. role="marquee" would make this a live
+            region and have it announced on every pass for no benefit. */}
+        <div ref={viewportRef} className="mq">
+          <div
+            className={`mq-track ${hidden ? 'is-paused' : ''}`}
+            style={
+              {
+                '--mq-copies': copies,
+                '--mq-duration': `${duration}s`,
+              } as React.CSSProperties
+            }
+          >
+            {Array.from({ length: copies }, (_, copy) => (
+              <div
+                key={copy}
+                ref={copy === 0 ? groupRef : undefined}
+                className="mq-group"
+                aria-hidden={copy > 0}
+              >
+                {active.map((sponsor) => {
+                  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
+
+                  return (
+                    <div key={`${copy}-${sponsor.id}`} className="mq-item h-12 w-36 sm:h-14 sm:w-44">
+                      {logoUrl ? (
+                        <span className="relative block h-full w-full">
                           <Image
                             src={logoUrl}
                             alt={sponsor.name}
                             fill
-                            sizes="192px"
-                            className="object-contain p-3"
+                            sizes="176px"
+                            className="object-contain"
                           />
-                        ) : (
-                          <span className="text-center font-display text-base font-bold uppercase text-on-logo-ground sm:text-lg">
-                            {sponsor.name}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+                        </span>
+                      ) : (
+                        /* Never redraw a sponsor's mark. With no file, their
+                           name set in the display face stands in for it. */
+                        <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
+                          {sponsor.name}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -129,7 +159,6 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
           </Button>
         </div>
       </div>
-
     </Slab>
   );
 }

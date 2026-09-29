@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useAdminAuth } from '@/providers/admin-auth-provider';
 import { CONTENT_CONFIG } from '@/lib/admin-config';
+import Button from '@/components/ui/button';
+import ThemeToggle from '@/components/ui/theme-toggle';
 import AdminSection from './components/admin-section';
 
 const TABS = [
@@ -22,33 +24,29 @@ export default function AdminDashboard() {
   const config = CONTENT_CONFIG[activeTab];
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-base)] flex">
+    <div className="min-h-screen bg-page flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/60 lg:hidden"
+          className="fixed inset-0 z-20 bg-[rgba(0,0,0,0.6)] lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-56 bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] z-30 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed top-0 left-0 h-full w-56 bg-raised shadow-2 z-30 flex flex-col transition-transform duration-[var(--d-move)] ease-move lg:translate-x-0 lg:static lg:z-auto lg:shadow-none ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Sidebar header */}
-        <div className="px-5 py-6 border-b border-[var(--color-border)]">
-          <p className="font-mono text-[var(--color-gold)] text-xs tracking-[0.3em] uppercase mb-1">
-            WSC Admin
-          </p>
-          <p className="text-[var(--color-text-subtle)] font-mono text-xs">
-            Content Manager
-          </p>
+        <div className="px-5 py-6">
+          <p className="label text-accent-ink mb-1">WSC Admin</p>
+          <p className="meta text-ink-muted">Content manager</p>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
           {TABS.map((tab) => (
             <button
               key={tab.key}
@@ -56,10 +54,10 @@ export default function AdminDashboard() {
                 setActiveTab(tab.key);
                 setSidebarOpen(false);
               }}
-              className={`w-full text-left px-3 py-2.5 font-mono text-xs tracking-[0.12em] uppercase transition-colors cursor-pointer ${
+              className={`label w-full text-left rounded-md px-3 py-2.5 transition-colors duration-[var(--d-hover)] ease-enter cursor-pointer ${
                 activeTab === tab.key
-                  ? 'bg-[var(--color-gold-dim)] text-[var(--color-gold)] border-l-2 border-[var(--color-gold)]'
-                  : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] border-l-2 border-transparent'
+                  ? 'bg-accent-veil text-accent-ink'
+                  : 'text-ink-muted hover:text-ink hover:bg-sunken'
               }`}
             >
               {tab.label}
@@ -68,30 +66,24 @@ export default function AdminDashboard() {
         </nav>
 
         {/* Sidebar footer */}
-        <div className="px-3 py-4 border-t border-[var(--color-border)] space-y-1">
-          <a
-            href="/"
-            className="flex items-center px-3 py-2.5 font-mono text-xs tracking-[0.12em] uppercase text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] transition-colors"
-          >
-            ← Back to site
-          </a>
-          <button
-            onClick={signOut}
-            className="w-full text-left px-3 py-2.5 font-mono text-xs tracking-[0.12em] uppercase text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-bg-subtle)] transition-colors cursor-pointer"
-          >
-            Sign Out
-          </button>
+        <div className="px-3 py-4 flex flex-col gap-1">
+          <Button variant="tertiary" href="/" className="!justify-start !px-3 !py-2.5 w-full">
+            Back to site
+          </Button>
+          <Button variant="tertiary" onClick={signOut} className="!justify-start !px-3 !py-2.5 w-full">
+            Sign out
+          </Button>
         </div>
       </aside>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-14 border-b border-[var(--color-border)] flex items-center justify-between px-5 bg-[var(--color-bg-elevated)] shrink-0">
+        <header className="h-16 flex items-center justify-between px-5 bg-raised shrink-0">
           <div className="flex items-center gap-4">
             {/* Mobile menu toggle */}
             <button
-              className="lg:hidden text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+              className="lg:hidden text-ink-muted hover:text-ink transition-colors duration-[var(--d-hover)] ease-enter cursor-pointer"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -99,13 +91,12 @@ export default function AdminDashboard() {
                 <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </button>
-            <span className="font-mono text-xs tracking-[0.2em] uppercase text-[var(--color-text-muted)]">
-              {config.displayName}
-            </span>
+            <span className="label text-ink-muted">{config.displayName}</span>
           </div>
-          <span className="font-mono text-xs text-[var(--color-text-subtle)] hidden sm:block">
-            westernsalesclub.ca
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="meta text-ink-faint hidden sm:block">westernsalesclub.ca</span>
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Section content */}

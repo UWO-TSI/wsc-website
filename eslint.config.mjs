@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Not application source: agent tooling, deps, build artifacts.
+    ".claude/**",
+    "node_modules/**",
   ]),
 ]);
 

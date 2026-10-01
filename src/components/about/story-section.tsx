@@ -1,140 +1,171 @@
 'use client';
 
 import Eyebrow from '@/components/ui/eyebrow';
+import RevealImage from '@/components/ui/reveal-image';
 import Slab, { type SlabTone } from '@/components/ui/slab';
 import { useReveal } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
+import type { SiteContentKey } from '@/lib/site-content-defaults';
+import type { ImageSlotKey } from '@/lib/image-slots';
 
 /*
-  Four panels, laid out asymmetrically on a 12 column grid.
+  Four facts and two photographs on one grid. The gallery section is gone;
+  the photographs belong to the same read as the copy.
 
-  This used to be the site's only Scroll Scrub. It was cut: two panels over
-  200vh meant the pin grabbed the page and let go again inside half a screen,
-  which reads as the page stuttering rather than as a deliberate move. With the
-  pin gone, sequence 8 is no longer used anywhere on the site, and GSAP is no
-  longer imported by any component.
+  From lg each photograph spans the two facts beside it, so a 3/2 frame
+  is about as tall as the copy and the slab is not an empty field under
+  a short paragraph. The top pair is raised, then bare, with the
+  competition photograph on the right. The bottom pair swaps: the group
+  photograph on the left, sunken then inverse on the right. Those two
+  slabs are the only ones that share an edge, and inverse is the one
+  loud slab. The photographs meet at a corner, with the page gap between
+  them, and never share a full side.
 
-  The interest now comes from where the panels sit rather than from motion: the
-  column spans and the vertical offsets are all different, and the tone steps
-  raised, bare, sunken, inverse so no two neighbours share a ground. Each panel
-  gets one move on arrival and nothing more, staggered by --i, which is four
-  elements against a budget of five.
+  Below lg, `order` stacks the cells in reading order: fact, photograph,
+  fact, photograph, then the closing pair. From md that is two columns.
+  Explicit lg placement ignores that order.
 
-  Headings are .title-sm under a numbered .label rather than .title, because
-  five title-scale headings on one page is the exact failure mode the type
-  scale exists to prevent. The page h1 is the only .title here.
+  Both photographs are 3/2, which is the frame they were delivered in, so
+  the crop does not cut the group off at the sides. Clip Reveal is theirs.
+  The four facts use arrive, staggered by --i, under the budget of five.
+
+  Headings are .title-sm. The page h1 is the only .title.
 */
 
-interface Panel {
+type Tone = SlabTone | 'bare';
+
+/*
+  The words are editable (about.story.factN_*) and the photographs are
+  slots (about.story.imageN). What stays here is the layout: the index,
+  the tone and the grid placement of each cell.
+*/
+interface TextCell {
+  kind: 'text';
   index: string;
-  eyebrow: string;
-  title: string;
-  body: string[];
-  tone: SlabTone | 'bare';
-  /** Column placement from lg up. Mobile is always a single column. */
-  span: string;
-  /** Optional vertical offset from lg up, so the column edges do not line up. */
-  offset?: string;
+  fact: 1 | 2 | 3 | 4;
+  tone: Tone;
+  place: string;
 }
 
-/*
-  Only what the club can point at: the exec groups the executives table
-  actually has, the partner and event counts already published as figures, the
-  USC store the join button links to, and the contact address in the legal
-  pages. If a sentence needs a fact that is not in the repo, it does not ship.
-*/
-const PANELS: Panel[] = [
+interface PhotoCell {
+  kind: 'photo';
+  slot: ImageSlotKey;
+  sizes: string;
+  place: string;
+}
+
+type Cell = TextCell | PhotoCell;
+
+const CELLS: Cell[] = [
   {
+    kind: 'text',
     index: '01',
-    eyebrow: 'What we do',
-    title: 'Workshops and events, all year',
-    body: [
-      'Western Sales Club runs workshops and events through the year for students who want experience in sales before they graduate.',
-      'Members learn from people who do the work, not only from a reading list.',
-    ],
+    fact: 1,
     tone: 'raised',
-    span: 'lg:col-start-1 lg:col-end-8',
+    place: 'order-1 lg:col-start-1 lg:col-span-5 lg:row-start-1',
   },
   {
+    kind: 'photo',
+    slot: 'about.story.image1',
+    sizes: '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 58vw',
+    place: 'order-2 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2',
+  },
+  {
+    kind: 'text',
     index: '02',
-    eyebrow: 'How we run',
-    title: 'A student exec team',
-    body: [
-      'Presidents, vice presidents, and assistant vice presidents run the club.',
-      'The roster is on the executive team page, and it turns over every year.',
-    ],
+    fact: 2,
     tone: 'bare',
-    span: 'lg:col-start-8 lg:col-end-13',
-    offset: 'lg:mt-16',
+    place: 'order-3 lg:col-start-1 lg:col-span-5 lg:row-start-2',
   },
   {
+    kind: 'photo',
+    slot: 'about.story.image2',
+    sizes: '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 58vw',
+    place: 'order-4 lg:col-start-1 lg:col-span-7 lg:row-start-3 lg:row-span-2',
+  },
+  {
+    kind: 'text',
     index: '03',
-    eyebrow: 'Who backs us',
-    title: 'Five industry partners',
-    body: [
-      'Partners support the club and connect members with people working in the field.',
-      'They are listed on the partners page.',
-    ],
+    fact: 3,
     tone: 'sunken',
-    span: 'lg:col-start-1 lg:col-end-7',
+    place: 'order-5 lg:col-start-8 lg:col-span-5 lg:row-start-3',
   },
   {
+    kind: 'text',
     index: '04',
-    eyebrow: 'How to join',
-    title: 'Membership runs through the USC store',
-    body: [
-      'The club runs about ten events a year for its members.',
-      'Questions go to sales.club@westernusc.ca.',
-    ],
+    fact: 4,
     tone: 'inverse',
-    span: 'lg:col-start-6 lg:col-end-13',
-    offset: 'lg:-mt-10',
+    place: 'order-6 lg:col-start-8 lg:col-span-5 lg:row-start-4',
   },
 ];
 
-function PanelBody({ panel }: { panel: Panel }) {
-  return (
+function TextPanel({ cell, stagger }: { cell: TextCell; stagger: number }) {
+  const { text } = useSiteContent();
+  const key = (part: string) => `about.story.fact${cell.fact}_${part}` as SiteContentKey;
+  /* A second paragraph left empty is dropped rather than leaving a gap. */
+  const body = [text(key('body1')), text(key('body2'))].filter(Boolean);
+
+  const style = { '--i': stagger } as React.CSSProperties;
+  const copy = (
     <div className="flex flex-col gap-3">
-      <Eyebrow index={panel.index}>{panel.eyebrow}</Eyebrow>
-      <h2 className="title-sm">{panel.title}</h2>
-      {panel.body.map((paragraph) => (
-        <p key={paragraph} className="body measure">
+      <Eyebrow index={cell.index}>{text(key('eyebrow'))}</Eyebrow>
+      <h2 className="title-sm">{text(key('title'))}</h2>
+      {body.map((paragraph, i) => (
+        <p key={i} className="body measure">
           {paragraph}
         </p>
       ))}
     </div>
   );
+
+  if (cell.tone === 'bare') {
+    return (
+      <div style={style} className={`arrive min-w-0 self-start px-1 py-2 ${cell.place}`}>
+        {copy}
+      </div>
+    );
+  }
+
+  return (
+    <div style={style} className={`arrive h-full min-w-0 ${cell.place}`}>
+      <Slab as="div" tone={cell.tone} className="h-full">
+        {copy}
+      </Slab>
+    </div>
+  );
+}
+
+function PhotoPanel({ cell }: { cell: PhotoCell }) {
+  const { image } = useSiteContent();
+
+  return (
+    <figure className={`m-0 min-w-0 ${cell.place}`}>
+      <RevealImage
+        {...image(cell.slot)}
+        sizes={cell.sizes}
+        className="aspect-[3/2] h-full w-full rounded-md"
+      />
+    </figure>
+  );
 }
 
 export default function StorySection() {
   const ref = useReveal<HTMLDivElement>();
+  const textCells = CELLS.filter((cell) => cell.kind === 'text');
 
   return (
-    <div
-      ref={ref}
-      className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-x-6 lg:gap-y-10"
-    >
-      {PANELS.map((panel, i) => {
-        const placement = `${panel.span} ${panel.offset ?? ''}`.trim();
-        const style = { '--i': i } as React.CSSProperties;
-
-        if (panel.tone === 'bare') {
-          return (
-            <div
-              key={panel.index}
-              style={style}
-              className={`arrive px-1 py-2 ${placement}`}
-            >
-              <PanelBody panel={panel} />
-            </div>
-          );
+    <div ref={ref} className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12">
+      {CELLS.map((cell) => {
+        if (cell.kind === 'photo') {
+          return <PhotoPanel key={cell.slot} cell={cell} />;
         }
 
         return (
-          <div key={panel.index} style={style} className={`arrive ${placement}`}>
-            <Slab as="div" tone={panel.tone}>
-              <PanelBody panel={panel} />
-            </Slab>
-          </div>
+          <TextPanel
+            key={cell.index}
+            cell={cell}
+            stagger={textCells.indexOf(cell)}
+          />
         );
       })}
     </div>

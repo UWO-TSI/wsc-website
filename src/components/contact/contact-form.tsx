@@ -6,6 +6,7 @@ import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import Chip from '@/components/ui/chip';
 import Field from '@/components/contact/field';
+import { useSiteContent } from '@/providers/site-content-provider';
 
 interface FormData {
   name: string;
@@ -66,6 +67,7 @@ function validateAll(formData: FormData): Record<FieldName, string | undefined> 
 
 export default function ContactForm() {
   const formRef = useRef<HTMLFormElement>(null);
+  const { text } = useSiteContent();
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -122,10 +124,8 @@ export default function ContactForm() {
     return (
       <Slab tone="sunken" className="flex flex-col items-center gap-4 py-16 text-center">
         <Chip status="ok">Sent</Chip>
-        <p className="title-sm">Message sent</p>
-        <p className="body-sm measure">
-          It went to sales.club@westernusc.ca.
-        </p>
+        <p className="title-sm">{text('contact.form.sent_title')}</p>
+        <p className="body-sm measure">{text('contact.form.sent_body')}</p>
         <Button
           variant="tertiary"
           onClick={() => {
@@ -220,7 +220,7 @@ export default function ContactForm() {
         </div>
 
         <Button type="submit" disabled={isSubmitting} className="self-start">
-          {isSubmitting ? 'Sending' : 'Send message'}
+          {isSubmitting ? 'Sending' : text('contact.form.submit_label')}
         </Button>
       </form>
     </Slab>

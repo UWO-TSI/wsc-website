@@ -9,6 +9,15 @@ import PartnersMarquee from '@/components/landing/partners-marquee';
 import ContactSection from '@/components/landing/contact-section';
 import CTASection from '@/components/landing/cta-section';
 
+/*
+  The visibility filters are not redundant with RLS. Anonymous visitors only
+  ever get published rows, but RLS lets a signed-in admin read drafts, and an
+  admin browsing the public site in the same browser must see what the public
+  sees.
+*/
+const PUBLISHED = [{ column: 'published', operator: 'eq', value: true }];
+const ACTIVE = [{ column: 'active', operator: 'eq', value: true }];
+
 export default function LandingPage() {
   const {
     data: events,
@@ -17,12 +26,14 @@ export default function LandingPage() {
   } = useSupabaseQuery<Event>('events', {
     orderBy: 'date',
     ascending: false,
+    thenBy: 'created_at',
+    filters: PUBLISHED,
   });
 
   const {
     data: sponsors,
     loading: sponsorsLoading,
-  } = useSupabaseQuery<Sponsor>('sponsors');
+  } = useSupabaseQuery<Sponsor>('sponsors', { filters: ACTIVE });
 
   return (
     <div className="stack">

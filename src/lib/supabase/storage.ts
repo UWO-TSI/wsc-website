@@ -10,12 +10,21 @@ export function getPublicUrl(bucket: string, objectName: string | null | undefin
   return supabase.storage.from(bucket).getPublicUrl(objectName).data.publicUrl;
 }
 
+const EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+};
+
 /**
  * Upload a file to a Supabase storage bucket with a UUID-based name.
- * Original filename is discarded (prevents collisions and encoding issues).
+ * Original filename is discarded (prevents collisions and encoding issues),
+ * and the extension comes from the MIME type rather than the name, so
+ * "photo.JPEG copy" cannot produce an object name the database rejects.
  */
 export async function uploadFile(bucket: string, file: File): Promise<{ objectName: string }> {
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+  const ext = EXTENSIONS[file.type] ?? 'bin';
   const objectName = `${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage.from(bucket).upload(objectName, file, {

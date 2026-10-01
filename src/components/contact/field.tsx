@@ -59,14 +59,18 @@ interface SelectFieldProps extends FieldBaseProps {
 
 type FieldProps = InputFieldProps | TextareaFieldProps | SelectFieldProps;
 
-const well =
+/* Exported so the admin form builds its wells from the same class rather
+   than a copy of it. */
+export const FIELD_WELL =
   'w-full rounded-sm bg-page px-[15px] py-[13px] font-text text-[length:var(--t-body)] text-ink outline-none transition-shadow duration-[var(--d-hover)] ease-enter disabled:cursor-not-allowed disabled:opacity-50';
+
+export const FIELD_ERROR_RING = { boxShadow: '0 0 0 2px var(--alert)' };
 
 export default function Field(props: FieldProps) {
   const { label, name, error, required, disabled, trailing } = props;
   const id = `contact-${name}`;
   const errorId = `${id}-error`;
-  const errorRing = error ? { boxShadow: '0 0 0 2px var(--alert)' } : undefined;
+  const errorRing = error ? FIELD_ERROR_RING : undefined;
 
   return (
     <div className="flex flex-col gap-2">
@@ -88,7 +92,7 @@ export default function Field(props: FieldProps) {
           required={required}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
-          className={`${well} resize-y`}
+          className={`${FIELD_WELL} resize-y`}
           style={errorRing}
         />
       )}
@@ -101,7 +105,7 @@ export default function Field(props: FieldProps) {
             value={props.value}
             onChange={props.onChange}
             disabled={disabled}
-            className={`${well} appearance-none pr-10`}
+            className={`${FIELD_WELL} appearance-none pr-10`}
             style={errorRing}
           >
             {props.options.map((opt) => (
@@ -135,7 +139,7 @@ export default function Field(props: FieldProps) {
           required={required}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
-          className={well}
+          className={FIELD_WELL}
           style={errorRing}
         />
       )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useReveal } from '@/lib/reveal';
 
@@ -24,10 +24,24 @@ import { useReveal } from '@/lib/reveal';
 
   next/image fires onLoad for an already-cached image too: its ref callback
   checks `complete` itself, so there is no need to race it here.
+
+  `src` undefined means the slot is not known yet (site_images is still in
+  flight): that is ordinary loading, and the sweep runs.
+
+  An empty slot (`src` null) is a frame with nothing to wait for. It is
+  loaded from the first paint, so the skeleton's sweep is already stopped
+  and what shows is the still skeleton surface at the frame's own size:
+  the page keeps its shape, nothing shimmers forever, and next/image is
+  never handed an empty src. It still reports ready, so a held group
+  that contains an empty slot is not stuck waiting on it.
 */
 
 interface RevealImageProps {
-  src: string;
+  /**
+   * Null for an empty photo slot: the frame holds its space, still.
+   * Undefined while the slot is unresolved: the frame loads as usual.
+   */
+  src: string | null | undefined;
   alt: string;
   sizes: string;
   /** Aspect ratio and radius for the frame, e.g. "aspect-[3/2] rounded-md". */
@@ -36,6 +50,13 @@ interface RevealImageProps {
   index?: number;
   /** Set on an image above the fold so it is not lazy-loaded. */
   priority?: boolean;
+  /**
+   * The frame does not run its own sequence. An ancestor owns `data-run`
+   * and releases every held image together. `onReady` reports when this
+   * file has decoded or failed, which is what that ancestor waits on.
+   */
+  hold?: boolean;
+  onReady?: () => void;
   /** `contain` for a supplied logo, which must not be cropped. */
   fit?: 'cover' | 'contain';
   /**
@@ -59,19 +80,45 @@ export default function RevealImage({
   priority = false,
   fit = 'cover',
   sequence = 'clip',
+  hold = false,
+  onReady,
 }: RevealImageProps) {
-  const [loaded, setLoaded] = useState(false);
+  const empty = src === null;
+  const [loaded, setLoaded] = useState(empty);
   const frameRef = useReveal<HTMLSpanElement>({
     ready: loaded,
     /* A faded image does not wait to be scrolled to: it has no entrance to
-       coordinate, it just stops being absent. */
+       coordinate, it just stops being absent. A held image has no entrance
+       of its own at all: the ancestor decides when the group goes. */
     immediate: sequence === 'fade',
+    enabled: !hold,
   });
+
+  const settle = () => {
+    setLoaded(true);
+    onReady?.();
+  };
+
+  /* An empty slot has no bytes to wait for, but a holding ancestor still
+     counts it. Reported once, after mount, like a cached image would be. */
+  useEffect(() => {
+    if (empty) onReady?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empty]);
+
+  /* The slot was filled or emptied after mount, e.g. once site_images
+     resolves: start that frame over. */
+  const [shownSrc, setShownSrc] = useState(src);
+  if (src !== shownSrc) {
+    setShownSrc(src);
+    setLoaded(src === null);
+  }
 
   return (
     <span
       ref={frameRef}
       data-loaded={loaded || undefined}
+      data-empty={empty || undefined}
       style={index ? ({ '--i': index } as React.CSSProperties) : undefined}
       className={`reveal-frame relative block overflow-hidden ${className}`.trim()}
     >
@@ -82,17 +129,21 @@ export default function RevealImage({
           sequence === 'clip' ? 'clip-cell' : 'fade-cell'
         } absolute inset-0 block overflow-hidden rounded-[inherit]`}
       >
+        {src && (
         <Image
           src={src}
           alt={alt}
           fill
           sizes={sizes}
           priority={priority}
-          onLoad={() => setLoaded(true)}
+          loading={hold ? 'eager' : undefined}
+          onLoad={settle}
+          onError={settle}
           className={`${sequence === 'clip' ? 'clip-inner' : ''} ${
             fit === 'contain' ? 'object-contain' : 'object-cover'
           }`.trim()}
         />
+        )}
       </span>
     </span>
   );

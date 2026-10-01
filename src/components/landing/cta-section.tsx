@@ -4,6 +4,8 @@ import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
 import RevealImage from '@/components/ui/reveal-image';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { externalLinkProps } from '@/lib/link-utils';
 
 /*
   CTABand: sequence 3, Slab Clip. The page's one loud slab: --accent, the
@@ -15,6 +17,9 @@ import RevealImage from '@/components/ui/reveal-image';
   the ask is the copy and the button.
 */
 export default function CTASection() {
+  const { text, image } = useSiteContent();
+  const href = text('home.cta.button_href');
+
   return (
     <Slab
       tone="accent"
@@ -26,30 +31,21 @@ export default function CTASection() {
       <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-14">
         <div className="flex flex-col items-start gap-6">
           <SectionHead
-            eyebrow="Join"
+            eyebrow={text('home.cta.eyebrow')}
             index="05"
             id="cta-heading"
-            title={['Apply to join']}
+            title={[text('home.cta.title_line1')]}
           />
 
-          <p className="subtitle measure">
-            Membership is sold through the Western USC store.
-          </p>
+          <p className="subtitle measure">{text('home.cta.subtitle')}</p>
 
-          <Button
-            href="https://westernusc.store/product/western-sales-club/"
-            target="_blank"
-            rel="noopener noreferrer"
-            onAccent
-            arrow
-          >
-            Apply to join
+          <Button href={href} {...externalLinkProps(href)} onAccent arrow>
+            {text('home.cta.button_label')}
           </Button>
         </div>
 
         <RevealImage
-          src="/imagery/sales-comp-2.avif"
-          alt="Western Sales Club members together at a club event"
+          {...image('home.cta.image1')}
           sizes="(max-width: 1024px) 100vw, 520px"
           className="aspect-[4/3] w-full rounded-md"
         />

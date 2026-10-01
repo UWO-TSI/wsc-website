@@ -3,11 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import Slab from "@/components/ui/slab";
+import { useSiteContent } from "@/providers/site-content-provider";
 
 /*
-  Footer: a --sunken slab, flat elevation, no shadow. Wordmark, the nav
-  links inline with dot separators, social links as --r-disc --sunken icon
-  buttons that go --accent on hover, and the Tethos affiliation lockup.
+  Footer: a --sunken slab, flat elevation, no shadow. Three columns on a
+  shared rhythm: wordmark and socials on the left, the nav stacked in the
+  center, and the Tethos mark right-aligned above "Website by Tethos".
+  Social links are --r-disc buttons that go --accent on hover.
 
   design-system/components.md → Footer.
 */
@@ -25,30 +27,29 @@ const LEGAL_LINKS = [
   { label: "Privacy", href: "/privacy-policy" },
 ] as const;
 
+/* The marks stay in code; the destinations are editable, and an empty
+   link hides its icon. */
 const SOCIAL_LINKS = [
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/westernsalesclub/",
-    icon: "/logos/instagram.svg",
-  },
-  {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/company/western-sales-club/",
-    icon: "/logos/linkedin.svg",
-  },
+  { label: "Instagram", key: "footer.social.instagram_url", icon: "/logos/instagram.svg" },
+  { label: "LinkedIn", key: "footer.social.linkedin_url", icon: "/logos/linkedin.svg" },
 ] as const;
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { text } = useSiteContent();
+  const email = text("footer.contact.email");
+  const socials = SOCIAL_LINKS.map((social) => ({ ...social, href: text(social.key) })).filter(
+    (social) => social.href
+  );
 
   return (
     <Slab
       as="footer"
       tone="sunken"
-      className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-5"
+      className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-4 pb-5! md:pb-6!"
     >
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="flex flex-col gap-[10px]">
+      <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-x-10">
+        <div className="flex flex-col items-start gap-4">
           <Link href="/" className="flex items-center gap-[9px] no-underline" data-cursor="hover">
             <span
               aria-hidden="true"
@@ -62,8 +63,17 @@ export default function Footer() {
               Western Sales Club
             </span>
           </Link>
-          <div className="flex items-center gap-2">
-            {SOCIAL_LINKS.map((social) => (
+          {email && (
+            <a
+              href={`mailto:${email}`}
+              data-cursor="hover"
+              className="meta w-fit no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
+            >
+              {email}
+            </a>
+          )}
+          <div className="flex items-center gap-3">
+            {socials.map((social) => (
               <a
                 key={social.label}
                 href={social.href}
@@ -71,7 +81,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 aria-label={social.label}
                 data-cursor="hover"
-                className="grid h-[34px] w-[34px] place-items-center rounded-full bg-page text-ink-muted transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent hover:text-on-accent"
+                className="grid h-11 w-11 place-items-center rounded-full bg-page text-ink-muted transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent hover:text-on-accent"
               >
                 {/*
                   Both social SVGs are hardcoded fill="#ffffff", so rendering
@@ -81,7 +91,7 @@ export default function Footer() {
                 */}
                 <span
                   aria-hidden="true"
-                  className="mark-mask h-4 w-4"
+                  className="mark-mask h-[22px] w-[22px]"
                   style={{
                     WebkitMaskImage: `url("${social.icon}")`,
                     maskImage: `url("${social.icon}")`,
@@ -92,22 +102,16 @@ export default function Footer() {
           </div>
         </div>
 
-        <nav className="flex flex-wrap items-center gap-[2px]" aria-label="Footer">
-          {NAV_LINKS.map((link, i) => (
-            <span key={link.href} className="flex items-center">
-              {i > 0 && (
-                <span className="mx-1 select-none body-sm" aria-hidden="true">
-                  &middot;
-                </span>
-              )}
-              <Link
-                href={link.href}
-                data-cursor="hover"
-                className="body-sm rounded-sm px-[9px] py-[7px] no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent-veil hover:text-ink"
-              >
-                {link.label}
-              </Link>
-            </span>
+        <nav className="flex flex-col items-center gap-0.5 md:justify-self-center" aria-label="Footer">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              data-cursor="hover"
+              className="body-sm rounded-sm px-3 py-1.5 text-center no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent-veil hover:text-ink"
+            >
+              {link.label}
+            </Link>
           ))}
         </nav>
 
@@ -115,9 +119,9 @@ export default function Footer() {
           href="https://tethos.ca"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Tethos"
+          aria-label="Website by Tethos"
           data-cursor="hover"
-          className="flex flex-none items-center gap-[10px] no-underline"
+          className="flex flex-col items-end gap-3 no-underline md:justify-self-end"
         >
           {/*
             The Tethos mark ships with its own black field baked into the file,
@@ -128,17 +132,17 @@ export default function Footer() {
           <span className="relative h-10 w-10 flex-none overflow-hidden rounded-sm shadow-1">
             <Image src="/logos/tethos.avif" alt="" fill sizes="40px" className="object-cover" />
           </span>
-          <span className="meta">A Tethos initiative</span>
+          <span className="meta text-right">Website by Tethos</span>
         </a>
       </div>
 
-      <div className="flex flex-wrap justify-between gap-[14px]">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <span className="meta">&copy; {year} Western Sales Club</span>
-        <nav className="flex items-center gap-[2px]" aria-label="Legal">
+        <nav className="flex items-center gap-3" aria-label="Legal">
           {LEGAL_LINKS.map((link, i) => (
-            <span key={link.href} className="flex items-center">
+            <span key={link.href} className="flex items-center gap-3">
               {i > 0 && (
-                <span className="mx-1 select-none meta" aria-hidden="true">
+                <span className="select-none meta" aria-hidden="true">
                   &middot;
                 </span>
               )}

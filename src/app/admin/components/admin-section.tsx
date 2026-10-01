@@ -9,25 +9,69 @@ import { uploadFile, getPublicUrl } from '@/lib/supabase/storage';
 import { validateImageDimensions } from '@/lib/image-utils';
 import { LIMITS } from '@/lib/admin-config';
 import type { ContentConfig } from '@/lib/admin-config';
-import { FORM_FIELDS } from '../form-config';
+import { FORM_FIELDS, type FormField } from '../form-config';
 import AdminForm from './admin-form';
 import Slab from '@/components/ui/slab';
 import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
+import type { ExecGroup } from '@/types/database';
 
 interface AdminSectionProps {
   configKey: string;
   config: ContentConfig;
 }
 
-export default function AdminSection({ configKey, config }: AdminSectionProps) {
-  const { table, bucket, pathColumn, visibilityColumn, displayName, limit, orderable = true } = config;
-  const hasStorage = !!(bucket && pathColumn);
-  const fields = FORM_FIELDS[configKey];
-  const singular = displayName.replace(/s$/, '');
+/** Cell text for the list table, resolving dropdown values to labels. */
+function displayCell(field: FormField, value: unknown): string {
+  const raw = String(value ?? '');
+  if (field.type === 'select') {
+    const match = field.options?.find((o) => o.value === raw);
+    return (match?.label ?? raw).slice(0, 60);
+  }
+  return raw.slice(0, 60);
+}
 
-  const { data: rows, loading, error, refetch } = useSupabaseQuery<Record<string, unknown>>(table);
+export default function AdminSection({ configKey, config }: AdminSectionProps) {
+  const {
+    table,
+    bucket,
+    pathColumn,
+    visibilityColumn,
+    displayName,
+    singularName,
+    limit,
+    orderable = true,
+    sort,
+  } = config;
+  const hasStorage = !!(bucket && pathColumn);
+  const rawFields = FORM_FIELDS[configKey];
+  const singular = singularName ?? displayName.replace(/s$/, '');
+
+  const { data: rows, loading, error, refetch } = useSupabaseQuery<Record<string, unknown>>(
+    table,
+    sort ? { orderBy: sort.column, ascending: sort.ascending, thenBy: sort.thenBy } : {}
+  );
+
+  /* Executive roles live in a table, so the Role dropdown is filled at
+     runtime. Only fetched when a field asks for it. */
+  const needsExecGroups = rawFields.some((f) => f.optionsSource === 'exec_groups');
+  const { data: execGroups } = useSupabaseQuery<ExecGroup>('exec_groups', {
+    enabled: needsExecGroups,
+  });
+
+  const fields = useMemo(
+    () =>
+      rawFields.map((field) =>
+        field.optionsSource === 'exec_groups'
+          ? {
+              ...field,
+              options: execGroups.map((g) => ({ value: g.slug, label: g.singular_label })),
+            }
+          : field
+      ),
+    [rawFields, execGroups]
+  );
   const { mutate, loading: mutating, error: mutError, reset: resetMutError } = useSupabaseMutation();
 
   const [showForm, setShowForm] = useState(false);
@@ -299,7 +343,7 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
                           )
                         ) : (
                           <span className="body-sm text-ink">
-                            {String(row[f.name] ?? '').slice(0, 60) || (
+                            {displayCell(f, row[f.name]) || (
                               <span className="text-ink-faint">None</span>
                             )}
                           </span>
@@ -364,6 +408,7 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
               saving={mutating}
               error={mutError}
               idPrefix={configKey}
+              imageFit={configKey === 'sponsors' ? 'contain' : 'cover'}
             />
           </div>
         </div>

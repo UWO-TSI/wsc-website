@@ -7,6 +7,7 @@ out/
 
 # Supabase
 supabase/.temp
+supabase/.branches
 supabase/scripts
 
 # Misc files
@@ -56,3 +57,7 @@ next-env.d.ts
 # graphify (local derived cache, never commit)
 graphify-out/
 raw/
+
+# Photos removed from the site when every photo became an admin slot.
+# Kept locally to seed the slots through the admin; never committed.
+/archive/

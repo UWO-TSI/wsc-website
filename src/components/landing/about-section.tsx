@@ -1,87 +1,89 @@
 'use client';
 
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import Eyebrow from '@/components/ui/eyebrow';
-import { revealVariant, delayedRevealVariant, viewportConfig } from '@/lib/motion';
+import RevealImage from '@/components/ui/reveal-image';
+import Button from '@/components/ui/button';
+import Slab from '@/components/ui/slab';
+import SectionHead from '@/components/ui/section-head';
+import StatFigure from '@/components/ui/stat-figure';
+import { useReveal } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
+import { SITE_STAT_FALLBACKS } from '@/lib/site-stat-fallbacks';
+import type { SiteStat } from '@/types/database';
 
-const stats = [
-  { number: '150+', label: 'Members' },
-  { number: '10+', label: 'Annual Events' },
-  { number: '5+', label: 'Industry Partners' },
-] as const;
+/*
+  About: a SectionHead, running copy at the measure, and the three
+  StatFigures. The figures are the club's own claims and live in site_stats,
+  edited under Statistics in the admin. Three in a row at most, per
+  StatFigure, so only the first three visible rows render.
+
+  The fallback trio shows while the query is in flight and if it fails, so
+  the row never appears half-built. Once it answers, the database wins.
+*/
+const PHOTO_SLOTS = ['home.about.image1', 'home.about.image2', 'home.about.image3'] as const;
 
 export default function AboutSection() {
+  const ref = useReveal<HTMLDivElement>();
+  const { text, image } = useSiteContent();
+  const { data, loading, error } = useSupabaseQuery<SiteStat>('site_stats');
+  /* visible is filtered here too: a signed-in admin's RLS can read hidden
+     rows, and a hidden stat must not show to them on the public page. */
+  const stats = (loading || error ? SITE_STAT_FALLBACKS : data)
+    .filter((stat) => stat.visible)
+    .slice(0, 3);
+
   return (
-    <section
-      className="bg-[var(--color-bg-subtle)]"
-      style={{ padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 5vw, 6rem)' }}
-    >
-      <div className="mx-auto max-w-[1400px] flex flex-col md:flex-row md:justify-between md:items-start gap-12 md:gap-0">
-        {/* Left column — text */}
-        <motion.div
-          className="w-full md:w-[40%]"
-          variants={revealVariant}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
-        >
-          <Eyebrow>ABOUT US</Eyebrow>
+    <Slab tone="raised" className="mx-[var(--gut)]" aria-labelledby="about-heading">
+      <div ref={ref} className="flex flex-col gap-10">
+        <SectionHead
+          eyebrow={text('home.about.eyebrow')}
+          index="01"
+          id="about-heading"
+          title={[text('home.about.title_line1'), text('home.about.title_line2')].filter(Boolean)}
+        />
 
-          <h2
-            className="mt-[var(--space-3)] font-display font-semibold text-[var(--color-text-primary)] leading-[1.1]"
-            style={{ fontSize: 'var(--text-display)' }}
-          >
-            Built for ambition, driven by purpose.
-          </h2>
+        <p className="body measure">{text('home.about.body')}</p>
 
-          <p
-            className="mt-[var(--space-4)] max-w-[75ch] font-body font-normal text-[var(--color-text-secondary)] leading-[1.7]"
-            style={{ fontSize: 'var(--text-body-lg)' }}
-          >
-            Western Sales Club is a student-run organization at Western
-            University dedicated to empowering the next generation of sales
-            professionals. Through real-world projects, mentorship, and
-            industry events, we bridge the gap between classroom knowledge and
-            career success.
-          </p>
+        {/*
+          A three-frame strip rather than one full-width photo. Blown up to the
+          slab width a single shot was being upscaled past its own resolution
+          and going soft; at a third of the width each frame is displayed at or
+          below its native size and stays sharp.
 
-          <Link
-            href="/about"
-            className="mt-[var(--space-6)] inline-flex min-h-[2.75rem] items-center font-mono text-[var(--color-gold)] hover:underline active:underline transition-colors duration-250"
-            data-cursor="hover"
-            style={{ fontSize: 'var(--text-mono)' }}
-          >
-            Learn more about us &rarr;
-          </Link>
-        </motion.div>
-
-        {/* Right column — stats */}
-        <motion.div
-          className="w-full md:w-[55%] md:translate-y-[40px] flex flex-row flex-wrap md:flex-col justify-between md:justify-start gap-4 md:gap-[var(--space-8)]"
-          variants={delayedRevealVariant}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
-        >
-          {stats.map((stat) => (
-            <div key={stat.label} className="min-w-[5rem] flex-1 text-center md:text-left">
-              <span
-                className="block font-display font-semibold text-[var(--color-gold)]"
-                style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', lineHeight: 1.1 }}
-              >
-                {stat.number}
-              </span>
-              <span
-                className="block mt-1 font-mono font-normal uppercase tracking-[0.15em] text-[var(--color-text-muted)]"
-                style={{ fontSize: 'var(--text-mono)' }}
-              >
-                {stat.label}
-              </span>
-            </div>
+          Clip Reveal, sequence 9: each cell unclips while its photo settles
+          from 1.06, so frame and content arrive at different rates, staggered
+          60ms in reading order by --i.
+        */}
+        <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3">
+          {PHOTO_SLOTS.map((slot, i) => (
+            <li key={slot} className="m-0">
+              <RevealImage
+                {...image(slot)}
+                sizes="(max-width: 700px) 33vw, 280px"
+                className="aspect-[4/3] w-full rounded-md"
+                index={i}
+              />
+            </li>
           ))}
-        </motion.div>
+        </ul>
+
+        <div className="flex flex-wrap gap-10 sm:gap-16">
+          {stats.map((stat) => (
+            <StatFigure
+              key={stat.id}
+              value={stat.value}
+              suffix={stat.suffix ?? undefined}
+              label={stat.label}
+            />
+          ))}
+        </div>
+
+        <div>
+          <Button href="/about" variant="tertiary" arrow>
+            {text('home.about.link_label')}
+          </Button>
+        </div>
       </div>
-    </section>
+    </Slab>
   );
 }

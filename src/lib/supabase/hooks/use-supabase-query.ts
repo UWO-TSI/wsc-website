@@ -15,6 +15,12 @@ interface QueryOptions {
   select?: string;
   orderBy?: string;
   ascending?: boolean;
+  /**
+   * Tie-break after `orderBy`, same direction. Two events on one date
+   * otherwise come back in whatever order Postgres finds them, and can
+   * swap places between two loads of the same page.
+   */
+  thenBy?: string;
   filters?: QueryFilter[];
   enabled?: boolean;
 }
@@ -30,6 +36,7 @@ export function useSupabaseQuery<T>(
     select = '*',
     orderBy = 'display_order',
     ascending = true,
+    thenBy,
     filters = [],
     enabled = true,
   } = options;
@@ -57,6 +64,9 @@ export function useSupabaseQuery<T>(
       if (orderBy) {
         query = query.order(orderBy, { ascending });
       }
+      if (orderBy && thenBy) {
+        query = query.order(thenBy, { ascending });
+      }
 
       const { data: rows, error: queryError } = await query;
 
@@ -74,7 +84,7 @@ export function useSupabaseQuery<T>(
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table, select, orderBy, ascending, JSON.stringify(filters), enabled]);
+  }, [table, select, orderBy, ascending, thenBy, JSON.stringify(filters), enabled]);
 
   useEffect(() => {
     fetchData();

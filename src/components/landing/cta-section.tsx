@@ -1,77 +1,55 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Eyebrow from '@/components/ui/eyebrow';
 import Button from '@/components/ui/button';
-import { revealVariant, viewportConfig } from '@/lib/motion';
-import type { Variants } from 'framer-motion';
+import Slab from '@/components/ui/slab';
+import SectionHead from '@/components/ui/section-head';
+import RevealImage from '@/components/ui/reveal-image';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { externalLinkProps } from '@/lib/link-utils';
 
-const ctaButtonReveal: Variants = {
-  hidden: { opacity: 0, y: 36 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: 0.2 },
-  },
-};
+/*
+  CTABand: sequence 3, Slab Clip. The page's one loud slab: --accent, the
+  only place --accent and --page ever touch on this page. A primary Button on
+  an --accent slab takes onAccent, because it has nowhere to go otherwise.
 
+  The photo is the point of the section: someone deciding whether to join
+  should see who they would be joining. It takes the narrower column, because
+  the ask is the copy and the button.
+*/
 export default function CTASection() {
+  const { text, image } = useSiteContent();
+  const href = text('home.cta.button_href');
+
   return (
-    <section
-      id="join-section"
-      className="relative w-full overflow-hidden"
-      style={{ padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 5vw, 6rem)' }}
+    <Slab
+      tone="accent"
+      clip
+      overflowHidden
+      className="mx-[var(--gut)]"
+      aria-labelledby="cta-heading"
     >
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/MIDDLESEX.avif')" }}
-        aria-hidden="true"
-      />
+      <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-14">
+        <div className="flex flex-col items-start gap-6">
+          <SectionHead
+            eyebrow={text('home.cta.eyebrow')}
+            index="05"
+            id="cta-heading"
+            title={[text('home.cta.title_line1')]}
+          />
 
-      {/* Overlay */}
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(10, 10, 10, 0.80)' }}
-        aria-hidden="true"
-      />
+          <p className="subtitle measure">{text('home.cta.subtitle')}</p>
 
-      {/* Content */}
-      <div className="relative z-10 mx-auto max-w-[700px] text-center flex flex-col items-center">
-        <motion.div
-          variants={revealVariant}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
-        >
-          <Eyebrow>JOIN OUR TEAM</Eyebrow>
+          <Button href={href} {...externalLinkProps(href)} onAccent arrow>
+            {text('home.cta.button_label')}
+          </Button>
+        </div>
 
-          <h2
-            className="mt-[var(--space-3)] font-display font-semibold text-[var(--color-text-primary)] leading-[1.1]"
-            style={{ fontSize: 'var(--text-display)' }}
-          >
-            Ready to make your mark?
-          </h2>
-
-          <p
-            className="mt-[var(--space-4)] max-w-[75ch] font-body font-normal text-[var(--color-text-muted)] leading-[1.7]"
-            style={{ fontSize: 'var(--text-body-lg)' }}
-          >
-            Connect with industry leaders, work on real sales challenges, and
-            build a career worth talking about.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="mt-[var(--space-8)]"
-          variants={ctaButtonReveal}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
-        >
-          <Button href="https://westernusc.store/product/western-sales-club/" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">Join Western Sales Club</Button>
-        </motion.div>
+        <RevealImage
+          {...image('home.cta.image1')}
+          sizes="(max-width: 1024px) 100vw, 520px"
+          className="aspect-[4/3] w-full rounded-md"
+        />
       </div>
-    </section>
+    </Slab>
   );
 }

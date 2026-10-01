@@ -8,15 +8,15 @@ This is a full-stack application functioning as a frontend website connected to 
 
 ---
 
-![Frontend Preview](public/Landing.png)
+![Frontend Preview](public/screenshots/landing.png)
 *Main Website (Frontend) Preview*
 
-![Backend Preview](public/AdminDash.png)
+![Backend Preview](public/screenshots/admin-dashboard.png)
 *Admin Dashboard (Backend) Preview*
 
 ---
 
-This application was designed and built by TSI Team 4 (Winter 2025): 
+This application was designed and built by Tethos Team 4 (Winter 2025): 
 
 **Project Managers**
 <p>

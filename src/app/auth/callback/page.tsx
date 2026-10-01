@@ -49,11 +49,9 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-base)] flex flex-col items-center justify-center gap-4">
-      <div className="w-6 h-6 border-2 border-[var(--color-gold)] border-t-transparent rounded-full animate-spin" />
-      <p className="text-[var(--color-text-muted)] font-mono text-xs tracking-[0.25em] uppercase">
-        Signing in…
-      </p>
+    <div className="min-h-screen bg-page flex flex-col items-center justify-center gap-4">
+      <span className="spin" role="status" aria-label="Signing in" />
+      <p className="label text-ink-muted">Signing in</p>
     </div>
   );
 }

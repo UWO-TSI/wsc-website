@@ -1,321 +1,81 @@
 'use client';
 
-import Link from 'next/link';
-import { useRef, useEffect, useState } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import Button from '@/components/ui/button';
+import { usePreloader } from '@/providers/preloader-provider';
+import { useReveal, cascade } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { externalLinkProps } from '@/lib/link-utils';
 
-gsap.registerPlugin(ScrollTrigger);
+/*
+  KineticHeadline: the one orchestrated moment on the page. Sequence 1, Line
+  Mask Reveal, on the title; sequence 2, Word Cascade, on the subtitle.
 
-/** Split a string into individually-wrapped <span> elements for GSAP character animation */
-function CharacterSplit({
-  text,
-  className,
-  charClassName,
-}: {
-  text: string;
-  className?: string;
-  charClassName?: string;
-}) {
-  return (
-    <span className={className} aria-label={text}>
-      {text.split('').map((char, i) => (
-        <span
-          key={`${char}-${i}`}
-          className={charClassName}
-          style={{
-            display: 'inline-block',
-            clipPath: 'inset(0 0 100% 0)',
-            transform: 'translateY(60px)',
-            whiteSpace: char === ' ' ? 'pre' : undefined,
-          }}
-          aria-hidden="true"
-        >
-          {char === ' ' ? '\u00A0' : char}
-        </span>
-      ))}
-    </span>
-  );
-}
+  Lines are an authored array, never one string left to wrap. The hero holds
+  its reveal until the Curtain lifts: design-system/adoption.md, "The
+  preloader handoff".
+*/
+/*
+  Two scales inside one h1, both existing type roles and nothing between them.
+
+  "Welcome to" takes `.title`, the same role the landing page section heads
+  use, so it reads as a lead-in. The name itself takes `.title-hero` on three
+  lines. On a wide viewport that is 3.25rem against 9rem, which is what makes
+  the name land rather than the greeting.
+
+  The size class goes on the `.ln` wrapper, not the inner span: the mask is an
+  overflow-hidden block whose height and its 0.06em descender allowance are
+  both computed from the wrapper's own font size. Putting the scale on the
+  inner span would leave the greeting masked by a hero-sized line box. The
+  second line carries a small top margin, in its own em, so the greeting
+  sits a step above the name.
+
+  Titles are Archivo all caps by the type role, so these carry the words and
+  not the casing.
+
+  The words are editable (site_content, home.hero.*); the scale per line is
+  layout and stays here. A line left empty is dropped, and each line's
+  ceiling (14 characters for a name line) is what stops an edit from
+  wrapping a hero line onto a second row.
+*/
+const TITLE_LINES = [
+  { key: 'home.hero.title_line1', scale: 'title' },
+  { key: 'home.hero.title_line2', scale: 'title-hero' },
+  { key: 'home.hero.title_line3', scale: 'title-hero' },
+  { key: 'home.hero.title_line4', scale: 'title-hero' },
+] as const;
 
 export default function Hero() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
-  const eyebrowRef = useRef<HTMLSpanElement>(null);
-  const line2Ref = useRef<HTMLDivElement>(null);
-  const line3Ref = useRef<HTMLDivElement>(null);
-  const subTextRef = useRef<HTMLParagraphElement>(null);
-  const ctaRowRef = useRef<HTMLDivElement>(null);
-  const scrollIndicatorRef = useRef<HTMLDivElement>(null);
-
-  const [mounted, setMounted] = useState(false);
-
-  // Scroll progress for fading out scroll indicator
-  const { scrollY } = useScroll();
-  const scrollIndicatorOpacity = useTransform(scrollY, [0, 80], [1, 0]);
-
-  // Mount flag — hero entrance starts after a fixed delay (~1s) to approximate preloader completion
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // GSAP entrance timeline
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Check reduced motion preference
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    const ctx = gsap.context(() => {
-      if (prefersReducedMotion) {
-        // Reduced motion: instant reveal with simple opacity
-        gsap.set(
-          [
-            eyebrowRef.current,
-            line2Ref.current?.querySelectorAll('.hero-char'),
-            line3Ref.current?.querySelectorAll('.hero-char'),
-            subTextRef.current,
-            ctaRowRef.current,
-            scrollIndicatorRef.current,
-          ].flat(),
-          { opacity: 1, y: 0, clipPath: 'inset(0 0 0% 0)' }
-        );
-        return;
-      }
-
-      const tl = gsap.timeline({ delay: 1 });
-
-      // t=0: Eyebrow fades in
-      tl.fromTo(
-        eyebrowRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
-        0
-      );
-
-      // t=0.2: "Western's Sales" character reveal
-      const line2Chars = line2Ref.current?.querySelectorAll('.hero-char');
-      if (line2Chars?.length) {
-        tl.to(
-          line2Chars,
-          {
-            clipPath: 'inset(0 0 0% 0)',
-            y: 0,
-            duration: 0.7,
-            ease: 'power3.out',
-            stagger: 0.03,
-          },
-          0.2
-        );
-      }
-
-      // t=0.5: "Community." character reveal
-      const line3Chars = line3Ref.current?.querySelectorAll('.hero-char');
-      if (line3Chars?.length) {
-        tl.to(
-          line3Chars,
-          {
-            clipPath: 'inset(0 0 0% 0)',
-            y: 0,
-            duration: 0.7,
-            ease: 'power3.out',
-            stagger: 0.03,
-          },
-          0.5
-        );
-      }
-
-      // t=1.2: Sub-text fades in
-      tl.fromTo(
-        subTextRef.current,
-        { opacity: 0, y: 16 },
-        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
-        0.9
-      );
-
-      // t=1.4: CTA row fades in (overlaps sub-text tail, waves into scroll indicator)
-      tl.fromTo(
-        ctaRowRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
-        0.9
-      );
-
-      // t=1.5: Scroll indicator fades in
-      tl.fromTo(
-        scrollIndicatorRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.4, ease: 'power3.out' },
-        1.2
-      );
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [mounted]);
-
-  // GSAP ScrollTrigger parallax on the background image
-  useEffect(() => {
-    if (!bgRef.current || !sectionRef.current) return;
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      gsap.to(bgRef.current, {
-        yPercent: -20,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  const { complete } = usePreloader();
+  const ref = useReveal<HTMLElement>({ immediate: true, enabled: complete });
+  const { text } = useSiteContent();
+  const href = text('home.hero.button_href');
+  const lines = TITLE_LINES.map((line) => ({ ...line, text: text(line.key) })).filter(
+    (line) => line.text
+  );
 
   return (
     <section
-      ref={sectionRef}
-      className="relative min-h-svh flex items-center overflow-hidden"
+      ref={ref}
+      className="flex min-h-[calc(100svh-2px)] flex-col justify-center gap-8 px-[var(--gut)] py-24"
     >
-      {/* Background image layer with desaturation */}
-      <div
-        ref={bgRef}
-        className="absolute inset-0 -top-[10%] -bottom-[10%]"
-        style={{ filter: 'saturate(0.7)' }}
-      >
-        <div
-          className="absolute inset-0 bg-cover bg-no-repeat"
-          style={{
-            backgroundImage: "url('/UC-HILL.avif')",
-            backgroundPosition: 'center 30%',
-          }}
-        />
-      </div>
-
-      {/* Gradient overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to bottom, rgba(10,10,10,0.6) 0%, rgba(10,10,10,0.75) 60%, #0A0A0A 100%)',
-        }}
-      />
-
-      {/* Text content */}
-      <div
-        className="relative z-10"
-        style={{ paddingLeft: 'clamp(2rem, 8vw, 10rem)', paddingRight: 'clamp(1rem, 4vw, 4rem)' }}
-      >
-        {/* Eyebrow */}
-        <span
-          ref={eyebrowRef}
-          className="block font-mono text-[length:var(--text-mono)] uppercase tracking-[0.25em] text-[var(--color-text-muted)] mb-[var(--space-3)]"
-          style={{ opacity: 0 }}
-        >
-          WELCOME TO
-        </span>
-
-        {/* Line 2: "Western's Sales" */}
-        <div ref={line2Ref}>
-          <CharacterSplit
-            text="Western's Sales"
-            className="block font-display text-[length:var(--text-hero)] font-semibold text-[var(--color-text-primary)] leading-[1.0]"
-            charClassName="hero-char"
-          />
-        </div>
-
-        {/* Line 3: "Community." — italic, gold */}
-        <div ref={line3Ref}>
-          <CharacterSplit
-            text="Community."
-            className="block font-display text-[length:var(--text-hero)] font-semibold italic text-[var(--color-gold)] leading-[1.0]"
-            charClassName="hero-char"
-          />
-        </div>
-
-        {/* Sub-text */}
-        <p
-          ref={subTextRef}
-          className="max-w-[75ch] font-body text-[length:var(--text-body-lg)] font-light text-[var(--color-text-muted)] tracking-[0.04em] mt-[var(--space-6)]"
-          style={{ opacity: 0 }}
-        >
-          Empowering sales excellence.
-        </p>
-
-        {/* CTA Row */}
-        <div
-          ref={ctaRowRef}
-          className="mt-[var(--space-8)] flex flex-wrap gap-[var(--space-4)] items-center"
-          style={{ opacity: 0 }}
-        >
-          {/* Contact Us: yellow bg / black text → hover: black bg / yellow text */}
-          <Link
-            href="#contact-form"
-            className="group relative inline-flex min-h-[2.75rem] items-center justify-center overflow-hidden rounded-none bg-[var(--color-gold)] px-[2.25rem] py-[0.875rem] font-body text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-[var(--color-bg-base)] transition-colors duration-350 hover:text-[var(--color-gold)] focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:outline-offset-[3px] active:scale-[0.97] active:transition-transform active:duration-100"
-            data-cursor="hover"
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 z-0 origin-left scale-x-0 bg-[var(--color-bg-base)] transition-transform duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100 group-active:scale-x-100"
-            />
-            <span className="relative z-10">Let Us Make Your Sales Calls</span>
-          </Link>
-          {/* Join Us: black bg / yellow text → hover: yellow bg / black text, black border */}
-          <Link
-            href="https://westernusc.store/product/western-sales-club/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative inline-flex min-h-[2.75rem] items-center justify-center overflow-hidden rounded-none bg-[var(--color-bg-base)] px-[2.25rem] py-[0.875rem] font-body text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-[var(--color-gold)] transition-colors duration-350 hover:text-[var(--color-bg-base)] focus-visible:outline-2 focus-visible:outline-[var(--color-gold)] focus-visible:outline-offset-[3px] active:scale-[0.97] active:transition-transform active:duration-100"
-            data-cursor="hover"
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 z-0 origin-left scale-x-0 bg-[var(--color-gold)] transition-transform duration-350 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-x-100 group-active:scale-x-100"
-            />
-            <span className="relative z-10">Join Our Team</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Scroll indicator — bottom center */}
-      {/* Outer: Framer Motion controls scroll-based fade. Inner: GSAP controls entrance. */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        style={{ opacity: scrollIndicatorOpacity }}
-      >
-        <div
-          ref={scrollIndicatorRef}
-          className="flex flex-col items-center gap-2"
-          style={{ opacity: 0 }}
-        >
-          <span className="font-mono text-[length:var(--text-mono-sm)] text-[var(--color-text-subtle)] uppercase tracking-[0.2em]">
-            Scroll
+      {/* The h1 carries no scale of its own: each masked line sets its own. */}
+      <h1 className="m-0">
+        {lines.map((line, i) => (
+          <span key={line.key} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
+            <i>{line.text}</i>
           </span>
+        ))}
+      </h1>
 
-          {/* Animated chevron */}
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className="animate-scroll-bounce"
-            aria-hidden="true"
-          >
-            <path
-              d="M3 6L8 11L13 6"
-              stroke="var(--color-text-subtle)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-      </motion.div>
+      <p className="subtitle cascade measure">
+        {cascade(text('home.hero.subtitle'))}
+      </p>
+
+      <div>
+        <Button href={href} {...externalLinkProps(href)} arrow>
+          {text('home.hero.button_label')}
+        </Button>
+      </div>
     </section>
   );
 }

@@ -2,6 +2,17 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Slab from "@/components/ui/slab";
+import { useSiteContent } from "@/providers/site-content-provider";
+
+/*
+  Footer: a --sunken slab, flat elevation, no shadow. Three columns on a
+  shared rhythm: wordmark and socials on the left, the nav stacked in the
+  center, and the Tethos mark right-aligned above "Website by Tethos".
+  Social links are --r-disc buttons that go --accent on hover.
+
+  design-system/components.md → Footer.
+*/
 
 const NAV_LINKS = [
   { label: "About", href: "/about" },
@@ -11,52 +22,58 @@ const NAV_LINKS = [
   { label: "Contact", href: "/contact-us" },
 ] as const;
 
+const LEGAL_LINKS = [
+  { label: "Terms", href: "/terms-of-service" },
+  { label: "Privacy", href: "/privacy-policy" },
+] as const;
+
+/* The marks stay in code; the destinations are editable, and an empty
+   link hides its icon. */
 const SOCIAL_LINKS = [
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/westernsalesclub/",
-    icon: "/Instagram.svg",
-  },
-  {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/company/western-sales-club/",
-    icon: "/Linkedin.svg",
-  },
+  { label: "Instagram", key: "footer.social.instagram_url", icon: "/logos/instagram.svg" },
+  { label: "LinkedIn", key: "footer.social.linkedin_url", icon: "/logos/linkedin.svg" },
 ] as const;
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { text } = useSiteContent();
+  const email = text("footer.contact.email");
+  const socials = SOCIAL_LINKS.map((social) => ({ ...social, href: text(social.key) })).filter(
+    (social) => social.href
+  );
 
   return (
-    <footer
-      className="w-full"
-      style={{
-        borderTop: "1px solid var(--color-border-gold)",
-        padding: "clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 5vw, 6rem)",
-      }}
+    <Slab
+      as="footer"
+      tone="sunken"
+      className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-4 pb-5! md:pb-6!"
     >
-      {/* Three-column row */}
-      <div
-        className="mx-auto flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between"
-        style={{ maxWidth: "1400px" }}
-      >
-        {/* Left — Wordmark + Social links */}
-        <div className="flex flex-col items-start gap-2 shrink-0">
-          <Link
-            href="/"
-            data-cursor="hover"
-          >
+      <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-x-10">
+        <div className="flex flex-col items-start gap-4">
+          <Link href="/" className="flex items-center gap-[9px] no-underline" data-cursor="hover">
             <span
-              className="font-display font-semibold text-lg tracking-[0.04em] text-text-primary"
+              aria-hidden="true"
+              className="mark-mask h-[26px] w-[26px] text-ink"
               style={{
-                color: "var(--color-text-muted)",
+                WebkitMaskImage: 'url("/logos/wsc-shark.png")',
+                maskImage: 'url("/logos/wsc-shark.png")',
               }}
-            >
+            />
+            <span className="font-display text-[12px] font-black uppercase tracking-[0.07em] text-ink">
               Western Sales Club
             </span>
           </Link>
-          <div className="flex items-center gap-1 self-center">
-            {SOCIAL_LINKS.map((social) => (
+          {email && (
+            <a
+              href={`mailto:${email}`}
+              data-cursor="hover"
+              className="meta w-fit no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
+            >
+              {email}
+            </a>
+          )}
+          <div className="flex items-center gap-3">
+            {socials.map((social) => (
               <a
                 key={social.label}
                 href={social.href}
@@ -64,85 +81,82 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 aria-label={social.label}
                 data-cursor="hover"
-                className="social-icon-link flex h-11 w-11 items-center justify-center"
+                className="grid h-11 w-11 place-items-center rounded-full bg-page text-ink-muted transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent hover:text-on-accent"
               >
-                <Image
-                  src={social.icon}
-                  alt={social.label}
-                  width={18}
-                  height={18}
-                  className="social-icon"
+                {/*
+                  Both social SVGs are hardcoded fill="#ffffff", so rendering
+                  them as images put a white glyph on the Showroom ground and
+                  they disappeared. Masked and filled with currentColor they
+                  inherit the link's own colour and flip with the theme.
+                */}
+                <span
+                  aria-hidden="true"
+                  className="mark-mask h-[22px] w-[22px]"
+                  style={{
+                    WebkitMaskImage: `url("${social.icon}")`,
+                    maskImage: `url("${social.icon}")`,
+                  }}
                 />
               </a>
             ))}
           </div>
         </div>
 
-        {/* Center — Nav links with dot separators */}
-        <nav className="flex flex-wrap items-center justify-center gap-y-1">
-          {NAV_LINKS.map((link, i) => (
-            <span key={link.href} className="flex items-center">
+        <nav className="flex flex-col items-center gap-0.5 md:justify-self-center" aria-label="Footer">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              data-cursor="hover"
+              className="body-sm rounded-sm px-3 py-1.5 text-center no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent-veil hover:text-ink"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <a
+          href="https://tethos.ca"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Website by Tethos"
+          data-cursor="hover"
+          className="flex flex-col items-end gap-3 no-underline md:justify-self-end"
+        >
+          {/*
+            The Tethos mark ships with its own black field baked into the file,
+            so it gets no ground behind it and no padding: anything we put
+            there would just be a second rectangle around the first. Corner and
+            overflow come from the wrapper so the artwork inherits --r-sm.
+          */}
+          <span className="relative h-10 w-10 flex-none overflow-hidden rounded-sm shadow-1">
+            <Image src="/logos/tethos.avif" alt="" fill sizes="40px" className="object-cover" />
+          </span>
+          <span className="meta text-right">Website by Tethos</span>
+        </a>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <span className="meta">&copy; {year} Western Sales Club</span>
+        <nav className="flex items-center gap-3" aria-label="Legal">
+          {LEGAL_LINKS.map((link, i) => (
+            <span key={link.href} className="flex items-center gap-3">
               {i > 0 && (
-                <span
-                  className="mx-2 select-none"
-                  style={{
-                    color: "var(--color-text-subtle)",
-                    fontSize: "var(--text-small)",
-                  }}
-                  aria-hidden="true"
-                >
+                <span className="select-none meta" aria-hidden="true">
                   &middot;
                 </span>
               )}
               <Link
                 href={link.href}
                 data-cursor="hover"
-                className="inline-flex min-h-[2.75rem] items-center font-body text-[var(--color-text-muted)] transition-colors duration-250 hover:text-[var(--color-text-primary)] active:text-[var(--color-text-primary)]"
-                style={{
-                  fontSize: "var(--text-small)",
-                  fontWeight: 400,
-                }}
+                className="meta no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
               >
                 {link.label}
               </Link>
             </span>
           ))}
         </nav>
-
-        {/* Right — TSI logo + initiative label */}
-        <a
-          href="https://tethos.ca"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="TSI - Tech for Social Impact"
-          data-cursor="hover"
-          className="flex flex-col items-center gap-1 shrink-0"
-        >
-          <Image
-            src="/TSI.avif"
-            alt="TSI"
-            width={56}
-            height={56}
-            className="object-contain"
-          />
-          <span
-            className="font-mono text-[var(--color-text-subtle)]"
-            style={{ fontSize: "var(--text-mono-sm)" }}
-          >
-            A TSI initiative
-          </span>
-        </a>
       </div>
-
-      {/* Copyright line */}
-      <p
-        className="font-body text-center"
-        style={{
-          color: "var(--color-text-subtle)",
-          marginTop: "var(--space-3)",
-        }}
-      >
-        &copy; {year} Western Sales Club      </p>
-    </footer>
+    </Slab>
   );
 }

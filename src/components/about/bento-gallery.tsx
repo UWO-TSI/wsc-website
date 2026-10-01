@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
-import { containerVariant, revealVariant, easing, viewportConfig } from '@/lib/motion';
+import { useRef, useState } from 'react';
+import RevealImage from '@/components/ui/reveal-image';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useReveal } from '@/lib/reveal';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
+import Skeleton from '@/components/ui/skeleton';
 import Eyebrow from '@/components/ui/eyebrow';
 import type { QueryError } from '@/types/database';
 
@@ -22,49 +23,52 @@ interface BentoGalleryProps {
   onRetry?: () => void;
 }
 
-/**
- * Bento grid cell pattern — maps index to grid-area sizing.
- * Desktop: irregular layout with some cells spanning 2 cols or 2 rows.
- * Mobile: uniform 2-column grid.
- */
-const cellPatterns = [
-  { gridColumn: 'span 2', gridRow: 'span 2' }, // Large
-  { gridColumn: 'span 1', gridRow: 'span 2' }, // Tall
-  { gridColumn: 'span 2', gridRow: 'span 1' }, // Wide
-  { gridColumn: 'span 1', gridRow: 'span 1' }, // Square
-  { gridColumn: 'span 1', gridRow: 'span 1' }, // Square
-  { gridColumn: 'span 1', gridRow: 'span 1' }, // Square
-];
+/*
+  Three columns, the repo's existing span pattern: large 2x2, tall 1x2, wide
+  2x1, then three squares (design-system/floor.html, .bc rules). Cells are
+  --r-sm with overflow hidden and run Sequence 9, Clip Reveal, staggered 60ms
+  in reading order via the --i custom property useReveal's clip-cell/clip-
+  inner classes read.
+*/
+const cellSpan = ['col-span-2 row-span-2', 'row-span-2', 'col-span-2', '', '', ''];
 
-function getCellStyle(index: number) {
-  return cellPatterns[index % cellPatterns.length];
+function spanFor(index: number) {
+  return cellSpan[index % cellSpan.length];
 }
 
-export default function BentoGallery({
-  photos,
-  loading,
-  error,
-  onRetry,
-}: BentoGalleryProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export default function BentoGallery({ photos, loading, error, onRetry }: BentoGalleryProps) {
+  const gridRef = useReveal<HTMLDivElement>();
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const triggerRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const lastOpenedIndex = useRef<number | null>(null);
 
-  const selectedPhoto = selectedId
-    ? photos.find((p) => p.id === selectedId) ?? null
-    : null;
+  const openPhoto = photos.filter((p) => p.src);
+  const selected = openIndex !== null ? openPhoto[openIndex] ?? null : null;
 
-  // Close lightbox on Escape key
-  const closeLightbox = useCallback(() => setSelectedId(null), []);
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedId) closeLightbox();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, closeLightbox]);
+  const open = (index: number) => {
+    lastOpenedIndex.current = index;
+    setOpenIndex(index);
+  };
+
+  /* Same three column grid and the same span pattern as the real bento, so
+     the bed keeps its height and the page below it does not move when the
+     photos arrive. */
+  const skeleton = (
+    <div className="bg-sunken rounded-xl p-3 sm:p-4">
+      <div
+        className="grid grid-cols-3 gap-2"
+        style={{ gridAutoRows: 'clamp(90px, 18vw, 160px)' }}
+      >
+        {cellSpan.map((span, i) => (
+          <Skeleton key={i} index={i} className={`h-full w-full rounded-sm ${span}`} />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ marginTop: 'clamp(5rem, 10vw, 9rem)' }}>
-      <Eyebrow className="mb-6 block">GALLERY</Eyebrow>
+    <div>
+      <Eyebrow className="mb-6 block">Gallery</Eyebrow>
 
       <AsyncStateWrapper
         loading={loading}
@@ -72,140 +76,138 @@ export default function BentoGallery({
         data={photos}
         onRetry={onRetry}
         emptyMessage="No photos yet."
+        skeleton={skeleton}
       >
-        {/* Bento grid */}
-        <motion.div
-          variants={containerVariant}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportConfig}
-          className="bento-grid grid gap-2"
-        >
-          {photos.map((photo, i) => {
-            if (!photo.src) return null;
-
-            const cellStyle = getCellStyle(i);
-
-            return (
-              <motion.div
-                key={photo.id}
-                layoutId={`gallery-${photo.id}`}
-                variants={revealVariant}
-                data-cursor="view"
-                onClick={() => setSelectedId(photo.id)}
-                className="bento-cell group relative cursor-pointer overflow-hidden"
-                style={cellStyle}
-              >
-                <motion.div
-                  className="relative h-full w-full"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{
-                    duration: 0.4,
-                    ease: easing.easeOutQuart,
+        <div className="bg-sunken rounded-xl p-3 sm:p-4">
+          <div
+            ref={gridRef}
+            className="grid grid-cols-3 gap-2"
+            style={{ gridAutoRows: 'clamp(90px, 18vw, 160px)' }}
+          >
+            {openPhoto.map((photo, index) => {
+              const altText = photo.alt ?? photo.caption ?? '';
+              return (
+                <button
+                  key={photo.id}
+                  ref={(el) => {
+                    triggerRefs.current[index] = el;
                   }}
+                  type="button"
+                  onClick={() => open(index)}
+                  className={`group relative overflow-hidden rounded-sm ${spanFor(index)}`}
+                  aria-label={photo.caption ? `Open ${photo.caption}` : 'Open gallery photo'}
                 >
-                  <Image
-                    src={photo.src}
-                    alt={photo.alt || 'Gallery photo'}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, 33vw"
+                  {/*
+                    Each cell now owns its own Clip Reveal and waits on its own
+                    bytes, rather than the whole grid clipping in on scroll
+                    while the photos were still decoding behind it.
+                  */}
+                  <span className="absolute inset-0">
+                    <RevealImage
+                      src={photo.src as string}
+                      alt={altText}
+                      sizes="(max-width: 768px) 33vw, 25vw"
+                      className="h-full w-full"
+                      index={index}
+                    />
+                  </span>
+
+                  <span
+                    aria-hidden="true"
+                    className="bg-inverse/60 pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-[var(--d-move)] ease-enter group-hover:opacity-100 group-focus-visible:opacity-100"
                   />
-                </motion.div>
 
-                {/* Dark overlay on hover */}
-                <div
-                  className="pointer-events-none absolute inset-0 bg-[rgba(10,10,10,0.5)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-active:opacity-100"
-                />
-
-                {/* Caption slide-up on hover */}
-                {photo.caption && (
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-active:translate-y-0 group-active:opacity-100">
-                    <p
-                      className="font-mono text-[var(--color-text-secondary)]"
-                      style={{ fontSize: 'var(--text-mono)' }}
+                  {photo.caption && (
+                    <span
+                      aria-hidden="true"
+                      className="text-on-inverse pointer-events-none absolute inset-x-2 bottom-2 translate-y-2 text-left opacity-0 transition-all duration-[var(--d-move)] ease-enter group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100"
+                      style={{
+                        fontFamily: 'var(--f-data)',
+                        fontSize: '10px',
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                      }}
                     >
                       {photo.caption}
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </motion.div>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        {/* Lightbox overlay */}
-        <AnimatePresence>
-          {selectedPhoto && selectedPhoto.src && (
-            <motion.div
-              key="lightbox-overlay"
-              className="fixed inset-0 z-50 flex items-center justify-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.22, ease: easing.easeOutQuart } }}
-              transition={{ duration: 0.3, ease: easing.easeOutQuart }}
-              onClick={() => setSelectedId(null)}
+        <Dialog.Root
+          open={selected !== null}
+          onOpenChange={(next) => {
+            if (!next) setOpenIndex(null);
+          }}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay
+              className="bg-inverse/90 fixed inset-0 transition-opacity duration-[var(--d-move)] ease-enter data-[state=closed]:opacity-0 data-[state=open]:opacity-100"
+              style={{ zIndex: 'var(--layer-overlay)' }}
+            />
+            <Dialog.Content
+              className="shadow-3 fixed left-1/2 top-1/2 w-[min(760px,90vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg transition-[opacity,transform] duration-[var(--d-move)] ease-enter data-[state=closed]:scale-95 data-[state=closed]:opacity-0 data-[state=open]:scale-100 data-[state=open]:opacity-100"
+              style={{ zIndex: 'var(--layer-overlay)' }}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                const index = lastOpenedIndex.current;
+                if (index !== null) triggerRefs.current[index]?.focus();
+              }}
             >
-              {/* Backdrop */}
-              <div className="absolute inset-0 bg-[rgba(10,10,10,0.92)]" />
+              <Dialog.Title asChild>
+                <span className="sr-only">{selected?.caption || 'Gallery photo'}</span>
+              </Dialog.Title>
+              <Dialog.Description asChild>
+                <span className="sr-only">Enlarged view. Press Escape to close.</span>
+              </Dialog.Description>
 
-              {/* Close button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedId(null);
-                }}
-                className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-gold)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--color-gold)]"
-                aria-label="Close lightbox"
+              {selected?.src && (
+                <div className="relative aspect-video w-full">
+                  {/* The full-size file is a fresh request even when the
+                      thumbnail is cached, so the lightbox skeletons too rather
+                      than opening onto an empty frame. */}
+                  <RevealImage
+                    src={selected.src}
+                    alt={selected.alt ?? selected.caption ?? ''}
+                    sizes="90vw"
+                    className="h-full w-full"
+                    fit="contain"
+                    sequence="fade"
+                    priority
+                  />
+                  {selected.caption && (
+                    <span
+                      className="text-on-inverse absolute inset-x-0 bottom-0"
+                      style={{
+                        fontFamily: 'var(--f-data)',
+                        fontSize: '12px',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        textAlign: 'center',
+                        padding: '26px 16px 14px',
+                        background:
+                          'linear-gradient(to top, color-mix(in srgb, var(--inverse) 70%, transparent), transparent)',
+                      }}
+                    >
+                      {selected.caption}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <Dialog.Close
+                className="text-on-inverse bg-inverse/40 absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-lg"
+                aria-label="Close"
               >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                >
-                  <line x1="4" y1="4" x2="20" y2="20" />
-                  <line x1="20" y1="4" x2="4" y2="20" />
-                </svg>
-              </button>
-
-              {/* Expanded image */}
-              <motion.div
-                layoutId={`gallery-${selectedPhoto.id}`}
-                className="relative z-10 h-[80vh] w-[90vw] max-w-[1200px]"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Image
-                  src={selectedPhoto.src}
-                  alt={selectedPhoto.alt || 'Gallery photo'}
-                  fill
-                  className="object-contain"
-                  sizes="90vw"
-                  priority
-                />
-
-                {selectedPhoto.caption && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.35 }}
-                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[rgba(10,10,10,0.8)] to-transparent p-6 pt-12 text-center font-mono text-[var(--color-text-secondary)]"
-                    style={{ fontSize: 'var(--text-mono)' }}
-                  >
-                    {selectedPhoto.caption}
-                  </motion.p>
-                )}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                &times;
+              </Dialog.Close>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </AsyncStateWrapper>
-
-      {/* Responsive grid styles defined in globals.css */}
     </div>
   );
 }

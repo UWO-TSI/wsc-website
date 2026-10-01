@@ -1,49 +1,59 @@
 'use client';
 
-import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
+import { ThemeProvider } from '@/providers/theme-provider';
+import { PreloaderProvider, usePreloader } from '@/providers/preloader-provider';
 import { CursorProvider } from '@/providers/cursor-provider';
 import { LenisProvider } from '@/providers/lenis-provider';
+import { SiteContentProvider } from '@/providers/site-content-provider';
 import { CustomCursor } from '@/components/cursor/custom-cursor';
 import Preloader from '@/components/layout/preloader';
 import Nav from '@/components/layout/nav';
 import Footer from '@/components/layout/footer';
 
+function Shell({ children }: { children: React.ReactNode }) {
+  const { complete, markComplete } = usePreloader();
+
+  return (
+    <SiteContentProvider>
+      <CursorProvider>
+        <LenisProvider>
+          <CustomCursor />
+
+          <AnimatePresence mode="wait">
+            {!complete && <Preloader key="preloader" onLoadComplete={markComplete} />}
+          </AnimatePresence>
+
+          <a href="#main-content" className="skip">
+            Skip to content
+          </a>
+
+          <Nav />
+          <main id="main-content">{children}</main>
+          <Footer />
+        </LenisProvider>
+      </CursorProvider>
+    </SiteContentProvider>
+  );
+}
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [preloaderComplete, setPreloaderComplete] = useState(false);
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/auth');
 
+  /* The theme sits outside the admin branch: /admin ships in both themes too,
+     and the toggle in the dashboard header needs the same context. The
+     preloader does not, so /admin gets the default `complete: true`. */
   if (isAdmin) {
-    return <>{children}</>;
+    return <ThemeProvider>{children}</ThemeProvider>;
   }
 
   return (
-    <CursorProvider>
-      <LenisProvider>
-        <CustomCursor />
-
-        <AnimatePresence mode="wait">
-          {!preloaderComplete && (
-            <Preloader
-              key="preloader"
-              onLoadComplete={() => setPreloaderComplete(true)}
-            />
-          )}
-        </AnimatePresence>
-
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[10000] focus:px-4 focus:py-2 focus:bg-[var(--color-bg-base)] focus:text-[var(--color-gold)] focus:outline-2 focus:outline-[var(--color-gold)] focus:outline-offset-[3px]"
-        >
-          Skip to content
-        </a>
-
-        <Nav />
-        <main id="main-content">{children}</main>
-        <Footer />
-      </LenisProvider>
-    </CursorProvider>
+    <ThemeProvider>
+      <PreloaderProvider>
+        <Shell>{children}</Shell>
+      </PreloaderProvider>
+    </ThemeProvider>
   );
 }

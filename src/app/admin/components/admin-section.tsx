@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSupabaseMutation, deleteContentItem } from '@/lib/supabase/hooks/use-supabase-mutation';
@@ -8,20 +9,69 @@ import { uploadFile, getPublicUrl } from '@/lib/supabase/storage';
 import { validateImageDimensions } from '@/lib/image-utils';
 import { LIMITS } from '@/lib/admin-config';
 import type { ContentConfig } from '@/lib/admin-config';
-import { FORM_FIELDS } from '../form-config';
+import { FORM_FIELDS, type FormField } from '../form-config';
 import AdminForm from './admin-form';
+import Slab from '@/components/ui/slab';
+import Button from '@/components/ui/button';
+import Chip from '@/components/ui/chip';
+import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
+import type { ExecGroup } from '@/types/database';
 
 interface AdminSectionProps {
   configKey: string;
   config: ContentConfig;
 }
 
-export default function AdminSection({ configKey, config }: AdminSectionProps) {
-  const { table, bucket, pathColumn, visibilityColumn, displayName, limit, orderable = true } = config;
-  const hasStorage = !!(bucket && pathColumn);
-  const fields = FORM_FIELDS[configKey];
+/** Cell text for the list table, resolving dropdown values to labels. */
+function displayCell(field: FormField, value: unknown): string {
+  const raw = String(value ?? '');
+  if (field.type === 'select') {
+    const match = field.options?.find((o) => o.value === raw);
+    return (match?.label ?? raw).slice(0, 60);
+  }
+  return raw.slice(0, 60);
+}
 
-  const { data: rows, loading, error, refetch } = useSupabaseQuery<Record<string, unknown>>(table);
+export default function AdminSection({ configKey, config }: AdminSectionProps) {
+  const {
+    table,
+    bucket,
+    pathColumn,
+    visibilityColumn,
+    displayName,
+    singularName,
+    limit,
+    orderable = true,
+    sort,
+  } = config;
+  const hasStorage = !!(bucket && pathColumn);
+  const rawFields = FORM_FIELDS[configKey];
+  const singular = singularName ?? displayName.replace(/s$/, '');
+
+  const { data: rows, loading, error, refetch } = useSupabaseQuery<Record<string, unknown>>(
+    table,
+    sort ? { orderBy: sort.column, ascending: sort.ascending, thenBy: sort.thenBy } : {}
+  );
+
+  /* Executive roles live in a table, so the Role dropdown is filled at
+     runtime. Only fetched when a field asks for it. */
+  const needsExecGroups = rawFields.some((f) => f.optionsSource === 'exec_groups');
+  const { data: execGroups } = useSupabaseQuery<ExecGroup>('exec_groups', {
+    enabled: needsExecGroups,
+  });
+
+  const fields = useMemo(
+    () =>
+      rawFields.map((field) =>
+        field.optionsSource === 'exec_groups'
+          ? {
+              ...field,
+              options: execGroups.map((g) => ({ value: g.slug, label: g.singular_label })),
+            }
+          : field
+      ),
+    [rawFields, execGroups]
+  );
   const { mutate, loading: mutating, error: mutError, reset: resetMutError } = useSupabaseMutation();
 
   const [showForm, setShowForm] = useState(false);
@@ -191,6 +241,8 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
 
   const visibilityLabel =
     visibilityColumn === 'published' ? 'Published' : visibilityColumn === 'active' ? 'Active' : 'Visible';
+  const hiddenLabel =
+    visibilityColumn === 'published' ? 'Draft' : visibilityColumn === 'active' ? 'Inactive' : 'Hidden';
 
   const openAdd = () => {
     setEditingRow(null);
@@ -212,184 +264,139 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
   return (
     <div>
       {/* Section header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
         <div>
-          <h2 className="text-xl text-[var(--color-text-primary)] font-mono tracking-wide">
-            {displayName}
-          </h2>
-          <p className="text-[var(--color-text-subtle)] font-mono text-xs mt-1">
+          <h2 className="title-sm text-ink">{displayName}</h2>
+          <p className="meta text-ink-faint mt-1">
             {rows.length} / {limit} items
           </p>
         </div>
-        <button
-          onClick={openAdd}
-          disabled={atLimit || mutating}
-          className="px-5 py-2 border border-[var(--color-border-gold)] text-[var(--color-gold)] font-mono text-xs tracking-[0.15em] uppercase hover:bg-[var(--color-gold)] hover:text-black disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
-        >
-          + Add {displayName.replace(/s$/, '')}
-        </button>
+        <Button onClick={openAdd} disabled={atLimit || mutating}>
+          Add {singular.toLowerCase()}
+        </Button>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex items-center gap-3 py-12 text-[var(--color-text-muted)]">
-          <div className="w-4 h-4 border border-[var(--color-gold)] border-t-transparent rounded-full animate-spin" />
-          <span className="font-mono text-xs tracking-widest uppercase">Loading…</span>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && !loading && (
-        <div className="border border-red-900/50 bg-red-950/20 px-4 py-3 mb-4">
-          <p className="text-red-400 font-mono text-sm">{error.message}</p>
-          {error.retryable && (
-            <button
-              onClick={refetch}
-              className="mt-2 text-[var(--color-gold)] font-mono text-xs hover:underline cursor-pointer"
-            >
-              Retry
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && !error && rows.length === 0 && (
-        <p className="text-[var(--color-text-subtle)] font-mono text-sm py-12 border border-dashed border-[var(--color-border)] text-center">
-          No {displayName.toLowerCase()} yet — click &ldquo;Add&rdquo; to create one.
-        </p>
-      )}
-
-      {/* Table */}
-      {!loading && !error && rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-[var(--color-border)]">
-                {orderable && (
-                  <th className="text-left font-mono text-xs tracking-widest uppercase text-[var(--color-text-muted)] px-3 py-3 w-16">
-                    Order
-                  </th>
-                )}
-                {tableFields.map((f) => (
-                  <th
-                    key={f.name}
-                    className="text-left font-mono text-xs tracking-widest uppercase text-[var(--color-text-muted)] px-3 py-3"
-                  >
-                    {f.label}
-                  </th>
-                ))}
-                <th className="text-left font-mono text-xs tracking-widest uppercase text-[var(--color-text-muted)] px-3 py-3 w-24">
-                  {visibilityLabel}
-                </th>
-                <th className="text-left font-mono text-xs tracking-widest uppercase text-[var(--color-text-muted)] px-3 py-3 w-28">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedRows.map((row, idx) => (
-                <tr
-                  key={row.id as string}
-                  className="border-b border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)] transition-colors"
-                >
-                  {orderable && (
+      <Slab tone="raised">
+        <AsyncStateWrapper
+          loading={loading}
+          error={error}
+          data={rows}
+          onRetry={refetch}
+          emptyMessage={`No ${displayName.toLowerCase()} yet. Add one to get started.`}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-separate border-spacing-y-2">
+              <thead>
+                <tr>
+                  {orderable && <th className="label px-3 pb-2 w-16">Order</th>}
+                  {tableFields.map((f) => (
+                    <th key={f.name} className="label px-3 pb-2">
+                      {f.label}
+                    </th>
+                  ))}
+                  <th className="label px-3 pb-2 w-28">{visibilityLabel}</th>
+                  <th className="label px-3 pb-2 w-40">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedRows.map((row, idx) => (
+                  <tr key={row.id as string} className="bg-sunken">
+                    {orderable && (
+                      <td className="px-3 py-3 rounded-l-md">
+                        <div className="flex gap-1">
+                          <button
+                            disabled={idx === 0 || mutating}
+                            onClick={() => handleMove(row, 'up')}
+                            className="label px-1.5 py-0.5 text-ink-muted hover:text-accent-ink disabled:text-ink-faint disabled:cursor-not-allowed cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter"
+                            aria-label={`Move ${singular.toLowerCase()} up`}
+                          >
+                            Up
+                          </button>
+                          <button
+                            disabled={idx === sortedRows.length - 1 || mutating}
+                            onClick={() => handleMove(row, 'down')}
+                            className="label px-1.5 py-0.5 text-ink-muted hover:text-accent-ink disabled:text-ink-faint disabled:cursor-not-allowed cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter"
+                            aria-label={`Move ${singular.toLowerCase()} down`}
+                          >
+                            Down
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    {tableFields.map((f, colIdx) => (
+                      <td
+                        key={f.name}
+                        className={`px-3 py-3 text-ink ${!orderable && colIdx === 0 ? 'rounded-l-md' : ''}`}
+                      >
+                        {f.type === 'image' ? (
+                          row[f.name] ? (
+                            <div className="relative h-10 w-10 overflow-hidden rounded-sm bg-page">
+                              <Image
+                                src={getPublicUrl(bucket!, row[f.name] as string) ?? ''}
+                                alt=""
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-ink-faint">None</span>
+                          )
+                        ) : (
+                          <span className="body-sm text-ink">
+                            {displayCell(f, row[f.name]) || (
+                              <span className="text-ink-faint">None</span>
+                            )}
+                          </span>
+                        )}
+                      </td>
+                    ))}
                     <td className="px-3 py-3">
-                      <div className="flex gap-1">
-                        <button
-                          disabled={idx === 0 || mutating}
-                          onClick={() => handleMove(row, 'up')}
-                          className="px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-gold)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                          title="Move up"
+                      <button
+                        type="button"
+                        aria-pressed={!!row[visibilityColumn]}
+                        onClick={() => handleToggleVisibility(row)}
+                        disabled={mutating}
+                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Chip status={row[visibilityColumn] ? 'ok' : 'neutral'}>
+                          {row[visibilityColumn] ? visibilityLabel : hiddenLabel}
+                        </Chip>
+                      </button>
+                    </td>
+                    <td className="px-3 py-3 rounded-r-md">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button variant="tertiary" className="!px-3 !py-1.5" onClick={() => openEdit(row)}>
+                          Edit
+                        </Button>
+                        <Button
+                          variant="tertiary"
+                          className="!px-3 !py-1.5"
+                          onClick={() => setDeleteConfirm(row)}
                         >
-                          ▲
-                        </button>
-                        <button
-                          disabled={idx === sortedRows.length - 1 || mutating}
-                          onClick={() => handleMove(row, 'down')}
-                          className="px-1.5 py-0.5 font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-gold)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                          title="Move down"
-                        >
-                          ▼
-                        </button>
+                          Delete
+                        </Button>
                       </div>
                     </td>
-                  )}
-                  {tableFields.map((f) => (
-                    <td key={f.name} className="px-3 py-3 text-[var(--color-text-secondary)]">
-                      {f.type === 'image' ? (
-                        row[f.name] ? (
-                          <img
-                            src={getPublicUrl(bucket!, row[f.name] as string) ?? ''}
-                            alt=""
-                            className="h-10 w-10 object-cover border border-[var(--color-border)]"
-                          />
-                        ) : (
-                          <span className="text-[var(--color-text-subtle)]">—</span>
-                        )
-                      ) : (
-                        <span className="font-mono text-xs">
-                          {String(row[f.name] ?? '').slice(0, 60) || (
-                            <span className="text-[var(--color-text-subtle)]">—</span>
-                          )}
-                        </span>
-                      )}
-                    </td>
-                  ))}
-                  <td className="px-3 py-3">
-                    <button
-                      role="switch"
-                      aria-checked={!!row[visibilityColumn]}
-                      onClick={() => handleToggleVisibility(row)}
-                      disabled={mutating}
-                      className={`inline-flex items-center h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 cursor-pointer disabled:opacity-50 ${
-                        row[visibilityColumn]
-                          ? 'bg-[var(--color-gold)]'
-                          : 'bg-[var(--color-bg-overlay)]'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                          row[visibilityColumn] ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openEdit(row)}
-                        className="text-[var(--color-text-muted)] font-mono text-xs hover:text-[var(--color-gold)] transition-colors cursor-pointer"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(row)}
-                        className="text-[var(--color-text-muted)] font-mono text-xs hover:text-red-400 transition-colors cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AsyncStateWrapper>
+      </Slab>
 
       {/* Form modal */}
       {showForm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.6)] p-4"
           onClick={closeForm}
         >
           <div
-            className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="bg-raised shadow-3 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-mono text-xs tracking-[0.2em] uppercase text-[var(--color-gold)] mb-6">
-              {editingRow ? 'Edit' : 'Add'} {displayName.replace(/s$/, '')}
+            <h3 className="label text-accent-ink mb-6">
+              {editingRow ? 'Edit' : 'Add'} {singular.toLowerCase()}
             </h3>
             <AdminForm
               fields={fields}
@@ -400,6 +407,8 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
               onCancel={closeForm}
               saving={mutating}
               error={mutError}
+              idPrefix={configKey}
+              imageFit={configKey === 'sponsors' ? 'contain' : 'cover'}
             />
           </div>
         </div>
@@ -408,22 +417,20 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
       {/* Delete confirmation modal */}
       {deleteConfirm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.6)] p-4"
           onClick={() => setDeleteConfirm(null)}
         >
           <div
-            className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] p-6 w-full max-w-md"
+            className="bg-raised shadow-3 rounded-xl p-6 w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-mono text-xs tracking-[0.2em] uppercase text-red-400 mb-4">
-              Confirm Delete
-            </h3>
-            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
+            <h3 className="label text-alert mb-4">Confirm delete</h3>
+            <p className="body text-ink mb-6">
               Delete{' '}
-              <strong className="text-[var(--color-text-primary)]">
+              <strong className="text-ink">
                 {(deleteConfirm.title as string) ||
                   (deleteConfirm.name as string) ||
-                  'this item'}
+                  `this ${singular.toLowerCase()}`}
               </strong>
               ?
               {hasStorage && !!deleteConfirm[pathColumn!] && (
@@ -431,25 +438,14 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
               )}{' '}
               This cannot be undone.
             </p>
-            {mutError && (
-              <p className="text-red-400 font-mono text-sm mb-4 bg-red-950/30 border border-red-900/50 px-3 py-2">
-                {mutError.message}
-              </p>
-            )}
+            {mutError && <p className="body-sm text-alert mb-4">{mutError.message}</p>}
             <div className="flex gap-3">
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={mutating}
-                className="px-5 py-2 bg-red-600 text-white font-mono text-xs tracking-[0.15em] uppercase hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-              >
-                {mutating ? 'Deleting…' : 'Delete'}
-              </button>
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-5 py-2 border border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-xs tracking-[0.15em] uppercase hover:border-[var(--color-border-gold)] transition-colors cursor-pointer"
-              >
+              <Button onClick={() => handleDelete(deleteConfirm)} disabled={mutating}>
+                {mutating ? 'Deleting' : `Delete ${singular.toLowerCase()}`}
+              </Button>
+              <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>

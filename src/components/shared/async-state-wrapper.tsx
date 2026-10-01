@@ -1,14 +1,42 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Button from '@/components/ui/button';
 import type { QueryError } from '@/types/database';
+
+/*
+  AsyncState. Four states, and none of them is a blank screen: loading, error
+  with a retry, empty, and 404.
+
+  The spinner is a masked conic gradient (the .spin class in globals.css), not
+  a border-top trick, because borders are out.
+
+  Empty states name what is missing and do not apologise.
+*/
+
+function Bed({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-[220px] flex-col items-center justify-center gap-4 px-6 py-14 text-center">
+      {children}
+    </div>
+  );
+}
 
 interface AsyncStateWrapperProps {
   loading: boolean;
   error: QueryError | null;
   data: unknown[];
   onRetry?: () => void;
+  /** Names what is missing, e.g. "No events on the calendar yet." */
   emptyMessage?: string;
+  /**
+   * The shape of the content, rendered while loading. Always pass this for a
+   * list or a grid. The spinner fallback is a different shape from whatever
+   * replaces it, so the page reflows the moment the query resolves, which is
+   * exactly the jump the skeleton exists to prevent. The spinner is only right
+   * where the content genuinely has no predictable shape.
+   */
+  skeleton?: ReactNode;
   children: ReactNode;
 }
 
@@ -17,46 +45,46 @@ export default function AsyncStateWrapper({
   error,
   data,
   onRetry,
-  emptyMessage = 'No items yet.',
+  emptyMessage = 'Nothing here yet.',
+  skeleton,
   children,
 }: AsyncStateWrapperProps) {
   if (loading) {
+    if (skeleton) {
+      return (
+        <div role="status" aria-busy="true" aria-label="Loading">
+          {skeleton}
+        </div>
+      );
+    }
+
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="size-7 animate-spin rounded-full border-[1.5px] border-transparent border-t-[var(--color-gold)]" />
-        <p className="mt-4 font-mono text-[length:var(--text-mono-sm)] tracking-wide text-[var(--color-text-muted)] opacity-60">
-          Loading...
-        </p>
-      </div>
+      <Bed>
+        <span className="spin" role="status" aria-label="Loading" />
+        <span className="label">Loading</span>
+      </Bed>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="mb-4 font-mono text-[length:var(--text-mono)] text-[var(--color-text-muted)]">
-          {error.message}
-        </p>
+      <Bed>
+        <p className="body text-ink max-w-[42ch]">{error.message}</p>
         {error.retryable && onRetry && (
-          <button
-            onClick={onRetry}
-            className="border border-[var(--color-border-gold)] bg-transparent px-6 py-2 font-body text-[0.8125rem] uppercase tracking-[0.1em] text-[var(--color-gold)] transition-colors duration-250 hover:bg-[var(--color-gold)] hover:text-[var(--color-bg-base)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--color-gold)]"
-          >
-            Try Again
-          </button>
+          <Button variant="secondary" onClick={onRetry}>
+            Try again
+          </Button>
         )}
-      </div>
+      </Bed>
     );
   }
 
   const isEmpty = Array.isArray(data) ? data.length === 0 : !data;
   if (isEmpty) {
     return (
-      <div className="flex items-center justify-center py-12 text-center">
-        <p className="font-display text-[length:var(--text-display-sm)] italic text-[var(--color-text-subtle)]">
-          {emptyMessage}
-        </p>
-      </div>
+      <Bed>
+        <p className="title-sm text-ink-muted">{emptyMessage}</p>
+      </Bed>
     );
   }
 

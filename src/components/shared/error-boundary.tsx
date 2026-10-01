@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import Button from '@/components/ui/button';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -12,7 +13,7 @@ interface ErrorBoundaryState {
 }
 
 /**
- * ErrorBoundary — catches RENDER-TIME React errors only.
+ * ErrorBoundary: catches RENDER-TIME React errors only.
  *
  * Does NOT catch: async errors, event handler errors, or errors
  * inside setTimeout/Promise callbacks. Those are handled by
@@ -38,19 +39,15 @@ export default class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[var(--color-bg-base)] px-8 text-center">
-          <h2 className="mb-4 font-display text-[length:var(--text-display-sm)] font-semibold text-[var(--color-gold)]">
-            Something went wrong
-          </h2>
-          <p className="mb-6 font-body text-[length:var(--text-body)] text-[var(--color-text-muted)]">
-            An unexpected error occurred. Please try again.
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 bg-page px-6 text-center">
+          <h2 className="title-sm">This section did not load</h2>
+          <p className="body measure text-ink-muted">
+            Something broke while rendering it. Try again, and if it keeps
+            happening the page needs a reload.
           </p>
-          <button
-            onClick={() => this.setState({ hasError: false })}
-            className="border border-[var(--color-border-gold)] bg-transparent px-9 py-3.5 font-body text-[0.8125rem] uppercase tracking-[0.1em] text-[var(--color-gold)] transition-colors duration-250 hover:bg-[var(--color-gold)] hover:text-[var(--color-bg-base)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--color-gold)]"
-          >
-            Try Again
-          </button>
+          <Button variant="secondary" onClick={() => this.setState({ hasError: false })}>
+            Try again
+          </Button>
         </div>
       );
     }

@@ -1,0 +1,262 @@
+/*
+  WSC Floor — design tokens.
+
+  These are the same values as design-system/floor.html. That file is the
+  visual source of truth; this file is what the app consumes.
+
+  To adopt: replace the @theme block in src/app/globals.css with the contents
+  of this file. Tailwind v4 is CSS-first, so there is no tailwind.config.js to
+  touch.
+
+  Theme is stamped on <html> as data-theme="light" | "dark". Read it from
+  localStorage in a blocking inline script before hydration or the page
+  flashes the wrong theme on every load.
+*/
+
+/* ─────────────────────────────────────────────────────────────
+   Runtime variables. Showroom (light) is the default and is
+   declared on bare :root so it applies when nothing is stamped.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* surfaces */
+  --page: #ffffff;
+  --raised: #f6f6f7;
+  --sunken: #ececed;
+  --inverse: #150920;
+
+  /* accent — velvet in Showroom, gold in Afterhours */
+  --accent: #3a1a57;
+  --accent-deep: #23102f;
+  --accent-ink: #3a1a57;
+  --accent-veil: rgba(58, 26, 87, 0.09);
+
+  /* ink */
+  --ink: #16101c;
+  --ink-muted: #55505e;
+  --ink-faint: #8a8492;
+
+  /* text on non-page grounds */
+  --on-inverse: #f1ecf6;
+  --on-accent: #f4f0f8;
+
+  /* fixed brand marks, do not flip with the accent */
+  --velvet: #3a1a57;
+  --gold: #8a6a1c;
+
+  /* status — always shipped with a word, never hue alone */
+  --ok: #1a6b47;
+  --warn: #8a5a00;
+  --alert: #a8241a;
+
+  --focus: #3a1a57;
+
+  /* elevation — shadows make the layers, there are no borders */
+  --sh-1: 0 1px 2px rgba(20, 16, 26, 0.05), 0 5px 14px -8px rgba(20, 16, 26, 0.10);
+  --sh-2: 0 2px 4px rgba(20, 16, 26, 0.06), 0 12px 26px -12px rgba(20, 16, 26, 0.16);
+  --sh-3: 0 4px 8px rgba(20, 16, 26, 0.07), 0 28px 56px -22px rgba(20, 16, 26, 0.24);
+
+  /* corners */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-pill: 999px;
+  --r-disc: 50%;
+
+  /* timing */
+  --d-tap: 90ms;
+  --d-hover: 180ms;
+  --d-move: 320ms;
+  --d-arrive: 620ms;
+  --d-seq: 1100ms;
+  --d-drift: 48s;
+
+  --e-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-exit: cubic-bezier(0.5, 0, 0.9, 0.2);
+  --e-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --e-snap: cubic-bezier(0.22, 1.2, 0.36, 1);
+  --e-drift: linear;
+
+  /* stacking — never write a raw z-index */
+  --layer-base: 0;
+  --layer-sticky: 20;
+  --layer-nav: 60;
+  --layer-overlay: 80;
+  --layer-curtain: 95;
+  --layer-cursor: 100;
+
+  /* families */
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-text: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --f-data: "Geist Mono", ui-monospace, Menlo, monospace;
+
+  /* fluid type — the scale is 4 roles, nothing between them */
+  --t-title-hero: clamp(2.6rem, 11.5vw, 9rem);
+  --t-title: clamp(1.75rem, 5vw, 3.25rem);
+  --t-title-sm: 19px;
+  --t-subtitle: 19px;
+  --t-body: 16px;
+  --t-body-sm: 14px;
+  --t-label: 11px;
+  --t-meta: 13px;
+}
+
+/* Afterhours via OS preference, unless an explicit light choice is stamped */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0a0a09;
+    --raised: #161513;
+    --sunken: #211f1b;
+    --inverse: #f7f4ee;
+    --accent: #d4a843;
+    --accent-deep: #a8801f;
+    --accent-ink: #e7c670;
+    --accent-veil: rgba(212, 168, 67, 0.12);
+    --ink: #f7f4ee;
+    --ink-muted: #a9a396;
+    --ink-faint: #6d675d;
+    --on-inverse: #0a0a09;
+    --on-accent: #191204;
+    --velvet: #9b7bc4;
+    --gold: #d4a843;
+    --ok: #6fd3a2;
+    --warn: #e8b05c;
+    --alert: #ff8f83;
+    --focus: #d4a843;
+    --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 5px 14px -8px rgba(0, 0, 0, 0.7);
+    --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
+    --sh-3: 0 6px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -22px rgba(0, 0, 0, 0.9);
+  }
+}
+
+/* Afterhours via the toggle, wins over the OS in both directions */
+:root[data-theme="dark"] {
+  --page: #0a0a09;
+  --raised: #161513;
+  --sunken: #211f1b;
+  --inverse: #f7f4ee;
+  --accent: #d4a843;
+  --accent-deep: #a8801f;
+  --accent-ink: #e7c670;
+  --accent-veil: rgba(212, 168, 67, 0.12);
+  --ink: #f7f4ee;
+  --ink-muted: #a9a396;
+  --ink-faint: #6d675d;
+  --on-inverse: #0a0a09;
+  --on-accent: #191204;
+  --velvet: #9b7bc4;
+  --gold: #d4a843;
+  --ok: #6fd3a2;
+  --warn: #e8b05c;
+  --alert: #ff8f83;
+  --focus: #d4a843;
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 5px 14px -8px rgba(0, 0, 0, 0.7);
+  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
+  --sh-3: 0 6px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -22px rgba(0, 0, 0, 0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Tailwind v4 mapping. `inline` is required because every value
+   is a var() reference, which is what makes one class name
+   resolve to velvet in Showroom and gold in Afterhours.
+   ───────────────────────────────────────────────────────────── */
+
+@theme inline {
+  --color-page: var(--page);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-inverse: var(--inverse);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-veil: var(--accent-veil);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-on-inverse: var(--on-inverse);
+  --color-on-accent: var(--on-accent);
+  --color-velvet: var(--velvet);
+  --color-gold: var(--gold);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-alert: var(--alert);
+
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+
+  --shadow-1: var(--sh-1);
+  --shadow-2: var(--sh-2);
+  --shadow-3: var(--sh-3);
+
+  --ease-enter: var(--e-enter);
+  --ease-exit: var(--e-exit);
+  --ease-move: var(--e-move);
+  --ease-snap: var(--e-snap);
+
+  --font-display: var(--f-display);
+  --font-text: var(--f-text);
+  --font-data: var(--f-data);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Base. The focus ring is the only outline in a system with no
+   borders, so it is never removed.
+   ───────────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--f-text);
+  font-size: var(--t-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Every title is Archivo, all caps. There is no other display style. */
+.title-hero,
+.title,
+.title-sm {
+  font-family: var(--f-display);
+  text-transform: uppercase;
+  margin: 0;
+}
+.title-hero { font-weight: 900; font-size: var(--t-title-hero); line-height: 0.84; letter-spacing: -0.02em; }
+.title      { font-weight: 900; font-size: var(--t-title);      line-height: 0.92; letter-spacing: -0.015em; }
+.title-sm   { font-weight: 800; font-size: var(--t-title-sm);   line-height: 1.1;  letter-spacing: 0.005em; }
+
+.subtitle { font-size: var(--t-subtitle); line-height: 1.4; color: var(--ink-muted); }
+.body     { font-size: var(--t-body); line-height: 1.6; }
+.body-sm  { font-size: var(--t-body-sm); line-height: 1.5; color: var(--ink-muted); }
+
+.label {
+  font-family: var(--f-data);
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.meta {
+  font-family: var(--f-data);
+  font-size: var(--t-meta);
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

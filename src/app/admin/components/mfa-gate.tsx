@@ -64,6 +64,9 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
       const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName: `WSC Admin ${new Date().toISOString().slice(0, 10)}`,
+        // The name the authenticator app lists the code under. Without it
+        // Supabase uses the site URL's host, which on localhost is an IP.
+        issuer: 'Western Sales Club',
       });
       if (enrollError) throw enrollError;
 
@@ -107,13 +110,20 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
     }
   };
 
-  /* Same shell as the sign-in screen: a raised slab on --page. */
-  const shell = (inner: React.ReactNode) => (
+  /*
+    Same shell as the sign-in screen: a raised slab on --page. Spaced with
+    gap, never margins: the type classes reset margin outside a layer, so an
+    mb-* on a title or body block never applies.
+  */
+  const shell = (title: string | null, inner: React.ReactNode) => (
     <div className="min-h-screen bg-page flex items-center justify-center px-6 py-16">
-      <Slab tone="raised" as="div" className="w-full max-w-md text-center flex flex-col items-center">
-        <p className="label text-accent-ink mb-6">Two-factor authentication</p>
+      <Slab tone="raised" as="div" className="w-full max-w-md text-center flex flex-col items-center gap-8">
+        <div className="flex flex-col items-center gap-4">
+          <p className="label text-accent-ink">Two-factor authentication</p>
+          {title && <h1 className="title-sm text-ink">{title}</h1>}
+        </div>
         {inner}
-        <Button variant="tertiary" onClick={onSignOut} className="mt-8">
+        <Button variant="tertiary" onClick={onSignOut}>
           Sign out
         </Button>
       </Slab>
@@ -122,6 +132,7 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
 
   if (mode === 'loading') {
     return shell(
+      null,
       <div className="flex flex-col items-center gap-4 py-8">
         <span className="spin" role="status" aria-label="Loading" />
         <p className="label text-ink-muted">Preparing</p>
@@ -131,7 +142,8 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
 
   if (mode === 'error') {
     return shell(
-      <>
+      null,
+      <div className="flex flex-col items-center gap-6">
         <p className="body-sm text-alert">{message}</p>
         <Button
           onClick={() => {
@@ -140,17 +152,16 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
             setMessage(null);
             initialise();
           }}
-          className="mt-6"
         >
           Try again
         </Button>
-      </>
+      </div>
     );
   }
 
   const codeInput = (
-    <form onSubmit={handleVerify} className="mt-8 w-full text-left">
-      <label htmlFor="totp-code" className="label mb-2 block">
+    <form onSubmit={handleVerify} className="w-full text-left flex flex-col gap-3">
+      <label htmlFor="totp-code" className="label block">
         6-digit code
       </label>
       <input
@@ -168,9 +179,9 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
         className={`${FIELD_WELL} text-center font-data tracking-[0.5em]`}
       />
 
-      {message && <p className="body-sm text-alert mt-3">{message}</p>}
+      {message && <p className="body-sm text-alert">{message}</p>}
 
-      <Button type="submit" disabled={busy || code.length < 6} className="mt-6 w-full">
+      <Button type="submit" disabled={busy || code.length < 6} className="mt-3 w-full">
         {busy ? 'Verifying' : 'Verify'}
       </Button>
     </form>
@@ -178,36 +189,44 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
 
   if (mode === 'challenge') {
     return shell(
+      'Enter your code',
       <>
-        <h1 className="title-sm text-ink mb-4">Enter your code</h1>
-        <p className="body text-ink-muted measure">
-          Open your authenticator app and enter the current code for Western Sales Club.
-        </p>
+        <div className="flex flex-col items-center gap-3">
+          <p className="body-sm text-ink-muted measure">
+            Open your authenticator app and enter the current code for Western Sales Club.
+          </p>
+          {/* Apple Passwords tucks its codes away well enough that people
+              assume they never set one up. */}
+          <p className="meta text-ink-faint measure">
+            Saved it in Apple Passwords? Open the Passwords app &rarr; Codes on iOS 18 or
+            later, or Settings &rarr; Passwords &rarr; Western Sales Club on iOS 17.
+          </p>
+        </div>
         {codeInput}
       </>
     );
   }
 
   return shell(
+    'Set up two-factor',
     <>
-      <h1 className="title-sm text-ink mb-4">Set up two-factor</h1>
-      <p className="body text-ink-muted measure">
+      <p className="body-sm text-ink-muted measure">
         Scan this with Google Authenticator, Microsoft Authenticator, 1Password, or Apple
         Passwords. Then enter the 6-digit code it shows.
       </p>
 
       {qrCode && (
-        <div className="mt-7 flex justify-center">
+        <>
           {/* Supabase returns the QR as an inline SVG data URI, which
               next/image cannot optimise. The white ground is required for
               a scanner in the dark theme. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCode} alt="Two-factor setup QR code" className="h-48 w-48 rounded-sm bg-white p-3" />
-        </div>
+        </>
       )}
 
       {secret && (
-        <details className="mt-5 w-full text-left">
+        <details className="w-full text-left">
           <summary className="label cursor-pointer text-ink-muted hover:text-accent-ink transition-colors duration-[var(--d-hover)] ease-enter">
             Cannot scan? Enter a code manually
           </summary>
@@ -219,7 +238,7 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
 
       {codeInput}
 
-      <p className="meta text-ink-faint mt-6">
+      <p className="meta text-ink-faint measure">
         Keep this in an app you will still have next term. If you lose the device, the site
         owner has to remove the factor for you.
       </p>

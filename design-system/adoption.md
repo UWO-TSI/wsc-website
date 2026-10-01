@@ -161,8 +161,8 @@ oversights, and both are reversible.
   section, over two panels and 200vh, which meant the pin grabbed the page and released it inside
   half a screen. That section is now four statically laid out panels on an asymmetric grid. The
   sequence remains part of the system and its card is still in `floor.html`; nothing on the site
-  currently spends it. **GSAP is therefore imported by no component**, so if you reintroduce Scroll
-  Scrub, import it dynamically inside that route's component and subscribe ScrollTrigger to Lenis
+  currently spends it. **GSAP is therefore no longer a dependency**, so if you reintroduce Scroll
+  Scrub, install it and import it dynamically inside that route's component and subscribe ScrollTrigger to Lenis
   there through `useLenis()`, never in `LenisProvider`, which is mounted everywhere.
 
 ## Images
@@ -173,20 +173,12 @@ the root.
 | Folder | Holds |
 | --- | --- |
 | `public/logos/` | Brand marks, ours and other people's: the club shark, the Tethos mark, the social glyphs. |
-| `public/imagery/` | General club photography. |
-| `public/events/` | Photography tied to a named event or partner. |
 | `public/screenshots/` | README captures. Not used by the site. |
 
-Photographs ship as AVIF with a WebP alongside, capped at 1600px. The camera-resolution originals
-are archived in `assets/originals/`, which is outside `public/` and so is never deployed.
-
-`node scripts/optimize-photos.mjs` does the pass: drop the new file into `public/`, add a line to
-its `PHOTOS` map naming the destination folder and the slug, and run it. It writes both formats,
-archives the original, and removes it from `public/`. Idempotent, so re-running after adding a few
-more is safe.
-
-Never point a component at a bare file at the root of `public/`. If a reference looks like
-`/Something.jpeg`, it has not been through the pass.
+**No photography lives in the repo.** Every photo is an admin-managed slot (`src/lib/image-slots.ts`,
+`site_images`), uploaded through `/admin` → Images into the `site-images` bucket: JPEG, PNG, WebP or
+AVIF, 2 MB at most, enforced by the bucket. Camera originals are kept outside git in the
+gitignored `archive/`.
 
 The social share image is `src/app/opengraph-image.png`, a Next file convention rather than a
 `public/` asset: it is served, sized and injected into the OpenGraph and Twitter tags

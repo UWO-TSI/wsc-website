@@ -10,7 +10,7 @@
 - **Affiliation**: Tethos (formerly TSI, Tech for Social Impact)
 
 **Pages**: Home, About, Executive Team, Events, Partners (Sponsors), Contact, Terms, Privacy Policy
-**Protected**: `/admin` — content management dashboard, Google OAuth only
+**Protected**: `/admin`, the content management dashboard. Google OAuth plus mandatory TOTP 2FA; invite-only, ten-month access. See `supabase/README.md`.
 
 ---
 
@@ -81,7 +81,8 @@ WSC Floor. The full rules are in `design-system/README.md`; this is the enforcea
 | ------ | ------- | --------- |
 | `headshots` | Executive portraits | `executives.headshot_path` |
 | `sponsor-logos` | Sponsor logos | `sponsors.logo_path` |
-| `gallery` | Gallery photos | `gallery_photos.image_path` |
+| `gallery` | Gallery photos (no page shows them; admin tab hidden) | `gallery_photos.image_path` |
+| `site-images` | The 12 photo slots in `src/lib/image-slots.ts` | `site_images.object_name` |
 
 ### Tables
 
@@ -91,6 +92,9 @@ WSC Floor. The full rules are in `design-system/README.md`; this is the enforcea
 | `sponsors` | `active` |
 | `executives` | `visible` |
 | `gallery_photos` | `visible` |
+| `site_stats` | `visible` |
+
+Also `site_content` (every editable string, admins UPDATE `value` only), `site_images` (slot to object), `exec_groups` (roles), `admins`, `admin_invites`, `admin_audit`.
 
 ### Hard Rules
 

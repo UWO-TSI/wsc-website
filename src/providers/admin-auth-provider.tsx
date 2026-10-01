@@ -168,19 +168,22 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
   if (state === 'denied' || !user) {
     return (
       <div className="min-h-screen bg-page flex items-center justify-center px-6">
-        <Slab tone="raised" as="div" className="max-w-md text-center flex flex-col items-center">
-          <p className="label text-accent-ink mb-6">Admin portal</p>
-          <h1 className="title-sm text-ink mb-4">Western Sales Club</h1>
-          <p className="body text-ink-muted mb-10 measure">
+        {/* Spaced with gap: the type classes reset margin outside a layer, so mb-* never applies. */}
+        <Slab tone="raised" as="div" className="max-w-md text-center flex flex-col items-center gap-8">
+          <div className="flex flex-col items-center gap-4">
+            <p className="label text-accent-ink">Admin portal</p>
+            <h1 className="title-sm text-ink">Western Sales Club</h1>
+          </div>
+          <p className="body-sm text-ink-muted measure">
             Sign in with an authorized Google account to access the content management
             dashboard. If someone invited you, sign in with the exact address they invited.
           </p>
-          <Button onClick={signIn} className="mb-6">
-            Sign in with Google
-          </Button>
-          <Button variant="tertiary" href="/">
-            Back to site
-          </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Button onClick={signIn}>Sign in with Google</Button>
+            <Button variant="tertiary" href="/">
+              Back to site
+            </Button>
+          </div>
           <DevSignIn />
         </Slab>
       </div>

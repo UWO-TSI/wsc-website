@@ -23,7 +23,6 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Chip | `ui/chip.tsx` | none |
 | TimelineEvent | `events/timeline-event.tsx` | Row Expand |
 | LogoWall | `sponsors/logo-wall.tsx`, `logo-card.tsx` | none |
-| BentoGallery | `about/bento-gallery.tsx` | Clip Reveal |
 | AsyncState | `shared/async-state-wrapper.tsx` | none |
 | Skeleton | `ui/skeleton.tsx`, `ui/row-skeleton.tsx` | sweep |
 | RevealImage | `ui/reveal-image.tsx` | Clip Reveal |

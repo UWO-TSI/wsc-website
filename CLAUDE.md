@@ -40,8 +40,7 @@ Headline rules: no borders anywhere (the focus ring is the only outline), the ac
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript (strict mode) |
 | Styling | Tailwind CSS v4 — CSS-first `@theme` in `globals.css`, **no `tailwind.config.js`** |
-| Animation | Framer Motion + Lenis. GSAP is still a dependency but no component imports it: it was only ever used for Scroll Scrub, which the site no longer spends. |
-| Primitives | Radix UI (NavigationMenu, Dialog, Tooltip) |
+| Animation | Framer Motion + Lenis. GSAP was removed: it was only ever used for Scroll Scrub, which the site no longer spends. Reinstall it on the one route that needs it if that changes. |
 | Backend | Supabase |
 | Contact | EmailJS (`service_qwpe0fl` / `template_lt8anmn`) |
 

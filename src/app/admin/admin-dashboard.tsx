@@ -78,10 +78,8 @@ export default function AdminDashboard() {
         }`}
       >
         {/* Sidebar header */}
-        {/* Eyebrow over title, the sign-in screen's pattern at sidebar width. */}
-        <div className="px-5 py-6 flex flex-col gap-2">
+        <div className="px-5 py-6">
           <p className="label text-accent-ink">Content manager</p>
-          <h2 className="title-sm text-ink">WSC Admin</h2>
         </div>
 
         {/* Nav */}

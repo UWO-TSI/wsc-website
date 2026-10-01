@@ -165,10 +165,15 @@ export const curtain: Variants = {
 };
 
 /* ── Magnetic Pull, sequence 6 ──
-   Up to 6px toward the pointer, behind (hover: hover) and (pointer: fine).
-   Never on touch, never on a form field. */
+   Up to 4px across and 2.5px down toward the pointer, behind (hover: hover)
+   and (pointer: fine). Never on touch, never on a form field. Eased by
+   exponential smoothing: TAU is the time constant in seconds, so the offset
+   covers about 95% of the way to its target in 3 x TAU. */
 
-export const MAGNET_RANGE = 6;
+export const MAGNET_RANGE = 4;
+export const MAGNET_RANGE_Y = 2.5;
+export const MAGNET_PULL_TAU = 0.12;
+export const MAGNET_RELEASE_TAU = 0.2;
 
 /**
  * A single move on arrival, for components that are already inside an

@@ -806,7 +806,7 @@
         </div>
       </div>
       <div class="tile" id="m10">
-        <div class="tile-h"><span><span class="nm">Magnetic pull</span><span class="sp">90ms toward cursor &middot; 6px max &middot; fine pointers</span></span><span class="label">Hover</span></div>
+        <div class="tile-h"><span><span class="nm">Magnetic pull</span><span class="sp">smoothed toward cursor &middot; 4px max &middot; fine pointers</span></span><span class="label">Hover</span></div>
         <div class="stage">
           <div class="mags">
             <button class="btn b1 mag" type="button">Apply to join <span class="aw">&#8594;</span></button>
@@ -1297,16 +1297,33 @@
       sweepNav(navdemo, navdemo.querySelector('[aria-current="true"]') || navdemo.querySelector('button'), true);
     });
 
-    /* magnetic */
+    /* magnetic: one rAF loop, exponential smoothing, centre measured on enter */
     if (window.matchMedia('(hover: hover) and (pointer: fine)').matches && !reduce.matches) {
+      var soft = function (n) { return Math.tanh(n * 1.4) / Math.tanh(1.4); };
+      var clamp = function (n) { return Math.max(-1, Math.min(1, n)); };
       document.querySelectorAll('.mag').forEach(function (b) {
-        b.addEventListener('pointermove', function (e) {
+        var cx = 0, cy = 0, hw = 1, hh = 1, x = 0, y = 0, tx = 0, ty = 0, tau = 0.12, frame = 0, last = 0;
+        function tick(now) {
+          var dt = last ? Math.min((now - last) / 1000, 0.05) : 1 / 60;
+          last = now;
+          var k = 1 - Math.exp(-dt / tau);
+          x += (tx - x) * k; y += (ty - y) * k;
+          if (Math.abs(tx - x) < 0.01 && Math.abs(ty - y) < 0.01) { x = tx; y = ty; frame = 0; last = 0; }
+          else frame = requestAnimationFrame(tick);
+          b.style.translate = (x === 0 && y === 0) ? '' : x.toFixed(2) + 'px ' + y.toFixed(2) + 'px';
+        }
+        function run() { if (!frame) frame = requestAnimationFrame(tick); }
+        b.addEventListener('pointerenter', function () {
           var r = b.getBoundingClientRect();
-          var dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-          var dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-          b.style.transform = 'translate(' + (dx * 6).toFixed(1) + 'px,' + (dy * 4).toFixed(1) + 'px)';
+          hw = r.width / 2; hh = r.height / 2; cx = r.left + hw - x; cy = r.top + hh - y;
         });
-        b.addEventListener('pointerleave', function () { b.style.transform = ''; });
+        b.addEventListener('pointermove', function (e) {
+          tau = 0.12;
+          tx = soft(clamp((e.clientX - cx) / hw)) * 4;
+          ty = soft(clamp((e.clientY - cy) / hh)) * 2.5;
+          run();
+        });
+        b.addEventListener('pointerleave', function () { tau = 0.2; tx = 0; ty = 0; run(); });
       });
     }
 

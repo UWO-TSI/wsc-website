@@ -65,7 +65,7 @@ Counts zero to value over `--d-seq`, `--e-enter`, starting at 70 percent visible
 
 ### 6. Magnetic Pull
 
-Buttons and the custom cursor. Up to 6px toward the pointer at `--d-tap`, released over `--d-move`. Behind `@media (hover: hover) and (pointer: fine)`. Never on touch, never on a form field.
+Buttons and the custom cursor. Up to 4px across and 2.5px down toward the pointer, through a soft `tanh` response so the pull flattens toward the edge instead of stopping hard. One `requestAnimationFrame` loop eases the offset with exponential smoothing (time constant 120ms pulling, 200ms releasing), never a CSS transition retargeted per `pointermove`, which restarts its curve every event and stutters. The centre is measured once on `pointerenter`, minus the current offset, so the button never chases its own displacement. Writes `translate`, leaving `transform` to the press scale. Behind `@media (hover: hover) and (pointer: fine)`. Never on touch, never on a form field.
 
 ### 7. Marquee Drift
 

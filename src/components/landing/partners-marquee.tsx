@@ -9,6 +9,7 @@ import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
 import Skeleton from '@/components/ui/skeleton';
 import { getPublicUrl } from '@/lib/supabase/storage';
+import { useSiteContent } from '@/providers/site-content-provider';
 
 /*
   Partners marquee: sequence 7, Marquee Drift. The one ambient loop in the
@@ -55,6 +56,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
   const [copies, setCopies] = useState(2);
   const [duration, setDuration] = useState(48);
   const [hidden, setHidden] = useState(false);
+  const { text } = useSiteContent();
 
   const active = sponsors.filter((sponsor) => sponsor.active);
 
@@ -104,10 +106,10 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     <Slab tone="logo" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
       <div className="flex flex-col gap-8">
         <SectionHead
-          eyebrow="Partners"
+          eyebrow={text('home.partners.eyebrow')}
           index="03"
           id="partners-heading"
-          title={['Who we work with']}
+          title={[text('home.partners.title_line1')]}
         />
 
         {loading ? (
@@ -172,7 +174,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
 
         <div>
           <Button href="/sponsors" variant="tertiary" arrow>
-            See all partners
+            {text('home.partners.link_label')}
           </Button>
         </div>
       </div>

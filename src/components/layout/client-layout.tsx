@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/providers/theme-provider';
 import { PreloaderProvider, usePreloader } from '@/providers/preloader-provider';
 import { CursorProvider } from '@/providers/cursor-provider';
 import { LenisProvider } from '@/providers/lenis-provider';
+import { SiteContentProvider } from '@/providers/site-content-provider';
 import { CustomCursor } from '@/components/cursor/custom-cursor';
 import Preloader from '@/components/layout/preloader';
 import Nav from '@/components/layout/nav';
@@ -15,23 +16,25 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { complete, markComplete } = usePreloader();
 
   return (
-    <CursorProvider>
-      <LenisProvider>
-        <CustomCursor />
+    <SiteContentProvider>
+      <CursorProvider>
+        <LenisProvider>
+          <CustomCursor />
 
-        <AnimatePresence mode="wait">
-          {!complete && <Preloader key="preloader" onLoadComplete={markComplete} />}
-        </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {!complete && <Preloader key="preloader" onLoadComplete={markComplete} />}
+          </AnimatePresence>
 
-        <a href="#main-content" className="skip">
-          Skip to content
-        </a>
+          <a href="#main-content" className="skip">
+            Skip to content
+          </a>
 
-        <Nav />
-        <main id="main-content">{children}</main>
-        <Footer />
-      </LenisProvider>
-    </CursorProvider>
+          <Nav />
+          <main id="main-content">{children}</main>
+          <Footer />
+        </LenisProvider>
+      </CursorProvider>
+    </SiteContentProvider>
   );
 }
 

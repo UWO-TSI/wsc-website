@@ -4,6 +4,9 @@ import Eyebrow from '@/components/ui/eyebrow';
 import RevealImage from '@/components/ui/reveal-image';
 import Slab, { type SlabTone } from '@/components/ui/slab';
 import { useReveal } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
+import type { SiteContentKey } from '@/lib/site-content-defaults';
+import type { ImageSlotKey } from '@/lib/image-slots';
 
 /*
   Four facts and two photographs on one grid. The gallery section is gone;
@@ -31,105 +34,84 @@ import { useReveal } from '@/lib/reveal';
 
 type Tone = SlabTone | 'bare';
 
+/*
+  The words are editable (about.story.factN_*) and the photographs are
+  slots (about.story.imageN). What stays here is the layout: the index,
+  the tone and the grid placement of each cell.
+*/
 interface TextCell {
   kind: 'text';
   index: string;
-  eyebrow: string;
-  title: string;
-  body: string[];
+  fact: 1 | 2 | 3 | 4;
   tone: Tone;
   place: string;
 }
 
 interface PhotoCell {
   kind: 'photo';
-  src: string;
-  alt: string;
+  slot: ImageSlotKey;
   sizes: string;
   place: string;
 }
 
 type Cell = TextCell | PhotoCell;
 
-/*
-  Only what the club can point at: the exec groups the executives table
-  actually has, the partner and event counts already published as figures,
-  the USC store the join button links to, and the contact address in the
-  legal pages.
-*/
 const CELLS: Cell[] = [
   {
     kind: 'text',
     index: '01',
-    eyebrow: 'What we do',
-    title: 'Workshops and events, all year',
-    body: [
-      'Western Sales Club runs workshops and events through the year for students who want experience in sales before they graduate.',
-      'Members learn from people who do the work, not only from a reading list.',
-    ],
+    fact: 1,
     tone: 'raised',
     place: 'order-1 lg:col-start-1 lg:col-span-5 lg:row-start-1',
   },
   {
     kind: 'photo',
-    src: '/imagery/sales-comp-4.avif',
-    alt: 'Western Sales Club members holding a competition prize cheque',
+    slot: 'about.story.image1',
     sizes: '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 58vw',
     place: 'order-2 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2',
   },
   {
     kind: 'text',
     index: '02',
-    eyebrow: 'How we run',
-    title: 'A student exec team',
-    body: [
-      'Presidents, vice presidents, and assistant vice presidents run the club.',
-      'The roster is on the executive team page, and it turns over every year.',
-    ],
+    fact: 2,
     tone: 'bare',
     place: 'order-3 lg:col-start-1 lg:col-span-5 lg:row-start-2',
   },
   {
     kind: 'photo',
-    src: '/imagery/sales-comp-5.avif',
-    alt: 'Western Sales Club members standing with the club banner',
+    slot: 'about.story.image2',
     sizes: '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 58vw',
     place: 'order-4 lg:col-start-1 lg:col-span-7 lg:row-start-3 lg:row-span-2',
   },
   {
     kind: 'text',
     index: '03',
-    eyebrow: 'Who backs us',
-    title: 'Five industry partners',
-    body: [
-      'Partners support the club and connect members with people working in the field.',
-      'They are listed on the partners page.',
-    ],
+    fact: 3,
     tone: 'sunken',
     place: 'order-5 lg:col-start-8 lg:col-span-5 lg:row-start-3',
   },
   {
     kind: 'text',
     index: '04',
-    eyebrow: 'How to join',
-    title: 'Membership runs through the USC store',
-    body: [
-      'The club runs about ten events a year for its members.',
-      'Questions go to sales.club@westernusc.ca.',
-    ],
+    fact: 4,
     tone: 'inverse',
     place: 'order-6 lg:col-start-8 lg:col-span-5 lg:row-start-4',
   },
 ];
 
 function TextPanel({ cell, stagger }: { cell: TextCell; stagger: number }) {
+  const { text } = useSiteContent();
+  const key = (part: string) => `about.story.fact${cell.fact}_${part}` as SiteContentKey;
+  /* A second paragraph left empty is dropped rather than leaving a gap. */
+  const body = [text(key('body1')), text(key('body2'))].filter(Boolean);
+
   const style = { '--i': stagger } as React.CSSProperties;
   const copy = (
     <div className="flex flex-col gap-3">
-      <Eyebrow index={cell.index}>{cell.eyebrow}</Eyebrow>
-      <h2 className="title-sm">{cell.title}</h2>
-      {cell.body.map((paragraph) => (
-        <p key={paragraph} className="body measure">
+      <Eyebrow index={cell.index}>{text(key('eyebrow'))}</Eyebrow>
+      <h2 className="title-sm">{text(key('title'))}</h2>
+      {body.map((paragraph, i) => (
+        <p key={i} className="body measure">
           {paragraph}
         </p>
       ))}
@@ -154,11 +136,12 @@ function TextPanel({ cell, stagger }: { cell: TextCell; stagger: number }) {
 }
 
 function PhotoPanel({ cell }: { cell: PhotoCell }) {
+  const { image } = useSiteContent();
+
   return (
     <figure className={`m-0 min-w-0 ${cell.place}`}>
       <RevealImage
-        src={cell.src}
-        alt={cell.alt}
+        {...image(cell.slot)}
         sizes={cell.sizes}
         className="aspect-[3/2] h-full w-full rounded-md"
       />
@@ -174,7 +157,7 @@ export default function StorySection() {
     <div ref={ref} className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12">
       {CELLS.map((cell) => {
         if (cell.kind === 'photo') {
-          return <PhotoPanel key={cell.src} cell={cell} />;
+          return <PhotoPanel key={cell.slot} cell={cell} />;
         }
 
         return (

@@ -1,7 +1,7 @@
 'use client';
 
 import RevealImage from '@/components/ui/reveal-image';
-import { format } from 'date-fns';
+import { format, parseISO, startOfDay } from 'date-fns';
 
 import type { Event, QueryError } from '@/types/database';
 import Button from '@/components/ui/button';
@@ -10,6 +10,7 @@ import SectionHead from '@/components/ui/section-head';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import { useReveal } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
 
 /*
   Events preview: rows, not cards. `events` has no status column, so Open is
@@ -19,6 +20,11 @@ import { useReveal } from '@/lib/reveal';
 
   Self-contained: another agent owns the full timeline in
   src/components/events/, so nothing here imports from that tree.
+
+  The four most recent, newest first, which is the order the landing page
+  already queries in (date DESC, created_at DESC). This used to re-sort
+  ascending before slicing, which showed the four OLDEST events ever
+  published once the calendar had more than four.
 */
 const PREVIEW_COUNT = 4;
 
@@ -28,19 +34,17 @@ interface EventsPreviewProps {
   error: QueryError | null;
 }
 
+/* parseISO, not new Date(): a bare 'YYYY-MM-DD' parses as UTC midnight,
+   which is the previous evening in London, Ontario. */
 function isUpcoming(date: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new Date(date) >= today;
+  return parseISO(date) >= startOfDay(new Date());
 }
 
 export default function EventsPreview({ events, loading, error }: EventsPreviewProps) {
   const ref = useReveal<HTMLElement>();
 
-  const upcoming = events
-    .filter((event) => event.published)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, PREVIEW_COUNT);
+  const { text, image } = useSiteContent();
+  const upcoming = events.filter((event) => event.published).slice(0, PREVIEW_COUNT);
 
   return (
     <section ref={ref} className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
@@ -52,13 +56,18 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
       */}
       <div className="mx-auto grid max-w-[1100px] grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-14">
         <div className="flex flex-col gap-10">
-          <SectionHead eyebrow="Events" index="02" id="events-heading" title={['On the', 'calendar']} />
+          <SectionHead
+            eyebrow={text('home.events.eyebrow')}
+            index="02"
+            id="events-heading"
+            title={[text('home.events.title_line1'), text('home.events.title_line2')].filter(Boolean)}
+          />
 
           <AsyncStateWrapper
             loading={loading}
             error={error}
             data={upcoming}
-            emptyMessage="No events on the calendar yet."
+            emptyMessage={text('home.events.empty')}
             skeleton={<RowSkeleton count={4} />}
           >
             <div className="arrive flex flex-col gap-1">
@@ -70,15 +79,14 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
 
           <div>
             <Button href="/events" variant="secondary" arrow>
-              See all events
+              {text('home.events.link_label')}
             </Button>
           </div>
         </div>
 
         {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
         <RevealImage
-          src="/events/college-pro.avif"
-          alt="Western Sales Club members at a College Pro event"
+          {...image('home.events.image1')}
           sizes="(max-width: 1024px) 100vw, 420px"
           className="aspect-[3/4] w-full rounded-md lg:sticky lg:top-28"
         />
@@ -89,7 +97,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
 
 function EventRow({ event }: { event: Event }) {
   const open = isUpcoming(event.date);
-  const formatted = format(new Date(event.date), 'MMM d').toUpperCase();
+  const formatted = format(parseISO(event.date), 'MMM d').toUpperCase();
 
   return (
     <div

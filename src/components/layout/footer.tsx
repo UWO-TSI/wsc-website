@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import Slab from "@/components/ui/slab";
+import { useSiteContent } from "@/providers/site-content-provider";
 
 /*
   Footer: a --sunken slab, flat elevation, no shadow. Three columns on a
@@ -26,21 +27,20 @@ const LEGAL_LINKS = [
   { label: "Privacy", href: "/privacy-policy" },
 ] as const;
 
+/* The marks stay in code; the destinations are editable, and an empty
+   link hides its icon. */
 const SOCIAL_LINKS = [
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/westernsalesclub/",
-    icon: "/logos/instagram.svg",
-  },
-  {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/company/western-sales-club/",
-    icon: "/logos/linkedin.svg",
-  },
+  { label: "Instagram", key: "footer.social.instagram_url", icon: "/logos/instagram.svg" },
+  { label: "LinkedIn", key: "footer.social.linkedin_url", icon: "/logos/linkedin.svg" },
 ] as const;
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { text } = useSiteContent();
+  const email = text("footer.contact.email");
+  const socials = SOCIAL_LINKS.map((social) => ({ ...social, href: text(social.key) })).filter(
+    (social) => social.href
+  );
 
   return (
     <Slab
@@ -63,15 +63,17 @@ export default function Footer() {
               Western Sales Club
             </span>
           </Link>
-          <a
-            href="mailto:sales.club@westernusc.ca"
-            data-cursor="hover"
-            className="meta w-fit no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
-          >
-            sales.club@westernusc.ca
-          </a>
+          {email && (
+            <a
+              href={`mailto:${email}`}
+              data-cursor="hover"
+              className="meta w-fit no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
+            >
+              {email}
+            </a>
+          )}
           <div className="flex items-center gap-3">
-            {SOCIAL_LINKS.map((social) => (
+            {socials.map((social) => (
               <a
                 key={social.label}
                 href={social.href}

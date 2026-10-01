@@ -9,6 +9,8 @@ export const LIMITS = {
   MAX_SPONSORS: 20,
   MAX_EXECUTIVES: 30,
   MAX_GALLERY_PHOTOS: 40,
+  MAX_SITE_STATS: 6,
+  MAX_EXEC_GROUPS: 10,
 };
 
 export interface ContentConfig {
@@ -17,8 +19,13 @@ export interface ContentConfig {
   pathColumn?: string;
   visibilityColumn: string;
   displayName: string;
+  /** Singular noun for the "Add X" button, when trimming an "s" is wrong. */
+  singularName?: string;
   limit: number;
+  /** Up and Down buttons on display_order. Default true. */
   orderable?: boolean;
+  /** Fixed sort for a table that is not orderable. */
+  sort?: { column: string; ascending: boolean; thenBy?: string };
 }
 
 export const CONTENT_CONFIG: Record<string, ContentConfig> = {
@@ -26,7 +33,12 @@ export const CONTENT_CONFIG: Record<string, ContentConfig> = {
     table: 'events',
     visibilityColumn: 'published',
     displayName: 'Events',
+    singularName: 'Event',
     limit: LIMITS.MAX_EVENTS,
+    // Events are ordered by their date, newest first, same as the site.
+    // Manual ordering would only be overridden by the date anyway.
+    orderable: false,
+    sort: { column: 'date', ascending: false, thenBy: 'created_at' },
   },
   sponsors: {
     table: 'sponsors',
@@ -34,6 +46,7 @@ export const CONTENT_CONFIG: Record<string, ContentConfig> = {
     pathColumn: 'logo_path',
     visibilityColumn: 'active',
     displayName: 'Sponsors',
+    singularName: 'Sponsor',
     limit: LIMITS.MAX_SPONSORS,
   },
   executives: {
@@ -42,8 +55,11 @@ export const CONTENT_CONFIG: Record<string, ContentConfig> = {
     pathColumn: 'headshot_path',
     visibilityColumn: 'visible',
     displayName: 'Executives',
+    singularName: 'Executive',
     limit: LIMITS.MAX_EXECUTIVES,
-    orderable: false,
+    // Was false, which left the club unable to order its own team even
+    // though executives.display_order has always existed.
+    orderable: true,
   },
   gallery_photos: {
     table: 'gallery_photos',
@@ -51,6 +67,21 @@ export const CONTENT_CONFIG: Record<string, ContentConfig> = {
     pathColumn: 'image_path',
     visibilityColumn: 'visible',
     displayName: 'Gallery Photos',
+    singularName: 'Photo',
     limit: LIMITS.MAX_GALLERY_PHOTOS,
+  },
+  site_stats: {
+    table: 'site_stats',
+    visibilityColumn: 'visible',
+    displayName: 'Statistics',
+    singularName: 'Statistic',
+    limit: LIMITS.MAX_SITE_STATS,
+  },
+  exec_groups: {
+    table: 'exec_groups',
+    visibilityColumn: 'visible',
+    displayName: 'Roles',
+    singularName: 'Role',
+    limit: LIMITS.MAX_EXEC_GROUPS,
   },
 };

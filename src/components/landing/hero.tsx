@@ -3,6 +3,8 @@
 import Button from '@/components/ui/button';
 import { usePreloader } from '@/providers/preloader-provider';
 import { useReveal, cascade } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { externalLinkProps } from '@/lib/link-utils';
 
 /*
   KineticHeadline: the one orchestrated moment on the page. Sequence 1, Line
@@ -29,17 +31,27 @@ import { useReveal, cascade } from '@/lib/reveal';
 
   Titles are Archivo all caps by the type role, so these carry the words and
   not the casing.
+
+  The words are editable (site_content, home.hero.*); the scale per line is
+  layout and stays here. A line left empty is dropped, and each line's
+  ceiling (14 characters for a name line) is what stops an edit from
+  wrapping a hero line onto a second row.
 */
 const TITLE_LINES = [
-  { text: 'Welcome to', scale: 'title' },
-  { text: 'Western’s', scale: 'title-hero' },
-  { text: 'Sales', scale: 'title-hero' },
-  { text: 'Community', scale: 'title-hero' },
+  { key: 'home.hero.title_line1', scale: 'title' },
+  { key: 'home.hero.title_line2', scale: 'title-hero' },
+  { key: 'home.hero.title_line3', scale: 'title-hero' },
+  { key: 'home.hero.title_line4', scale: 'title-hero' },
 ] as const;
 
 export default function Hero() {
   const { complete } = usePreloader();
   const ref = useReveal<HTMLElement>({ immediate: true, enabled: complete });
+  const { text } = useSiteContent();
+  const href = text('home.hero.button_href');
+  const lines = TITLE_LINES.map((line) => ({ ...line, text: text(line.key) })).filter(
+    (line) => line.text
+  );
 
   return (
     <section
@@ -48,25 +60,20 @@ export default function Hero() {
     >
       {/* The h1 carries no scale of its own: each masked line sets its own. */}
       <h1 className="m-0">
-        {TITLE_LINES.map((line, i) => (
-          <span key={line.text} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
+        {lines.map((line, i) => (
+          <span key={line.key} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
             <i>{line.text}</i>
           </span>
         ))}
       </h1>
 
       <p className="subtitle cascade measure">
-        {cascade('A student-run sales organization at Western University.')}
+        {cascade(text('home.hero.subtitle'))}
       </p>
 
       <div>
-        <Button
-          href="https://westernusc.store/product/western-sales-club/"
-          target="_blank"
-          rel="noopener noreferrer"
-          arrow
-        >
-          Apply to join
+        <Button href={href} {...externalLinkProps(href)} arrow>
+          {text('home.hero.button_label')}
         </Button>
       </div>
     </section>

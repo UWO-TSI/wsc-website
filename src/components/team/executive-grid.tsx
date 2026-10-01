@@ -71,7 +71,7 @@ export default function ExecutiveGrid({ executives }: { executives: Executive[] 
     what releases the shared Clip Reveal.
   */
   const pending = useRef(new Set(photos.map((photo) => photo.id)));
-  const [ready, setReady] = useState(pending.current.size === 0);
+  const [ready, setReady] = useState(photos.length === 0);
   const ref = useReveal<HTMLUListElement>({ ready });
 
   const settle = (id: string) => {
@@ -101,7 +101,10 @@ export default function ExecutiveGrid({ executives }: { executives: Executive[] 
 
           <div className="flex flex-col gap-1">
             <span className="title-sm">{executive.name}</span>
-            <span className="meta">{executive.title}</span>
+            <span className="meta">
+              {executive.title}
+              {executive.year_of_study ? ` · Year ${executive.year_of_study}` : ''}
+            </span>
           </div>
         </li>
         );

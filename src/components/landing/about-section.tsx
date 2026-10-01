@@ -6,42 +6,43 @@ import Slab from '@/components/ui/slab';
 import SectionHead from '@/components/ui/section-head';
 import StatFigure from '@/components/ui/stat-figure';
 import { useReveal } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
+import { SITE_STAT_FALLBACKS } from '@/lib/site-stat-fallbacks';
+import type { SiteStat } from '@/types/database';
 
 /*
   About: a SectionHead, running copy at the measure, and the three
-  StatFigures. These numbers are the club's own existing claims
-  (design-system/adoption.md, "Data decisions taken during adoption"): do not
-  add a fourth, do not invent one.
+  StatFigures. The figures are the club's own claims and live in site_stats,
+  edited under Statistics in the admin. Three in a row at most, per
+  StatFigure, so only the first three visible rows render.
+
+  The fallback trio shows while the query is in flight and if it fails, so
+  the row never appears half-built. Once it answers, the database wins.
 */
-/*
-  Optimized derivatives from public/. The camera-resolution originals are
-  archived in assets/originals/ and are not deployed: see
-  scripts/optimize-photos.mjs.
-*/
-const PHOTOS = [
-  { src: '/imagery/sales-comp-1.avif', alt: 'Western Sales Club members at a sales competition' },
-  { src: '/events/vantage-1.avif', alt: 'Western Sales Club members at a club event' },
-  { src: '/imagery/sales-comp-3.avif', alt: 'Western Sales Club members presenting' },
-] as const;
+const PHOTO_SLOTS = ['home.about.image1', 'home.about.image2', 'home.about.image3'] as const;
 
 export default function AboutSection() {
   const ref = useReveal<HTMLDivElement>();
+  const { text, image } = useSiteContent();
+  const { data, loading, error } = useSupabaseQuery<SiteStat>('site_stats');
+  /* visible is filtered here too: a signed-in admin's RLS can read hidden
+     rows, and a hidden stat must not show to them on the public page. */
+  const stats = (loading || error ? SITE_STAT_FALLBACKS : data)
+    .filter((stat) => stat.visible)
+    .slice(0, 3);
 
   return (
     <Slab tone="raised" className="mx-[var(--gut)]" aria-labelledby="about-heading">
       <div ref={ref} className="flex flex-col gap-10">
         <SectionHead
-          eyebrow="About"
+          eyebrow={text('home.about.eyebrow')}
           index="01"
           id="about-heading"
-          title={['A sales floor', 'run by students']}
+          title={[text('home.about.title_line1'), text('home.about.title_line2')].filter(Boolean)}
         />
 
-        <p className="body measure">
-          Western Sales Club is a student-run organization at Western University.
-          We run workshops and events through the year, and connect members with
-          people who sell for a living.
-        </p>
+        <p className="body measure">{text('home.about.body')}</p>
 
         {/*
           A three-frame strip rather than one full-width photo. Blown up to the
@@ -54,11 +55,10 @@ export default function AboutSection() {
           60ms in reading order by --i.
         */}
         <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 sm:gap-3">
-          {PHOTOS.map((photo, i) => (
-            <li key={photo.src} className="m-0">
+          {PHOTO_SLOTS.map((slot, i) => (
+            <li key={slot} className="m-0">
               <RevealImage
-                src={photo.src}
-                alt={photo.alt}
+                {...image(slot)}
                 sizes="(max-width: 700px) 33vw, 280px"
                 className="aspect-[4/3] w-full rounded-md"
                 index={i}
@@ -68,14 +68,19 @@ export default function AboutSection() {
         </ul>
 
         <div className="flex flex-wrap gap-10 sm:gap-16">
-          <StatFigure value={150} suffix="+" label="Members" />
-          <StatFigure value={10} suffix="+" label="Annual events" />
-          <StatFigure value={5} suffix="+" label="Industry partners" />
+          {stats.map((stat) => (
+            <StatFigure
+              key={stat.id}
+              value={stat.value}
+              suffix={stat.suffix ?? undefined}
+              label={stat.label}
+            />
+          ))}
         </div>
 
         <div>
           <Button href="/about" variant="tertiary" arrow>
-            Learn about the club
+            {text('home.about.link_label')}
           </Button>
         </div>
       </div>

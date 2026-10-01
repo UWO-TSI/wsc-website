@@ -5,6 +5,7 @@ import type { Sponsor } from '@/types/database';
 import Eyebrow from '@/components/ui/eyebrow';
 import { useReveal } from '@/lib/reveal';
 import LogoWall from '@/components/sponsors/logo-wall';
+import { useSiteContent } from '@/providers/site-content-provider';
 
 /*
   A page is a stack of slabs on --page, inset by the gutter. The title block
@@ -12,8 +13,12 @@ import LogoWall from '@/components/sponsors/logo-wall';
   of cards (design-system/README.md, Layout).
 */
 export default function SponsorsPage() {
-  const { data: sponsors, loading, error, refetch } = useSupabaseQuery<Sponsor>('sponsors');
+  const { data: sponsors, loading, error, refetch } = useSupabaseQuery<Sponsor>('sponsors', {
+    /* Not redundant with RLS: a signed-in admin can read inactive rows. */
+    filters: [{ column: 'active', operator: 'eq', value: true }],
+  });
   const titleRef = useReveal<HTMLDivElement>();
+  const { text } = useSiteContent();
 
   return (
     <main
@@ -24,10 +29,10 @@ export default function SponsorsPage() {
       }}
     >
       <div ref={titleRef} className="mb-10">
-        <Eyebrow className="mb-3 block">Partners</Eyebrow>
+        <Eyebrow className="mb-3 block">{text('partners.header.eyebrow')}</Eyebrow>
         <h1 className="title">
           <span className="ln">
-            <i>The businesses that support Western Sales Club.</i>
+            <i>{text('partners.header.title')}</i>
           </span>
         </h1>
       </div>

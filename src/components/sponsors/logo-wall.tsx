@@ -8,6 +8,7 @@ import Skeleton from '@/components/ui/skeleton';
 import LogoCard from '@/components/sponsors/logo-card';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
+import { useSiteContent } from '@/providers/site-content-provider';
 
 interface LogoWallProps {
   sponsors: Sponsor[];
@@ -88,11 +89,13 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
 }
 
 export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWallProps) {
+  const { text } = useSiteContent();
+
   return (
     <Slab tone="sunken">
       <div className="mb-6 flex items-center gap-3">
         <span className="h-1 w-10 rounded-pill bg-gold" aria-hidden="true" />
-        <span className="label text-gold">Partners</span>
+        <span className="label text-gold">{text('partners.wall.label')}</span>
       </div>
 
       <AsyncStateWrapper
@@ -100,7 +103,7 @@ export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWall
         error={error}
         data={sponsors}
         onRetry={onRetry}
-        emptyMessage="No partners listed yet."
+        emptyMessage={text('partners.wall.empty')}
         skeleton={<WallSkeleton />}
       >
         <LogoGrid sponsors={sponsors} />

@@ -7,6 +7,11 @@ interface SupabaseError {
   statusCode?: number;
 }
 
+/** Trimmed error message, or '' when there is nothing usable. */
+function originalMessage(error: SupabaseError | Error): string {
+  return error.message?.trim() ?? '';
+}
+
 /**
  * Classifies a Supabase error into a category for consistent UI handling.
  */
@@ -55,6 +60,27 @@ export function classifyError(error: SupabaseError | Error | null): QueryError |
     return {
       category: 'conflict',
       message: 'This item already exists.',
+      retryable: false,
+    };
+  }
+
+  // Foreign key violation. The common case is deleting a role that
+  // still has team members assigned to it.
+  if (code === '23503') {
+    return {
+      category: 'conflict',
+      message:
+        'Something on the site still uses this item. Reassign or remove those entries first, then try again.',
+      retryable: false,
+    };
+  }
+
+  // RAISE EXCEPTION from our own triggers and functions. Those messages
+  // are written for the club to read, so pass them straight through.
+  if (code === 'P0001' && originalMessage(error)) {
+    return {
+      category: 'conflict',
+      message: originalMessage(error),
       retryable: false,
     };
   }

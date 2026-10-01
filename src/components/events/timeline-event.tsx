@@ -18,6 +18,18 @@ import type { Event } from '@/types/database';
   affordance.
 */
 
+/*
+  events.time is 24-hour HH:MM (migration 9). Shown the way the club writes
+  times on posters, "6:30 PM". Anything that is not HH:MM is a row from
+  before the migration that did not parse, and is shown as written.
+*/
+function formatTime(time: string) {
+  const match = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!match) return time;
+  const hours = Number(match[1]);
+  return `${hours % 12 || 12}:${match[2]} ${hours < 12 ? 'AM' : 'PM'}`;
+}
+
 interface TimelineEventProps {
   event: Event;
   index: number;
@@ -40,7 +52,7 @@ export default function TimelineEvent({ event, index }: TimelineEventProps) {
 
         <time dateTime={event.date} className="meta text-ink! order-2 shrink-0 pl-[44px] sm:pl-0">
           {format(date, 'MMM d, yyyy')}
-          {event.time ? ` · ${event.time}` : ''}
+          {event.time ? ` · ${formatTime(event.time)}` : ''}
         </time>
 
         {!isPast && (

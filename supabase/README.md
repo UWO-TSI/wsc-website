@@ -244,6 +244,22 @@ COMMIT;
 
 Both statements must run in one transaction: the unique index allows only one owner at a time.
 
+### Auth configuration (dashboard, not code)
+
+None of this lives in the repo, and `supabase db push` does not touch it. `supabase/config.toml`
+only configures the local stack.
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Google OAuth client | Personal GCP project on the maintainer's account | Google only ever redirects to Supabase's own `/auth/v1/callback`, so the client needs no site URLs |
+| Authentication → Multi-Factor → TOTP | Enabled | Migration 5 requires `aal2` for every write; with TOTP off, no admin can write |
+| Authentication → URL Configuration → Site URL | `https://www.westernsalesclub.ca` | The canonical host. The apex 307s to www |
+| Redirect URLs | `https://www.westernsalesclub.ca/auth/callback`, `https://westernsalesclub.ca/auth/callback`, `https://*-thomas-projects-a1e7ba4b.vercel.app/auth/callback`, `http://localhost:3003/auth/callback` | The app sends `redirectTo: <origin>/auth/callback` |
+
+**If sign-in lands on the homepage with a bare `#`**, the `redirectTo` was not on the allowlist and
+Supabase fell back to the Site URL. Check which host the browser was on: it is almost always a
+missing `www` (or preview) entry.
+
 ### Verification and maintenance
 
 - **After schema or policy changes:** run `supabase/scripts/verify-security.sql`; all checks must pass.
@@ -252,6 +268,6 @@ Both statements must run in one transaction: the unique index allows only one ow
 
 ### Operational notes
 
-- **ErrorBoundary** in the app catches render-time errors only. Supabase/async errors are handled in data hooks and `classifyError()`, not by the boundary.
+- Supabase and async errors are handled in the data hooks and `classifyError()`.
 - **Transferring project:** Dashboard → Settings → General → Transfer project.
-- **Rotating the anon key:** Dashboard → Settings → API → Regenerate anon key; update `VITE_SUPABASE_ANON_KEY` and redeploy.
+- **Rotating the anon key:** Dashboard → Settings → API → Regenerate anon key; update `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel and redeploy.

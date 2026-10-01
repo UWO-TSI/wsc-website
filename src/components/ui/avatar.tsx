@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 
 /*
@@ -35,6 +37,14 @@ interface AvatarProps {
   /** Required when `fluid`: the rendered width at each breakpoint. */
   sizes?: string;
   className?: string;
+  /**
+   * Clip Reveal, sequence 9, on the headshot. The initials disc stays
+   * underneath, which is the loading state. The parent owns `data-run`, so a
+   * roster can hold every portrait and release them together.
+   */
+  reveal?: boolean;
+  /** Fires when the headshot has decoded, or failed, so a group can proceed. */
+  onReady?: () => void;
 }
 
 export default function Avatar({
@@ -44,6 +54,8 @@ export default function Avatar({
   fluid = false,
   sizes,
   className = '',
+  reveal = false,
+  onReady,
 }: AvatarProps) {
   const style = fluid ? undefined : ({ width: size, height: size } as const);
 
@@ -69,15 +81,29 @@ export default function Avatar({
         {initialsOf(name)}
       </span>
 
-      {src && (
-        <Image
-          src={src}
-          alt=""
-          fill
-          sizes={fluid ? (sizes ?? '25vw') : `${size}px`}
-          className="object-cover"
-        />
-      )}
+      {src &&
+        (reveal ? (
+          <span className="clip-cell absolute inset-0 block overflow-hidden rounded-full">
+            <Image
+              src={src}
+              alt=""
+              fill
+              sizes={fluid ? (sizes ?? '25vw') : `${size}px`}
+              loading="eager"
+              onLoad={onReady}
+              onError={onReady}
+              className="clip-inner object-cover"
+            />
+          </span>
+        ) : (
+          <Image
+            src={src}
+            alt=""
+            fill
+            sizes={fluid ? (sizes ?? '25vw') : `${size}px`}
+            className="object-cover"
+          />
+        ))}
     </span>
   );
 }

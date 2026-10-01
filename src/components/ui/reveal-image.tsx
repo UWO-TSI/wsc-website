@@ -36,6 +36,13 @@ interface RevealImageProps {
   index?: number;
   /** Set on an image above the fold so it is not lazy-loaded. */
   priority?: boolean;
+  /**
+   * The frame does not run its own sequence. An ancestor owns `data-run`
+   * and releases every held image together. `onReady` reports when this
+   * file has decoded or failed, which is what that ancestor waits on.
+   */
+  hold?: boolean;
+  onReady?: () => void;
   /** `contain` for a supplied logo, which must not be cropped. */
   fit?: 'cover' | 'contain';
   /**
@@ -59,14 +66,23 @@ export default function RevealImage({
   priority = false,
   fit = 'cover',
   sequence = 'clip',
+  hold = false,
+  onReady,
 }: RevealImageProps) {
   const [loaded, setLoaded] = useState(false);
   const frameRef = useReveal<HTMLSpanElement>({
     ready: loaded,
     /* A faded image does not wait to be scrolled to: it has no entrance to
-       coordinate, it just stops being absent. */
+       coordinate, it just stops being absent. A held image has no entrance
+       of its own at all: the ancestor decides when the group goes. */
     immediate: sequence === 'fade',
+    enabled: !hold,
   });
+
+  const settle = () => {
+    setLoaded(true);
+    onReady?.();
+  };
 
   return (
     <span
@@ -88,7 +104,9 @@ export default function RevealImage({
           fill
           sizes={sizes}
           priority={priority}
-          onLoad={() => setLoaded(true)}
+          loading={hold ? 'eager' : undefined}
+          onLoad={settle}
+          onError={settle}
           className={`${sequence === 'clip' ? 'clip-inner' : ''} ${
             fit === 'contain' ? 'object-contain' : 'object-cover'
           }`.trim()}

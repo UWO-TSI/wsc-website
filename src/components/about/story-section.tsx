@@ -1,49 +1,65 @@
 'use client';
 
 import Eyebrow from '@/components/ui/eyebrow';
+import RevealImage from '@/components/ui/reveal-image';
 import Slab, { type SlabTone } from '@/components/ui/slab';
 import { useReveal } from '@/lib/reveal';
 
 /*
-  Four panels, laid out asymmetrically on a 12 column grid.
+  Four facts and two photographs on one grid. The gallery section is gone;
+  the photographs belong to the same read as the copy.
 
-  This used to be the site's only Scroll Scrub. It was cut: two panels over
-  200vh meant the pin grabbed the page and let go again inside half a screen,
-  which reads as the page stuttering rather than as a deliberate move. With the
-  pin gone, sequence 8 is no longer used anywhere on the site, and GSAP is no
-  longer imported by any component.
+  From lg each photograph spans the two facts beside it, so a 3/2 frame
+  is about as tall as the copy and the slab is not an empty field under
+  a short paragraph. The top pair is raised, then bare, with the
+  competition photograph on the right. The bottom pair swaps: the group
+  photograph on the left, sunken then inverse on the right. Those two
+  slabs are the only ones that share an edge, and inverse is the one
+  loud slab. The photographs meet at a corner, with the page gap between
+  them, and never share a full side.
 
-  The interest now comes from where the panels sit rather than from motion: the
-  column spans and the vertical offsets are all different, and the tone steps
-  raised, bare, sunken, inverse so no two neighbours share a ground. Each panel
-  gets one move on arrival and nothing more, staggered by --i, which is four
-  elements against a budget of five.
+  Below lg, `order` stacks the cells in reading order: fact, photograph,
+  fact, photograph, then the closing pair. From md that is two columns.
+  Explicit lg placement ignores that order.
 
-  Headings are .title-sm under a numbered .label rather than .title, because
-  five title-scale headings on one page is the exact failure mode the type
-  scale exists to prevent. The page h1 is the only .title here.
+  Both photographs are 3/2, which is the frame they were delivered in, so
+  the crop does not cut the group off at the sides. Clip Reveal is theirs.
+  The four facts use arrive, staggered by --i, under the budget of five.
+
+  Headings are .title-sm. The page h1 is the only .title.
 */
 
-interface Panel {
+type Tone = SlabTone | 'bare';
+
+interface TextCell {
+  kind: 'text';
   index: string;
   eyebrow: string;
   title: string;
   body: string[];
-  tone: SlabTone | 'bare';
-  /** Column placement from lg up. Mobile is always a single column. */
-  span: string;
-  /** Optional vertical offset from lg up, so the column edges do not line up. */
-  offset?: string;
+  tone: Tone;
+  place: string;
 }
+
+interface PhotoCell {
+  kind: 'photo';
+  src: string;
+  alt: string;
+  sizes: string;
+  place: string;
+}
+
+type Cell = TextCell | PhotoCell;
 
 /*
   Only what the club can point at: the exec groups the executives table
-  actually has, the partner and event counts already published as figures, the
-  USC store the join button links to, and the contact address in the legal
-  pages. If a sentence needs a fact that is not in the repo, it does not ship.
+  actually has, the partner and event counts already published as figures,
+  the USC store the join button links to, and the contact address in the
+  legal pages.
 */
-const PANELS: Panel[] = [
+const CELLS: Cell[] = [
   {
+    kind: 'text',
     index: '01',
     eyebrow: 'What we do',
     title: 'Workshops and events, all year',
@@ -52,9 +68,17 @@ const PANELS: Panel[] = [
       'Members learn from people who do the work, not only from a reading list.',
     ],
     tone: 'raised',
-    span: 'lg:col-start-1 lg:col-end-8',
+    place: 'order-1 lg:col-start-1 lg:col-span-5 lg:row-start-1',
   },
   {
+    kind: 'photo',
+    src: '/imagery/sales-comp-4.avif',
+    alt: 'Western Sales Club members holding a competition prize cheque',
+    sizes: '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 58vw',
+    place: 'order-2 lg:col-start-6 lg:col-span-7 lg:row-start-1 lg:row-span-2',
+  },
+  {
+    kind: 'text',
     index: '02',
     eyebrow: 'How we run',
     title: 'A student exec team',
@@ -63,10 +87,17 @@ const PANELS: Panel[] = [
       'The roster is on the executive team page, and it turns over every year.',
     ],
     tone: 'bare',
-    span: 'lg:col-start-8 lg:col-end-13',
-    offset: 'lg:mt-16',
+    place: 'order-3 lg:col-start-1 lg:col-span-5 lg:row-start-2',
   },
   {
+    kind: 'photo',
+    src: '/imagery/sales-comp-5.avif',
+    alt: 'Western Sales Club members standing with the club banner',
+    sizes: '(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 58vw',
+    place: 'order-4 lg:col-start-1 lg:col-span-7 lg:row-start-3 lg:row-span-2',
+  },
+  {
+    kind: 'text',
     index: '03',
     eyebrow: 'Who backs us',
     title: 'Five industry partners',
@@ -75,9 +106,10 @@ const PANELS: Panel[] = [
       'They are listed on the partners page.',
     ],
     tone: 'sunken',
-    span: 'lg:col-start-1 lg:col-end-7',
+    place: 'order-5 lg:col-start-8 lg:col-span-5 lg:row-start-3',
   },
   {
+    kind: 'text',
     index: '04',
     eyebrow: 'How to join',
     title: 'Membership runs through the USC store',
@@ -86,55 +118,71 @@ const PANELS: Panel[] = [
       'Questions go to sales.club@westernusc.ca.',
     ],
     tone: 'inverse',
-    span: 'lg:col-start-6 lg:col-end-13',
-    offset: 'lg:-mt-10',
+    place: 'order-6 lg:col-start-8 lg:col-span-5 lg:row-start-4',
   },
 ];
 
-function PanelBody({ panel }: { panel: Panel }) {
-  return (
+function TextPanel({ cell, stagger }: { cell: TextCell; stagger: number }) {
+  const style = { '--i': stagger } as React.CSSProperties;
+  const copy = (
     <div className="flex flex-col gap-3">
-      <Eyebrow index={panel.index}>{panel.eyebrow}</Eyebrow>
-      <h2 className="title-sm">{panel.title}</h2>
-      {panel.body.map((paragraph) => (
+      <Eyebrow index={cell.index}>{cell.eyebrow}</Eyebrow>
+      <h2 className="title-sm">{cell.title}</h2>
+      {cell.body.map((paragraph) => (
         <p key={paragraph} className="body measure">
           {paragraph}
         </p>
       ))}
     </div>
   );
+
+  if (cell.tone === 'bare') {
+    return (
+      <div style={style} className={`arrive min-w-0 self-start px-1 py-2 ${cell.place}`}>
+        {copy}
+      </div>
+    );
+  }
+
+  return (
+    <div style={style} className={`arrive h-full min-w-0 ${cell.place}`}>
+      <Slab as="div" tone={cell.tone} className="h-full">
+        {copy}
+      </Slab>
+    </div>
+  );
+}
+
+function PhotoPanel({ cell }: { cell: PhotoCell }) {
+  return (
+    <figure className={`m-0 min-w-0 ${cell.place}`}>
+      <RevealImage
+        src={cell.src}
+        alt={cell.alt}
+        sizes={cell.sizes}
+        className="aspect-[3/2] h-full w-full rounded-md"
+      />
+    </figure>
+  );
 }
 
 export default function StorySection() {
   const ref = useReveal<HTMLDivElement>();
+  const textCells = CELLS.filter((cell) => cell.kind === 'text');
 
   return (
-    <div
-      ref={ref}
-      className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-x-6 lg:gap-y-10"
-    >
-      {PANELS.map((panel, i) => {
-        const placement = `${panel.span} ${panel.offset ?? ''}`.trim();
-        const style = { '--i': i } as React.CSSProperties;
-
-        if (panel.tone === 'bare') {
-          return (
-            <div
-              key={panel.index}
-              style={style}
-              className={`arrive px-1 py-2 ${placement}`}
-            >
-              <PanelBody panel={panel} />
-            </div>
-          );
+    <div ref={ref} className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12">
+      {CELLS.map((cell) => {
+        if (cell.kind === 'photo') {
+          return <PhotoPanel key={cell.src} cell={cell} />;
         }
 
         return (
-          <div key={panel.index} style={style} className={`arrive ${placement}`}>
-            <Slab as="div" tone={panel.tone}>
-              <PanelBody panel={panel} />
-            </Slab>
-          </div>
+          <TextPanel
+            key={cell.index}
+            cell={cell}
+            stagger={textCells.indexOf(cell)}
+          />
         );
       })}
     </div>

@@ -9,6 +9,8 @@ interface LogoCardProps {
   /** Position in display_order, zero-based. Carries the tile's scale. */
   rank: number;
   total: number;
+  /** The wall calls this when the mark has decoded or failed. */
+  onReady?: () => void;
 }
 
 type Scale = 'lead' | 'mid' | 'std';
@@ -38,24 +40,30 @@ const spanClass: Record<Scale, string> = {
   std: '',
 };
 
-export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
+export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProps) {
   const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
   const scale = scaleFor(rank, total);
 
   /*
-    No tile behind the mark. The whole wall is already on --logo-ground, so a
-    per-logo panel would just be a darker rectangle on a dark ground. The marks
-    sit directly on the section, separated by the grid gap, which is the same
-    way everything else in this system is divided.
+    The tile is the constant dark logo ground. The wall behind it is sunken,
+    so the black plate is visible in both themes, and a light-on-transparent
+    mark still has the ground it was drawn for.
   */
   const tileClass = [
-    'flex aspect-[3/2] items-center justify-center rounded-md p-4',
-    'transition-transform duration-[var(--d-hover)] ease-enter',
-    sponsor.link ? 'hover:scale-[1.04]' : '',
+    'group flex aspect-[3/2] items-center justify-center overflow-hidden rounded-md bg-logo-ground p-4',
     spanClass[scale],
   ]
     .filter(Boolean)
     .join(' ');
+
+  /*
+    The plate stays put. Scaling it covered the next tile and read as a pop.
+    The mark eases up on --d-move and --e-move, the same pair a row uses when
+    it shifts, and only far enough to notice.
+  */
+  const markClass = sponsor.link
+    ? 'flex w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
+    : 'flex w-full items-center justify-center';
 
   // Never redraw a sponsor's mark: use their file, or fall back to the name
   // set in the display face, in the same tile.
@@ -67,6 +75,8 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
       className={`w-full ${logoHeights[scale]}`}
       fit="contain"
       sequence="fade"
+      hold
+      onReady={onReady}
     />
   ) : (
     <span className="text-center font-display font-bold uppercase text-on-logo-ground">
@@ -84,7 +94,7 @@ export default function LogoCard({ sponsor, rank, total }: LogoCardProps) {
         aria-label={`${sponsor.name}, opens in a new tab`}
         data-cursor="view"
       >
-        {content}
+        <span className={markClass}>{content}</span>
       </a>
     );
   }

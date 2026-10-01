@@ -1,6 +1,10 @@
+'use client';
+
+import { useRef, useState } from 'react';
 import Avatar from '@/components/ui/avatar';
 import Skeleton from '@/components/ui/skeleton';
 import { getPublicUrl } from '@/lib/supabase/storage';
+import { useReveal } from '@/lib/reveal';
 import type { Executive } from '@/types/database';
 
 /*
@@ -18,9 +22,12 @@ import type { Executive } from '@/types/database';
   another. Organization is conveyed by layout.
 
   Everyone is the same size, in the same kind of cell, with no fill, no
-  shadow, no border and no hover: these are people, not controls. Headshots
-  are always visible here rather than revealed, because a profile picture is
-  the content, not a flourish.
+  shadow, no border and no hover: these are people, not controls.
+
+  Headshots run Clip Reveal together. Each portrait waits on its own bytes,
+  and the grid does not start the sequence until every one has settled, so
+  they arrive as one moment instead of popping in as each response lands.
+  The initials disc is what shows until then.
 */
 
 const GRID = 'grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4';
@@ -53,9 +60,30 @@ export function ExecutiveGridSkeleton({ count = 8 }: { count?: number }) {
 }
 
 export default function ExecutiveGrid({ executives }: { executives: Executive[] }) {
+  const photos = executives.flatMap((executive) => {
+    const src = getPublicUrl('headshots', executive.headshot_path);
+    return src ? [{ id: executive.id, src }] : [];
+  });
+
+  /*
+    A ref, not state, for the set itself: marking a portrait ready must not
+    rebuild the list. State flips once, when the last one settles, which is
+    what releases the shared Clip Reveal.
+  */
+  const pending = useRef(new Set(photos.map((photo) => photo.id)));
+  const [ready, setReady] = useState(pending.current.size === 0);
+  const ref = useReveal<HTMLUListElement>({ ready });
+
+  const settle = (id: string) => {
+    if (!pending.current.delete(id)) return;
+    if (pending.current.size === 0) setReady(true);
+  };
+
   return (
-    <ul className={`m-0 list-none p-0 ${GRID}`}>
-      {executives.map((executive) => (
+    <ul ref={ref} className={`m-0 list-none p-0 ${GRID}`}>
+      {executives.map((executive) => {
+        const src = getPublicUrl('headshots', executive.headshot_path);
+        return (
         <li key={executive.id} className="flex flex-col items-center gap-4 text-center">
           {/* The cap lives on a wrapper, not on the Avatar. Passing a width
               class to a component that already sets w-full leaves the winner
@@ -63,9 +91,11 @@ export default function ExecutiveGrid({ executives }: { executives: Executive[] 
           <span className={AVATAR_WIDTH}>
             <Avatar
               name={executive.name}
-              src={getPublicUrl('headshots', executive.headshot_path)}
+              src={src}
               fluid
               sizes={AVATAR_SIZES}
+              reveal={src !== null}
+              onReady={src ? () => settle(executive.id) : undefined}
             />
           </span>
 
@@ -74,7 +104,8 @@ export default function ExecutiveGrid({ executives }: { executives: Executive[] 
             <span className="meta">{executive.title}</span>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

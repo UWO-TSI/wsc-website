@@ -23,7 +23,9 @@ import { useReveal, cascade } from '@/lib/reveal';
   The size class goes on the `.ln` wrapper, not the inner span: the mask is an
   overflow-hidden block whose height and its 0.06em descender allowance are
   both computed from the wrapper's own font size. Putting the scale on the
-  inner span would leave the greeting masked by a hero-sized line box.
+  inner span would leave the greeting masked by a hero-sized line box. The
+  second line carries a small top margin, in its own em, so the greeting
+  sits a step above the name.
 
   Titles are Archivo all caps by the type role, so these carry the words and
   not the casing.
@@ -46,8 +48,8 @@ export default function Hero() {
     >
       {/* The h1 carries no scale of its own: each masked line sets its own. */}
       <h1 className="m-0">
-        {TITLE_LINES.map((line) => (
-          <span key={line.text} className={`ln ${line.scale}`}>
+        {TITLE_LINES.map((line, i) => (
+          <span key={line.text} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
             <i>{line.text}</i>
           </span>
         ))}

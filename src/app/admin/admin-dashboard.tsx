@@ -85,10 +85,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-7 overflow-y-auto">
           {TAB_GROUPS.map((group) => (
             <div key={group.heading} className="flex flex-col gap-1">
-              <p className="meta text-ink-faint px-3 mb-1">{group.heading}</p>
+              {/* Group heads take the title role so they read as sections, not
+                  as one more tab in the same mono label as the items. */}
+              <p className="title-sm text-ink px-3 pb-2">{group.heading}</p>
               {group.tabs.map((t) => (
                 <button
                   key={t.key}

@@ -197,7 +197,8 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
           </p>
           {/* Apple Passwords tucks its codes away well enough that people
               assume they never set one up. */}
-          <p className="meta text-ink-faint measure">
+          {/* Running text at the label size: an aside, quieter than the body. */}
+          <p className="font-text text-[length:var(--t-label)] leading-normal text-ink-faint measure">
             Saved it in Apple Passwords? Open the Passwords app &rarr; Codes on iOS 18 or
             later, or Settings &rarr; Passwords &rarr; Western Sales Club on iOS 17.
           </p>

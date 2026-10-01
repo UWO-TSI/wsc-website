@@ -116,6 +116,18 @@ Sponsors grouped by tier, `--gold` for the tier bar and label, the explicit mark
 
 Never redraw a sponsor's mark. Use their file. Where there is none, set the name in `--f-display` weight 700 in the same tile. Logos sit on `--sunken` so a single-ink mark has a predictable ground.
 
+## RevealImage
+
+A frame that holds its aspect ratio from the first paint, keeps the skeleton mounted behind the picture, and runs Clip Reveal once the bytes are there. The crop is the frame's job: the file is drawn `object-fit: cover` inside a fixed-aspect wrapper, so a wide photo in a tall frame scales up and crops, and the frame never resizes.
+
+Three states, all at the frame's own size:
+
+- **Loading** (`src` undefined, or bytes in flight): the skeleton with its sweep.
+- **Loaded**: the photo, after Clip Reveal. The skeleton is still behind it and its sweep has stopped.
+- **Empty slot** (`src` null): the skeleton surface with the sweep stopped, and nothing drawn over it. No new token: it is exactly the loaded skeleton with no picture. The frame reports ready at once, so a held group is never stuck on it. Used for every admin photo slot that has not been filled.
+
+Every photo on the public site is a slot named `page.section.imageN`; see `src/lib/image-slots.ts`. Brand marks are not slots.
+
 ## BentoGallery
 
 Three columns, the repo's existing span pattern: large 2x2, tall 1x2, wide 2x1, then three squares. Cells are `--r-sm` with `overflow: hidden`. Hover brings an `--inverse` veil and a caption. Clicking opens a lightbox with a close button, scrim click, and Escape, returning focus to the cell that opened it.

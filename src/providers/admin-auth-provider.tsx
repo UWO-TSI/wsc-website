@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import Slab from '@/components/ui/slab';
 import Button from '@/components/ui/button';
 import MfaGate from '@/app/admin/components/mfa-gate';
+import DevSignIn from '@/app/admin/components/dev-sign-in';
 
 type AdminState =
   | 'checking_auth'
@@ -180,6 +181,7 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
           <Button variant="tertiary" href="/">
             Back to site
           </Button>
+          <DevSignIn />
         </Slab>
       </div>
     );

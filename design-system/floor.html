@@ -531,6 +531,8 @@
   .skrow { display: grid; grid-template-columns: 30px 1fr auto 34px; gap: 14px; align-items: center; padding: 14px; }
   .skrows { display: flex; flex-direction: column; gap: 4px; }
   @media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+  /* Empty photo slot: the loaded skeleton with no picture over it. */
+  .sk-still::after { animation: none; }
 
   /* extend */
   .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
@@ -1068,7 +1070,17 @@
       bytes before running Clip Reveal. Unmounting the skeleton on load leaves
       one frame where it is gone and the image is still clipped, which shows as
       a flash of empty.
+      <br><br>
+      An <b>empty photo slot</b> is the same frame with nothing to load: the
+      skeleton surface with its sweep stopped, at the slot's own aspect, and no
+      picture over it. Nothing new is drawn and nothing shimmers forever, and
+      the page keeps its shape whether or not the club has uploaded a photo.
     </p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px;max-width:520px">
+      <div><span class="sk" style="aspect-ratio:4/3;border-radius:var(--r-md)"></span><span class="meta">Loading</span></div>
+      <div><span class="sk sk-still" style="aspect-ratio:4/3;border-radius:var(--r-md)"></span><span class="meta">Empty slot</span></div>
+      <div><span class="sk sk-still" style="aspect-ratio:3/4;border-radius:var(--r-md);max-width:60%"></span><span class="meta">Empty, 3/4</span></div>
+    </div>
   </section>
 
   <section class="slab">

@@ -530,6 +530,15 @@
   @keyframes sweep { to { transform: translateX(100%); } }
   .skrow { display: grid; grid-template-columns: 30px 1fr auto 34px; gap: 14px; align-items: center; padding: 14px; }
   .skrows { display: flex; flex-direction: column; gap: 4px; }
+  .edbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .edbar .acts { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn.off { background: var(--sunken); color: var(--ink-faint); box-shadow: none; cursor: not-allowed; }
+  .edlist { display: flex; flex-direction: column; gap: 8px; background: var(--raised); border-radius: var(--r-lg); padding: 12px; }
+  .edrow { display: grid; grid-template-columns: 36px minmax(0,1fr) minmax(0,1fr) auto; gap: 12px; align-items: center; background: var(--sunken); border-radius: var(--r-md); padding: 12px; transition: box-shadow var(--d-hover) var(--e-enter); }
+  .edrow.held { box-shadow: var(--sh-3); position: relative; z-index: 1; }
+  .grip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--ink-muted); border-radius: var(--r-sm); cursor: grab; touch-action: none; transition: background-color var(--d-hover) var(--e-enter), color var(--d-hover) var(--e-enter); }
+  .grip:hover { background: var(--accent-veil); color: var(--accent-ink); }
+  .edrow.held .grip { cursor: grabbing; }
   @media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
   /* Empty photo slot: the loaded skeleton with no picture over it. */
   .sk-still::after { animation: none; }
@@ -1115,7 +1124,44 @@
   </section>
 
   <section class="slab sunk">
-    <div class="sechead"><span class="label"><span class="n">15</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
+    <div class="sechead"><span class="label"><span class="n">15</span> &nbsp;Editor</span><span class="meta">The content manager: one save per editor, rows dragged by a handle.</span></div>
+    <div class="edbar">
+      <div><span class="title-sm" style="display:block">Executives</span><span class="meta">2 unsaved changes</span></div>
+      <div class="acts"><button class="btn b2" type="button">Discard</button><button class="btn b1" type="button">Save all changes</button></div>
+    </div>
+    <div class="edlist">
+      <span class="label" style="color:var(--accent-ink);padding:4px 12px 0">Vice Presidents</span>
+      <div class="edrow"><button class="grip" type="button" aria-label="Reorder"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span class="body-sm">Mei Chen</span><span class="body-sm">VP Partnerships</span><span class="chip-s c-ok"><span class="d"></span>Visible</span></div>
+      <div class="edrow held"><button class="grip" type="button" aria-label="Reorder"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span class="body-sm">Amara Boateng</span><span class="body-sm">VP Marketing</span><span class="chip-s c-ok"><span class="d"></span>Visible</span></div>
+      <div class="edrow"><button class="grip" type="button" aria-label="Reorder"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button><span class="body-sm">Jonas Keller</span><span class="body-sm">VP Events</span><span class="chip-s"><span class="d" style="background:var(--ink-faint)"></span>Hidden *</span></div>
+    </div>
+    <div class="edbar" style="margin-top:20px;margin-bottom:0">
+      <span class="meta">At rest, nothing pending, and for two seconds after a save:</span>
+      <div class="acts"><button class="btn off" type="button" disabled>Save changes</button><button class="btn off" type="button" disabled>Saved</button></div>
+    </div>
+    <p class="body-sm" style="margin-top:24px;max-width:62ch">
+      Every editor in the content manager is a <b>Save bar</b> over a list. The
+      bar is the title, a status line, and one Save. Save sits disabled on
+      <b>--sunken</b> until something changes, reads <b>Save all changes</b>
+      while edits are pending with Discard beside it, and reads <b>Saved</b>
+      for two seconds after writing. Only the button says so; the list under
+      it updates in place and never drops to a loading state.
+      <br><br>
+      A reorderable row is a ledger row on <b>--sunken</b> with a <b>grip</b>
+      first: three lines, the same mark as the menu toggle, 36px square. Only
+      the grip starts a drag, so the chip and the actions stay clickable, and
+      it takes the arrow keys one step at a time. The held row lifts to
+      <b>--sh-3</b> and its neighbours slide on <b>--d-move</b> /
+      <b>--e-move</b>, the budget for anything changing position. No new
+      sequence: this is the move row, not a thirteenth.
+      <br><br>
+      Leaving an editor with edits pending asks once, Stay or Discard and
+      leave, in the same dialog shape as delete. It never traps anyone.
+    </p>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label"><span class="n">16</span> &nbsp;Extending</span><span class="meta">What to do when the thing you need is not in here.</span></div>
     <div class="steps">
       <div class="step"><span class="no">1</span><span class="hd">Look first</span><p>Read this page before writing CSS. Most new components are an existing one re-composed.</p></div>
       <div class="step"><span class="no">2</span><span class="hd">Spend tokens only</span><p>Every colour, radius, shadow, duration and easing comes from a token. No new hex, no new number.</p></div>

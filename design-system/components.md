@@ -134,3 +134,9 @@ Three columns, the repo's existing span pattern: large 2x2, tall 1x2, wide 2x1, 
 ## Cursor
 
 Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover 46, view 62, text 12. The ring is one of only two strokes in the system, alongside the focus ring, because a ring is its shape. Pointer devices only.
+
+## Editor (admin)
+
+`src/app/admin/components/save-bar.tsx`, `admin-section.tsx` (`ReorderRow`), `src/app/admin/unsaved-changes.tsx`. Card 15 in `floor.html`.
+
+Every content manager tab is a Save bar over a list, and every change in it is staged until one Save. Save rests disabled as "Save changes", reads "Save all changes" with Discard beside it while edits are pending, and "Saved" for two seconds after writing. The list updates in place; a refetch never drops it to a loading state. Reorderable rows carry a three-line grip that alone starts a drag (Framer Motion `Reorder` with drag controls) and takes the arrow keys; the held row lifts to `--sh-3` and neighbours move on `--d-move` / `--e-move`. Executives reorder within their role, because the team page sorts by role first. Leaving an editor with edits pending asks once (Stay, or Discard and leave) and never refuses.

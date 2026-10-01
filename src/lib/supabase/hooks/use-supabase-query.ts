@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../client';
 import { classifyError } from '@/lib/error-utils';
 import type { QueryError, QueryResult } from '@/types/database';
@@ -44,6 +44,13 @@ export function useSupabaseQuery<T>(
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<QueryError | null>(null);
+  /*
+    Only the first load shows the loading state. A refetch after a save keeps
+    the rows on screen and swaps them in place, so the list does not drop to
+    a spinner and back (the flicker editors saw on every save). After an
+    error nothing usable is on screen, so a retry shows loading again.
+  */
+  const loadedRef = useRef(false);
 
   const fetchData = useCallback(async () => {
     if (!enabled) {
@@ -51,7 +58,7 @@ export function useSupabaseQuery<T>(
       return;
     }
 
-    setLoading(true);
+    if (!loadedRef.current) setLoading(true);
     setError(null);
 
     try {
@@ -71,13 +78,16 @@ export function useSupabaseQuery<T>(
       const { data: rows, error: queryError } = await query;
 
       if (queryError) {
+        loadedRef.current = false;
         setError(classifyError(queryError));
         setData([]);
       } else {
+        loadedRef.current = true;
         setData((rows as T[]) ?? []);
         setError(null);
       }
     } catch (err) {
+      loadedRef.current = false;
       setError(classifyError(err as Error));
       setData([]);
     } finally {

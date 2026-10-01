@@ -55,15 +55,22 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
         return;
       }
 
-      // Clear abandoned enrollments first. An unverified factor from a
-      // previous attempt blocks a fresh enroll on friendly-name reuse.
-      for (const stale of data?.totp ?? []) {
-        await supabase.auth.mfa.unenroll({ factorId: stale.id });
+      // Clear abandoned enrollments first: a QR shown but never confirmed
+      // leaves an unverified factor behind. `data.totp` lists VERIFIED
+      // factors only, so the unverified ones have to come from `data.all`.
+      const stale = (data?.all ?? []).filter(
+        (f) => f.factor_type === 'totp' && f.status === 'unverified'
+      );
+      for (const f of stale) {
+        const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: f.id });
+        if (unenrollError) throw unenrollError;
       }
 
       const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: `WSC Admin ${new Date().toISOString().slice(0, 10)}`,
+        // Unique per attempt, so a factor that could not be cleared above
+        // never blocks the next try on a name clash.
+        friendlyName: `WSC Admin ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
         // The name the authenticator app lists the code under. Without it
         // Supabase uses the site URL's host, which on localhost is an IP.
         issuer: 'Western Sales Club',

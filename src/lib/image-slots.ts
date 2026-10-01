@@ -38,6 +38,11 @@ export interface ImageSlot {
 }
 
 export const IMAGE_SLOTS = {
+  'home.hero.image1': {
+    page: 'Home', section: 'Hero', label: 'Banner under the headline',
+    aspect: 21 / 9, aspectClass: 'aspect-[21/9]', minWidth: 1920,
+    alt: 'University College tower on Western University campus in autumn',
+  },
   'home.about.image1': {
     page: 'Home', section: 'About', label: 'Strip, left',
     aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,

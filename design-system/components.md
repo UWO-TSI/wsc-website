@@ -12,7 +12,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Button | `ui/button.tsx` | Magnetic Pull |
 | Eyebrow | `ui/eyebrow.tsx` | travels with its title |
 | Field | `contact/field.tsx` | none |
-| KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade |
+| KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade; banner photo slot `home.hero.image1` on Clip Reveal |
 | SectionHead | `landing/about-section.tsx` | Line Mask Reveal |
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |

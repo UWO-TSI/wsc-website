@@ -1,6 +1,7 @@
 'use client';
 
 import Button from '@/components/ui/button';
+import RevealImage from '@/components/ui/reveal-image';
 import { usePreloader } from '@/providers/preloader-provider';
 import { useReveal, cascade } from '@/lib/reveal';
 import { useSiteContent } from '@/providers/site-content-provider';
@@ -32,6 +33,15 @@ import { externalLinkProps } from '@/lib/link-utils';
   Titles are Archivo all caps by the type role, so these carry the words and
   not the casing.
 
+  The banner is a photo slot (home.hero.image1), filled under Images in the
+  admin. It sits under the button rather than beside the headline: the hero
+  scale is sized off the full viewport width, and a second column would push
+  a name line out of its row. It is Clip Reveal, sequence 9, and a sibling of
+  the text group rather than a child, because the clip rules match any
+  running ancestor: inside the group it would unclip with the title whether
+  its bytes had landed or not. `hold` keeps it at rest under the Curtain, the
+  same wait the title takes.
+
   The words are editable (site_content, home.hero.*); the scale per line is
   layout and stays here. A line left empty is dropped, and each line's
   ceiling (14 characters for a name line) is what stops an edit from
@@ -46,36 +56,43 @@ const TITLE_LINES = [
 
 export default function Hero() {
   const { complete } = usePreloader();
-  const ref = useReveal<HTMLElement>({ immediate: true, enabled: complete });
-  const { text } = useSiteContent();
+  const ref = useReveal<HTMLDivElement>({ immediate: true, enabled: complete });
+  const { text, image } = useSiteContent();
   const href = text('home.hero.button_href');
   const lines = TITLE_LINES.map((line) => ({ ...line, text: text(line.key) })).filter(
     (line) => line.text
   );
 
   return (
-    <section
-      ref={ref}
-      className="flex min-h-[calc(100svh-2px)] flex-col justify-center gap-8 px-[var(--gut)] py-24"
-    >
-      {/* The h1 carries no scale of its own: each masked line sets its own. */}
-      <h1 className="m-0">
-        {lines.map((line, i) => (
-          <span key={line.key} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
-            <i>{line.text}</i>
-          </span>
-        ))}
-      </h1>
+    <section className="flex flex-col gap-12 px-[var(--gut)] py-24">
+      <div ref={ref} className="flex flex-col gap-8">
+        {/* The h1 carries no scale of its own: each masked line sets its own. */}
+        <h1 className="m-0">
+          {lines.map((line, i) => (
+            <span key={line.key} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
+              <i>{line.text}</i>
+            </span>
+          ))}
+        </h1>
 
-      <p className="subtitle cascade measure">
-        {cascade(text('home.hero.subtitle'))}
-      </p>
+        <p className="subtitle cascade measure">
+          {cascade(text('home.hero.subtitle'))}
+        </p>
 
-      <div>
-        <Button href={href} {...externalLinkProps(href)} arrow>
-          {text('home.hero.button_label')}
-        </Button>
+        <div>
+          <Button href={href} {...externalLinkProps(href)} arrow>
+            {text('home.hero.button_label')}
+          </Button>
+        </div>
       </div>
+
+      <RevealImage
+        {...image('home.hero.image1')}
+        sizes="100vw"
+        className="aspect-[21/9] w-full rounded-md"
+        hold={!complete}
+        priority
+      />
     </section>
   );
 }

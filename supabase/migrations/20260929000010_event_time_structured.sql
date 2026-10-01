@@ -1,5 +1,5 @@
 -- ================================================================
--- 20260929000009_event_time_structured.sql: event time as HH:MM
+-- 20260929000010_event_time_structured.sql: event time as HH:MM
 -- ================================================================
 -- events.time was free text ("6:00 PM", "6pm", "18:30"). The admin form
 -- now uses a time picker, which produces 24-hour HH:MM, and the site
@@ -45,14 +45,25 @@ BEGIN
 END;
 $$;
 
+-- Only rows whose value actually changes are written, and each write is
+-- its own subtransaction: an UPDATE re-checks every constraint on the row,
+-- so one row failing some other ceiling must leave its time as is with a
+-- NOTICE, not abort the migration.
 DO $$
-DECLARE r RECORD;
+DECLARE
+  r      RECORD;
+  parsed TEXT;
 BEGIN
   FOR r IN SELECT id, time FROM public.events WHERE time IS NOT NULL LOOP
-    IF public.parse_event_time(r.time) IS NOT NULL THEN
-      UPDATE public.events SET time = public.parse_event_time(r.time) WHERE id = r.id;
-    ELSE
+    parsed := public.parse_event_time(r.time);
+    IF parsed IS NULL THEN
       RAISE NOTICE 'events %: time % did not parse; left as is', r.id, quote_literal(r.time);
+    ELSIF parsed IS DISTINCT FROM r.time THEN
+      BEGIN
+        UPDATE public.events SET time = parsed WHERE id = r.id;
+      EXCEPTION WHEN check_violation THEN
+        RAISE NOTICE 'events %: time % not converted (%); left as is', r.id, quote_literal(r.time), SQLERRM;
+      END;
     END IF;
   END LOOP;
 END $$;

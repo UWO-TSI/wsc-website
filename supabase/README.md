@@ -73,7 +73,8 @@ Migrations in `supabase/migrations/` are applied in order:
 11. `20260929000006_site_images.sql`: Photo slots, plus 2 MB and raster-only limits on all five buckets
 12. `20260929000007_field_constraints.sql`: Length ceilings (`NOT VALID`) and normalising triggers
 13. `20260929000008_executives_year.sql`: Optional year of study, 1 to 6
-14. `20260929000009_event_time_structured.sql`: Event time as `HH:MM`, converting free text where it parses  
+14. `20260929000009_fit_description_ceilings.sql`: Event and sponsor description caps raised to fit live copy (800, 500)
+15. `20260929000010_event_time_structured.sql`: Event time as `HH:MM`, converting free text where it parses  
 
 ---
 

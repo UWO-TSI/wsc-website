@@ -34,13 +34,13 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
     { name: 'date',        label: 'Date',        type: 'date',     required: true,  showInTable: true },
     { name: 'time',        label: 'Start time',  type: 'time',     required: false, showInTable: true, format: 'time', help: 'Optional. Shown on the site as, for example, 6:30 PM.' },
     { name: 'location',    label: 'Location',    type: 'text',     required: false, showInTable: true, maxLength: 60 },
-    { name: 'description', label: 'Description', type: 'textarea', required: false, showInTable: false, maxLength: 400 },
+    { name: 'description', label: 'Description', type: 'textarea', required: false, showInTable: false, maxLength: 800 },
   ],
 
   sponsors: [
     { name: 'name',        label: 'Name',        type: 'text',     required: true,  showInTable: true, maxLength: 40 },
     { name: 'logo_path',   label: 'Logo',        type: 'image',    required: false, showInTable: true, help: 'PNG with a transparent background works best. It is shown on a dark ground and never cropped.' },
-    { name: 'description', label: 'Description', type: 'textarea', required: false, showInTable: false, maxLength: 200 },
+    { name: 'description', label: 'Description', type: 'textarea', required: false, showInTable: false, maxLength: 500 },
     { name: 'link',        label: 'Website',     type: 'text',     required: false, showInTable: true, placeholder: 'https://', maxLength: 200, format: 'https' },
   ],
 

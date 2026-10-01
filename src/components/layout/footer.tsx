@@ -7,8 +7,9 @@ import { useSiteContent } from "@/providers/site-content-provider";
 
 /*
   Footer: a --sunken slab, flat elevation, no shadow. Three columns on a
-  shared rhythm: wordmark and socials on the left, the nav stacked in the
-  center, and the Tethos mark right-aligned above "Website by Tethos".
+  shared rhythm from md up: wordmark and socials on the left, the nav stacked
+  in the center, and the Tethos mark right-aligned above "Website by Tethos".
+  Below md it is one centered stack with no left or right alignment.
   Social links are --r-disc buttons that go --accent on hover.
 
   design-system/components.md → Footer.
@@ -49,7 +50,7 @@ export default function Footer() {
       className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-4 pb-5! md:pb-6!"
     >
       <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-x-10">
-        <div className="flex flex-col items-start gap-4">
+        <div className="flex flex-col items-center gap-4 md:items-start">
           <Link href="/" className="flex items-center gap-[9px] no-underline" data-cursor="hover">
             <span
               aria-hidden="true"
@@ -121,7 +122,7 @@ export default function Footer() {
           rel="noopener noreferrer"
           aria-label="Website by Tethos"
           data-cursor="hover"
-          className="flex flex-col items-end gap-3 no-underline md:justify-self-end"
+          className="flex flex-col items-center gap-3 no-underline md:items-end md:justify-self-end"
         >
           {/*
             The Tethos mark ships with its own black field baked into the file,
@@ -132,11 +133,11 @@ export default function Footer() {
           <span className="relative h-10 w-10 flex-none overflow-hidden rounded-sm shadow-1">
             <Image src="/logos/tethos.avif" alt="" fill sizes="40px" className="object-cover" />
           </span>
-          <span className="meta text-right">Website by Tethos</span>
+          <span className="meta text-center md:text-right">Website by Tethos</span>
         </a>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col items-center gap-4 md:flex-row md:flex-wrap md:justify-between">
         <span className="meta">&copy; {year} Western Sales Club</span>
         <nav className="flex items-center gap-3" aria-label="Legal">
           {LEGAL_LINKS.map((link, i) => (

@@ -28,7 +28,8 @@ import { externalLinkProps } from '@/lib/link-utils';
   both computed from the wrapper's own font size. Putting the scale on the
   inner span would leave the greeting masked by a hero-sized line box. The
   second line carries a small top margin, in its own em, so the greeting
-  sits a step above the name.
+  sits a step above the name; tighter from md up, where the hero scale makes
+  the same em a much wider gap.
 
   Titles are Archivo all caps by the type role, so these carry the words and
   not the casing.
@@ -69,7 +70,7 @@ export default function Hero() {
         {/* The h1 carries no scale of its own: each masked line sets its own. */}
         <h1 className="m-0">
           {lines.map((line, i) => (
-            <span key={line.key} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]!' : ''}`}>
+            <span key={line.key} className={`ln ${line.scale}${i === 1 ? ' mt-[0.22em]! md:mt-[0.12em]!' : ''}`}>
               <i>{line.text}</i>
             </span>
           ))}

@@ -18,3 +18,9 @@ major_version = 17
 [studio]
 enabled = true
 port = 54323
+
+# Local auth only: the CLI defaults TOTP off, so the admin MfaGate cannot enroll.
+# Hosted auth is configured in the dashboard; `supabase db push` ignores this.
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

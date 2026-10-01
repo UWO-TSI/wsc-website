@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
-import { useSupabaseMutation } from '@/lib/supabase/hooks/use-supabase-mutation';
 import { uploadFile, getPublicUrl } from '@/lib/supabase/storage';
+import { classifyError } from '@/lib/error-utils';
 import { LIMITS } from '@/lib/admin-config';
 import { normalizeLine, validateField } from '@/lib/normalize';
 import {
@@ -22,9 +22,16 @@ import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import CharCount from './char-count';
+import SaveBar from './save-bar';
+import { useUnsavedChanges } from '../unsaved-changes';
 
 /*
   Images: every photo slot on the public site, by page.
+
+  Edits batch, like Site text: choose photos, rewrite descriptions and mark
+  slots to empty across the page, then "Save all changes" writes every
+  changed slot. Switching page or tab with edits pending asks first. A slot
+  that fails keeps its draft and shows why; the others still save.
 
   The preview IS the slot's frame: same aspect class, same object-fit:
   cover. A panorama dropped into the 3/4 events portrait shows here exactly
@@ -53,6 +60,16 @@ interface Pending {
   height: number;
 }
 
+/** What an editor has changed on one slot and not saved yet. */
+interface SlotDraft {
+  pending?: Pending;
+  alt?: string;
+  /** Marked to be emptied on save. */
+  empty?: boolean;
+}
+
+type Drafts = Partial<Record<ImageSlotKey, SlotDraft>>;
+
 function readDimensions(file: File): Promise<{ url: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -66,27 +83,150 @@ function readDimensions(file: File): Promise<{ url: string; width: number; heigh
   });
 }
 
+const altFor = (slot: ImageSlotKey, row: SiteImage | null, draft: SlotDraft | undefined) =>
+  draft?.alt ?? row?.alt ?? IMAGE_SLOTS[slot].alt;
+
+const altErrorFor = (alt: string) =>
+  validateField({ label: 'Description', required: true, maxLength: ALT_MAX }, alt);
+
+/** A draft that would write nothing is not a change. */
+function isDirty(row: SiteImage | null, draft: SlotDraft | undefined): boolean {
+  if (!draft) return false;
+  if (draft.pending) return true;
+  if (draft.empty) return !!row;
+  return !!row && draft.alt !== undefined && normalizeLine(draft.alt) !== row.alt;
+}
+
 export default function AdminImages() {
   const { data: rows, loading, error, refetch } = useSupabaseQuery<SiteImage>('site_images', {
     orderBy: 'slot',
   });
   const [page, setPage] = useState<(typeof PAGES)[number]>('Home');
+  const [drafts, setDrafts] = useState<Drafts>({});
+  const [slotErrors, setSlotErrors] = useState<Partial<Record<ImageSlotKey, string>>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const bySlot = useMemo(() => new Map(rows.map((r) => [r.slot, r])), [rows]);
   const slots = IMAGE_SLOT_KEYS.filter((key) => IMAGE_SLOTS[key].page === page);
   const filled = IMAGE_SLOT_KEYS.filter((key) => bySlot.has(key)).length;
 
+  const dirtySlots = IMAGE_SLOT_KEYS.filter((key) => isDirty(bySlot.get(key) ?? null, drafts[key]));
+  const confirmLeave = useUnsavedChanges('site_images', dirtySlots.length > 0);
+
+  /* Object URLs for chosen files live until replaced, discarded or saved,
+     and any left are released when the editor unmounts. */
+  const draftsRef = useRef(drafts);
+  useEffect(() => {
+    draftsRef.current = drafts;
+  }, [drafts]);
+  useEffect(
+    () => () => {
+      for (const d of Object.values(draftsRef.current)) if (d?.pending) URL.revokeObjectURL(d.pending.url);
+    },
+    []
+  );
+
+  const updateDraft = (slot: ImageSlotKey, patch: Partial<SlotDraft>) => {
+    setSlotErrors((prev) => ({ ...prev, [slot]: undefined }));
+    setDrafts((prev) => {
+      const current = prev[slot] ?? {};
+      if ('pending' in patch && current.pending && current.pending !== patch.pending) {
+        URL.revokeObjectURL(current.pending.url);
+      }
+      return { ...prev, [slot]: { ...current, ...patch } };
+    });
+  };
+
+  const discardAll = () => {
+    for (const d of Object.values(drafts)) if (d?.pending) URL.revokeObjectURL(d.pending.url);
+    setDrafts({});
+    setSlotErrors({});
+    setSubmitted(false);
+  };
+
+  const saveSlot = async (slot: ImageSlotKey, row: SiteImage | null, draft: SlotDraft) => {
+    if (draft.empty && row) {
+      const { error: delRowErr } = await supabase.from('site_images').delete().eq('slot', slot);
+      if (delRowErr) throw delRowErr;
+      const { error: delErr } = await supabase.storage.from(SITE_IMAGES_BUCKET).remove([row.object_name]);
+      if (delErr) console.warn('File cleanup failed:', delErr.message);
+      return;
+    }
+
+    let objectName = row?.object_name;
+    if (draft.pending) {
+      ({ objectName } = await uploadFile(SITE_IMAGES_BUCKET, draft.pending.file));
+    }
+    const { error: upsertErr } = await supabase
+      .from('site_images')
+      .upsert(
+        { slot, object_name: objectName, alt: normalizeLine(altFor(slot, row, draft)) },
+        { onConflict: 'slot' }
+      );
+    if (upsertErr) throw upsertErr;
+
+    if (draft.pending && row?.object_name && row.object_name !== objectName) {
+      const { error: delErr } = await supabase.storage.from(SITE_IMAGES_BUCKET).remove([row.object_name]);
+      if (delErr) console.warn('Old file cleanup failed:', delErr.message);
+    }
+  };
+
+  const saveAll = async () => {
+    setSubmitted(true);
+    if (dirtySlots.length === 0) return;
+    const invalid = dirtySlots.filter(
+      (slot) => !drafts[slot]?.empty && altErrorFor(altFor(slot, bySlot.get(slot) ?? null, drafts[slot]))
+    );
+    if (invalid.length > 0) return;
+
+    setSaving(true);
+    const failed: Partial<Record<ImageSlotKey, string>> = {};
+    /* One at a time: each slot is an upload plus a row, and a failure on
+       one should not stop or roll back the rest. */
+    for (const slot of dirtySlots) {
+      try {
+        await saveSlot(slot, bySlot.get(slot) ?? null, drafts[slot]!);
+      } catch (err) {
+        failed[slot] = classifyError(err as Error)?.message ?? 'Could not save this slot.';
+      }
+    }
+
+    await refetch();
+    setDrafts((prev) => {
+      const next: Drafts = {};
+      for (const [slot, d] of Object.entries(prev) as [ImageSlotKey, SlotDraft][]) {
+        if (failed[slot]) next[slot] = d;
+        else if (d.pending) URL.revokeObjectURL(d.pending.url);
+      }
+      return next;
+    });
+    setSlotErrors(failed);
+    setSaving(false);
+    if (Object.keys(failed).length === 0) {
+      setSubmitted(false);
+      setSavedAt(Date.now());
+    }
+  };
+
   return (
     <div>
-      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-        <div>
-          <h2 className="title-sm text-ink">Images</h2>
-          <p className="meta text-ink-faint mt-1">
-            {filled} / {IMAGE_SLOT_KEYS.length} slots filled. An empty slot shows a still
-            placeholder at the same size.
-          </p>
-        </div>
-      </div>
+      <SaveBar
+        title="Images"
+        hint={`${filled} / ${IMAGE_SLOT_KEYS.length} slots filled. An empty slot shows a still placeholder at the same size.`}
+        pending={dirtySlots.length}
+        saving={saving}
+        savedAt={savedAt}
+        onSave={saveAll}
+        onDiscard={discardAll}
+      />
+
+      {Object.values(slotErrors).some(Boolean) && (
+        <p className="body-sm text-alert mb-5">
+          Some slots did not save. Their changes are still here; see each slot below.
+        </p>
+      )}
 
       <div className="flex gap-1 mb-6 flex-wrap" role="tablist" aria-label="Page">
         {PAGES.map((p) => (
@@ -94,7 +234,13 @@ export default function AdminImages() {
             key={p}
             role="tab"
             aria-selected={page === p}
-            onClick={() => setPage(p)}
+            onClick={() => {
+              if (p === page) return;
+              confirmLeave(() => {
+                discardAll();
+                setPage(p);
+              });
+            }}
             className={`label rounded-md px-3 py-2 cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter ${
               page === p ? 'bg-accent-veil text-accent-ink' : 'text-ink-muted hover:text-ink hover:bg-sunken'
             }`}
@@ -107,7 +253,17 @@ export default function AdminImages() {
       <AsyncStateWrapper loading={loading} error={error} data={IMAGE_SLOT_KEYS} onRetry={refetch}>
         <div className="flex flex-col gap-4">
           {slots.map((slot) => (
-            <SlotEditor key={slot} slot={slot} row={bySlot.get(slot) ?? null} onSaved={refetch} />
+            <SlotEditor
+              key={slot}
+              slot={slot}
+              row={bySlot.get(slot) ?? null}
+              draft={drafts[slot]}
+              dirty={dirtySlots.includes(slot)}
+              onChange={(patch) => updateDraft(slot, patch)}
+              saveError={slotErrors[slot] ?? null}
+              submitted={submitted}
+              saving={saving}
+            />
           ))}
         </div>
       </AsyncStateWrapper>
@@ -118,43 +274,39 @@ export default function AdminImages() {
 function SlotEditor({
   slot,
   row,
-  onSaved,
+  draft,
+  dirty,
+  onChange,
+  saveError,
+  submitted,
+  saving,
 }: {
   slot: ImageSlotKey;
   row: SiteImage | null;
-  onSaved: () => void;
+  draft: SlotDraft | undefined;
+  dirty: boolean;
+  onChange: (patch: Partial<SlotDraft>) => void;
+  saveError: string | null;
+  submitted: boolean;
+  saving: boolean;
 }) {
   const def: ImageSlot = IMAGE_SLOTS[slot];
-  const { mutate, loading: saving, error: mutError, reset } = useSupabaseMutation();
-
-  const [pending, setPending] = useState<Pending | null>(null);
-  const [alt, setAlt] = useState(row?.alt ?? def.alt);
   const [altTouched, setAltTouched] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [confirmEmpty, setConfirmEmpty] = useState(false);
 
-  /* A refetch after save brings the stored alt back. */
-  const [syncedAlt, setSyncedAlt] = useState(row?.alt);
-  if (row?.alt !== syncedAlt) {
-    setSyncedAlt(row?.alt);
-    setAlt(row?.alt ?? def.alt);
-  }
-
-  useEffect(() => () => {
-    if (pending) URL.revokeObjectURL(pending.url);
-  }, [pending]);
+  const pending = draft?.pending ?? null;
+  const emptying = !!draft?.empty && !!row;
+  const alt = altFor(slot, row, draft);
 
   const currentUrl = row ? getPublicUrl(SITE_IMAGES_BUCKET, row.object_name) : null;
-  const shown = pending?.url ?? currentUrl;
+  const shown = emptying ? null : (pending?.url ?? currentUrl);
 
-  const altError = validateField({ label: 'Description', required: true, maxLength: ALT_MAX }, alt);
+  const altError = altErrorFor(alt);
+  const showAltError = (altTouched || (submitted && dirty)) && !emptying && altError;
   const lowRes = pending && pending.width < def.minWidth;
-  const altChanged = !!row && normalizeLine(alt) !== row.alt;
-  const dirty = !!pending || altChanged;
 
   const choose = async (file: File | undefined) => {
     setFileError(null);
-    reset();
     if (!file) return;
     if (!LIMITS.ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setFileError('Use a JPEG, PNG, WebP or AVIF image.');
@@ -171,56 +323,20 @@ function SlotEditor({
         setFileError(`That photo is ${dims.width}px wide. This slot needs at least ${Math.ceil(def.minWidth / 2)}px, ideally ${def.minWidth}px.`);
         return;
       }
-      setPending({ file, ...dims });
+      onChange({ pending: { file, ...dims }, empty: false });
     } catch (err) {
       setFileError((err as Error).message);
     }
   };
 
-  const save = async () => {
-    setAltTouched(true);
-    if (altError || (!pending && !row)) return;
-    try {
-      await mutate(async () => {
-        let objectName = row?.object_name;
-        if (pending) {
-          ({ objectName } = await uploadFile(SITE_IMAGES_BUCKET, pending.file));
-        }
-        const { error } = await supabase
-          .from('site_images')
-          .upsert({ slot, object_name: objectName, alt: normalizeLine(alt) }, { onConflict: 'slot' });
-        if (error) throw error;
-
-        if (pending && row?.object_name && row.object_name !== objectName) {
-          const { error: delErr } = await supabase.storage.from(SITE_IMAGES_BUCKET).remove([row.object_name]);
-          if (delErr) console.warn('Old file cleanup failed:', delErr.message);
-        }
-      });
-      setPending(null);
-      onSaved();
-    } catch {
-      // shown via mutError
-    }
-  };
-
-  const empty = async () => {
-    if (!row) return;
-    try {
-      await mutate(async () => {
-        const { error } = await supabase.from('site_images').delete().eq('slot', slot);
-        if (error) throw error;
-        const { error: delErr } = await supabase.storage.from(SITE_IMAGES_BUCKET).remove([row.object_name]);
-        if (delErr) console.warn('File cleanup failed:', delErr.message);
-      });
-      setConfirmEmpty(false);
-      setPending(null);
-      onSaved();
-    } catch {
-      // shown via mutError
-    }
-  };
-
   const inputId = `slot-${slot}`;
+  const chip = emptying
+    ? { status: 'warn' as const, text: 'Will be emptied' }
+    : dirty
+        ? { status: 'warn' as const, text: 'Unsaved' }
+        : row
+          ? { status: 'ok' as const, text: 'Filled' }
+          : { status: 'neutral' as const, text: 'Empty' };
 
   return (
     <Slab tone="raised">
@@ -255,9 +371,7 @@ function SlotEditor({
               </p>
               <p className="meta text-ink-faint mt-1">{slot}</p>
             </div>
-            <Chip status={pending ? 'warn' : row ? 'ok' : 'neutral'}>
-              {pending ? 'Unsaved' : row ? 'Filled' : 'Empty'}
-            </Chip>
+            <Chip status={chip.status}>{chip.text}</Chip>
           </div>
 
           {def.note && <p className="body-sm text-ink-muted">{def.note}</p>}
@@ -293,57 +407,51 @@ function SlotEditor({
             {fileError && <p className="body-sm text-alert mt-2">{fileError}</p>}
           </div>
 
-          <div>
-            <label htmlFor={`${inputId}-alt`} className="label mb-2 block">
-              Description *
-            </label>
-            <input
-              id={`${inputId}-alt`}
-              type="text"
-              value={alt}
-              onChange={(e) => setAlt(e.target.value)}
-              onBlur={() => {
-                setAltTouched(true);
-                setAlt((v) => normalizeLine(v));
-              }}
-              aria-invalid={altTouched && !!altError}
-              style={altTouched && altError ? FIELD_ERROR_RING : undefined}
-              className={FIELD_WELL}
-            />
-            <div className="mt-1.5 flex items-start justify-between gap-4">
-              <p className="meta text-ink-faint">
-                Read aloud by screen readers. Describe what is in this photo.
-              </p>
-              <CharCount length={alt.length} max={ALT_MAX} />
+          {!emptying && (
+            <div>
+              <label htmlFor={`${inputId}-alt`} className="label mb-2 block">
+                Description *
+              </label>
+              <input
+                id={`${inputId}-alt`}
+                type="text"
+                value={alt}
+                onChange={(e) => onChange({ alt: e.target.value })}
+                onBlur={() => {
+                  setAltTouched(true);
+                  onChange({ alt: normalizeLine(alt) });
+                }}
+                aria-invalid={!!showAltError}
+                style={showAltError ? FIELD_ERROR_RING : undefined}
+                className={FIELD_WELL}
+              />
+              <div className="mt-1.5 flex items-start justify-between gap-4">
+                <p className="meta text-ink-faint">
+                  Read aloud by screen readers. Describe what is in this photo.
+                </p>
+                <CharCount length={alt.length} max={ALT_MAX} />
+              </div>
+              {showAltError && <p className="body-sm text-alert mt-1.5">{altError}</p>}
             </div>
-            {altTouched && altError && <p className="body-sm text-alert mt-1.5">{altError}</p>}
-          </div>
+          )}
 
-          {mutError && <p className="body-sm text-alert">{mutError.message}</p>}
+          {saveError && <p className="body-sm text-alert">{saveError}</p>}
 
           <div className="flex gap-3 flex-wrap">
-            <Button onClick={save} disabled={saving || !dirty || (!pending && !row)}>
-              {saving ? 'Saving' : 'Save'}
-            </Button>
             {pending && (
-              <Button variant="tertiary" onClick={() => setPending(null)} disabled={saving}>
-                Discard
+              <Button variant="tertiary" onClick={() => onChange({ pending: undefined })} disabled={saving}>
+                {row ? 'Keep the current photo' : 'Remove this photo'}
               </Button>
             )}
-            {row && !pending && !confirmEmpty && (
-              <Button variant="tertiary" onClick={() => setConfirmEmpty(true)} disabled={saving}>
+            {row && !pending && !emptying && (
+              <Button variant="tertiary" onClick={() => onChange({ empty: true })} disabled={saving}>
                 Empty this slot
               </Button>
             )}
-            {confirmEmpty && (
-              <>
-                <Button variant="secondary" onClick={empty} disabled={saving}>
-                  Remove the photo
-                </Button>
-                <Button variant="tertiary" onClick={() => setConfirmEmpty(false)}>
-                  Keep it
-                </Button>
-              </>
+            {emptying && (
+              <Button variant="tertiary" onClick={() => onChange({ empty: false })} disabled={saving}>
+                Keep the photo
+              </Button>
             )}
           </div>
         </div>

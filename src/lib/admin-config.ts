@@ -22,8 +22,15 @@ export interface ContentConfig {
   /** Singular noun for the "Add X" button, when trimming an "s" is wrong. */
   singularName?: string;
   limit: number;
-  /** Up and Down buttons on display_order. Default true. */
+  /** Drag-to-reorder on display_order. Default true. */
   orderable?: boolean;
+  /**
+   * The public page sorts by this exec_groups slug column first and
+   * display_order second, so the editor lists one reorderable group per
+   * role. A flat list would let an editor drag someone past a role
+   * boundary that the site then ignores.
+   */
+  groupColumn?: string;
   /** Fixed sort for a table that is not orderable. */
   sort?: { column: string; ascending: boolean; thenBy?: string };
 }
@@ -60,6 +67,7 @@ export const CONTENT_CONFIG: Record<string, ContentConfig> = {
     // Was false, which left the club unable to order its own team even
     // though executives.display_order has always existed.
     orderable: true,
+    groupColumn: 'group',
   },
   gallery_photos: {
     table: 'gallery_photos',

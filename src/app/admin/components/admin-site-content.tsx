@@ -8,9 +8,10 @@ import { normalizeFor, validateField, type FieldFormat } from '@/lib/normalize';
 import { CONTENT_PAGES, type ContentKind } from '@/lib/site-content-defaults';
 import { FIELD_ERROR_RING, FIELD_WELL } from '@/components/contact/field';
 import Slab from '@/components/ui/slab';
-import Button from '@/components/ui/button';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import CharCount from './char-count';
+import SaveBar from './save-bar';
+import { useUnsavedChanges } from '../unsaved-changes';
 
 /*
   Site text: every editable string on the public site, in the seven tabs
@@ -20,7 +21,9 @@ import CharCount from './char-count';
   seeded from src/lib/site-content-defaults.ts. An admin can change a value
   and nothing else; the database grants UPDATE on that one column.
 
-  Edits batch: change any number of fields across tabs, then save once.
+  Edits batch: change any number of fields on a page, then save once.
+  Switching page or tab with edits pending asks first, and leaving
+  discards them.
   Each field validates against its own ceiling and kind, and Save is
   refused while any edited field is invalid. Values are normalised to one
   line on blur, so a pasted line break never splits a heading.
@@ -94,10 +97,11 @@ export default function AdminSiteContent() {
 
   const dirtyPages = new Set(dirtyKeys.map((key) => byKey.get(key)?.page));
 
+  const confirmLeave = useUnsavedChanges('site_content', dirtyKeys.length > 0);
+
   const valueFor = (row: ContentRow) => drafts[row.key] ?? row.value ?? '';
 
   const setDraft = (row: ContentRow, next: string) => {
-    setSavedAt(null);
     setDrafts((prev) => {
       /* Typing a value back to its original un-dirties the field, so Save
          reflects real pending changes. */
@@ -133,10 +137,12 @@ export default function AdminSiteContent() {
         }
       });
 
+      /* Refetch before clearing drafts, so no field shows its old value for
+         a frame in between. */
+      await refetch();
       setDrafts({});
       setSubmitted(false);
       setSavedAt(Date.now());
-      refetch();
     } catch {
       // Surfaced through mutError.
     }
@@ -144,29 +150,15 @@ export default function AdminSiteContent() {
 
   return (
     <div>
-      {/* Header and save controls */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-        <div>
-          <h2 className="title-sm text-ink">Site text</h2>
-          <p className="meta text-ink-faint mt-1">
-            {dirtyKeys.length > 0
-              ? `${dirtyKeys.length} unsaved change${dirtyKeys.length === 1 ? '' : 's'}`
-              : savedAt
-                ? 'All changes saved'
-                : 'Every word on the public site, by page.'}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {dirtyKeys.length > 0 && (
-            <Button variant="secondary" onClick={discardAll} disabled={saving}>
-              Discard
-            </Button>
-          )}
-          <Button onClick={handleSave} disabled={saving || dirtyKeys.length === 0}>
-            {saving ? 'Saving' : 'Save changes'}
-          </Button>
-        </div>
-      </div>
+      <SaveBar
+        title="Site text"
+        hint="Every word on the public site, by page."
+        pending={dirtyKeys.length}
+        saving={saving}
+        savedAt={savedAt}
+        onSave={handleSave}
+        onDiscard={discardAll}
+      />
 
       {submitted && invalid.length > 0 && (
         <p className="body-sm text-alert mb-5">
@@ -182,7 +174,13 @@ export default function AdminSiteContent() {
             key={page}
             role="tab"
             aria-selected={page === activePage}
-            onClick={() => setActivePage(page)}
+            onClick={() => {
+              if (page === activePage) return;
+              confirmLeave(() => {
+                discardAll();
+                setActivePage(page);
+              });
+            }}
             className={`label rounded-md px-3 py-2 cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter ${
               page === activePage
                 ? 'bg-accent-veil text-accent-ink'

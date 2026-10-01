@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Image from 'next/image';
+import { Reorder, useDragControls } from 'framer-motion';
 import { supabase } from '@/lib/supabase/client';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSupabaseMutation, deleteContentItem } from '@/lib/supabase/hooks/use-supabase-mutation';
@@ -9,20 +10,42 @@ import { uploadFile, getPublicUrl } from '@/lib/supabase/storage';
 import { validateImageDimensions } from '@/lib/image-utils';
 import { LIMITS } from '@/lib/admin-config';
 import type { ContentConfig } from '@/lib/admin-config';
+import { D, E } from '@/lib/motion';
 import { FORM_FIELDS, type FormField } from '../form-config';
+import { useUnsavedChanges } from '../unsaved-changes';
 import AdminForm from './admin-form';
+import SaveBar from './save-bar';
 import Slab from '@/components/ui/slab';
 import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import type { ExecGroup } from '@/types/database';
 
+/*
+  A content table (events, executives, roles, sponsors, statistics).
+
+  Two kinds of change, committed differently:
+  - Order and visibility are staged. Drag rows by their handle (or focus the
+    handle and use the arrow keys) and flip visibility chips as often as you
+    like; nothing is written until "Save all changes", which writes every
+    staged row in one go.
+  - Add, Edit and Delete commit from their own dialog. They carry uploads
+    and the storage-first delete, which should not sit half-done in a draft.
+    A dialog save refreshes the rows in place and keeps the staged order.
+
+  Saving order writes display_order = position for every row whose stored
+  value differs. The old Up/Down swapped two rows' values, which did
+  nothing when both were 0 (the column default for every new row).
+*/
+
+type Row = Record<string, unknown>;
+
 interface AdminSectionProps {
   configKey: string;
   config: ContentConfig;
 }
 
-/** Cell text for the list table, resolving dropdown values to labels. */
+/** Cell text for the list, resolving dropdown values to labels. */
 function displayCell(field: FormField, value: unknown): string {
   const raw = String(value ?? '');
   if (field.type === 'select') {
@@ -31,6 +54,9 @@ function displayCell(field: FormField, value: unknown): string {
   }
   return raw.slice(0, 60);
 }
+
+const idOf = (row: Row) => row.id as string;
+const orderOf = (row: Row) => (row.display_order as number | null) ?? 0;
 
 export default function AdminSection({ configKey, config }: AdminSectionProps) {
   const {
@@ -42,20 +68,21 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
     singularName,
     limit,
     orderable = true,
+    groupColumn,
     sort,
   } = config;
   const hasStorage = !!(bucket && pathColumn);
   const rawFields = FORM_FIELDS[configKey];
   const singular = singularName ?? displayName.replace(/s$/, '');
 
-  const { data: rows, loading, error, refetch } = useSupabaseQuery<Record<string, unknown>>(
+  const { data: rows, loading, error, refetch } = useSupabaseQuery<Row>(
     table,
     sort ? { orderBy: sort.column, ascending: sort.ascending, thenBy: sort.thenBy } : {}
   );
 
-  /* Executive roles live in a table, so the Role dropdown is filled at
-     runtime. Only fetched when a field asks for it. */
-  const needsExecGroups = rawFields.some((f) => f.optionsSource === 'exec_groups');
+  /* Executive roles live in a table, so the Role dropdown and the role
+     grouping are filled at runtime. Only fetched when something needs it. */
+  const needsExecGroups = !!groupColumn || rawFields.some((f) => f.optionsSource === 'exec_groups');
   const { data: execGroups } = useSupabaseQuery<ExecGroup>('exec_groups', {
     enabled: needsExecGroups,
   });
@@ -72,31 +99,133 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
       ),
     [rawFields, execGroups]
   );
+
+  /* The dialogs and the batch save fail independently, so each keeps its
+     own error. */
   const { mutate, loading: mutating, error: mutError, reset: resetMutError } = useSupabaseMutation();
+  const {
+    mutate: mutateBatch,
+    loading: saving,
+    error: batchError,
+    reset: resetBatchError,
+  } = useSupabaseMutation();
 
   const [showForm, setShowForm] = useState(false);
-  const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<Record<string, unknown> | null>(null);
+  const [editingRow, setEditingRow] = useState<Row | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Row | null>(null);
+
+  /** Staged order, as row ids. Null until the first move. */
+  const [orderDraft, setOrderDraft] = useState<string[] | null>(null);
+  /** Staged visibility, only for rows that differ from the database. */
+  const [visDraft, setVisDraft] = useState<Record<string, boolean>>({});
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const atLimit = rows.length >= limit;
 
-  const handleToggleVisibility = async (row: Record<string, unknown>) => {
-    const newVal = !row[visibilityColumn];
+  /* Same rank the public team page uses: exec_groups order, unknown last. */
+  const rankOf = useMemo(() => {
+    const slugs = execGroups.map((g) => g.slug);
+    return (row: Row) => {
+      if (!groupColumn) return 0;
+      const i = slugs.indexOf(String(row[groupColumn] ?? ''));
+      return i === -1 ? slugs.length : i;
+    };
+  }, [execGroups, groupColumn]);
+
+  /** The order the database holds now. Sort is stable, so ties keep query order. */
+  const baseRows = useMemo(() => {
+    if (!orderable) return rows;
+    return [...rows].sort((a, b) => rankOf(a) - rankOf(b) || orderOf(a) - orderOf(b));
+  }, [rows, orderable, rankOf]);
+
+  /** The order on screen: the draft, then any row added since, regrouped. */
+  const shownRows = useMemo(() => {
+    if (!orderDraft) return baseRows;
+    const byId = new Map(baseRows.map((r) => [idOf(r), r]));
+    const drafted = orderDraft.map((id) => byId.get(id)).filter((r): r is Row => !!r);
+    const rest = baseRows.filter((r) => !orderDraft.includes(idOf(r)));
+    /* A role changed in the Edit dialog moves the row to its new group. */
+    return [...drafted, ...rest].sort((a, b) => rankOf(a) - rankOf(b));
+  }, [baseRows, orderDraft, rankOf]);
+
+  /** One reorderable list per role, or a single list. */
+  const segments = useMemo(() => {
+    if (!groupColumn) return [{ key: 'all', heading: null as string | null, rows: shownRows }];
+    const out: { key: string; heading: string | null; rows: Row[] }[] = [];
+    for (const row of shownRows) {
+      const slug = String(row[groupColumn] ?? '');
+      let seg = out.find((s) => s.key === slug);
+      if (!seg) {
+        const group = execGroups.find((g) => g.slug === slug);
+        seg = { key: slug, heading: group?.label ?? (slug || 'No role'), rows: [] };
+        out.push(seg);
+      }
+      seg.rows.push(row);
+    }
+    return out;
+  }, [shownRows, groupColumn, execGroups]);
+
+  const visibleOf = (row: Row) => visDraft[idOf(row)] ?? !!row[visibilityColumn];
+
+  const movedCount = orderDraft
+    ? shownRows.filter((r, i) => baseRows[i] && idOf(baseRows[i]) !== idOf(r)).length
+    : 0;
+  const pending = movedCount + Object.keys(visDraft).length;
+
+  useUnsavedChanges(`section:${configKey}`, pending > 0);
+
+  const reorderSegment = (key: string, ids: string[]) => {
+    setOrderDraft(segments.flatMap((s) => (s.key === key ? ids : s.rows.map(idOf))));
+  };
+
+  const toggleVisibility = (row: Row) => {
+    const id = idOf(row);
+    const next = !visibleOf(row);
+    setVisDraft((prev) => {
+      const rest = { ...prev };
+      /* Flipping back to the stored value un-stages the row. */
+      if (next === !!row[visibilityColumn]) delete rest[id];
+      else rest[id] = next;
+      return rest;
+    });
+  };
+
+  const discardAll = () => {
+    setOrderDraft(null);
+    setVisDraft({});
+    resetBatchError();
+  };
+
+  const saveAll = async () => {
+    if (pending === 0) return;
+    const updates: { id: string; patch: Row }[] = [];
+    shownRows.forEach((row, i) => {
+      const patch: Row = {};
+      if (orderDraft && orderOf(row) !== i) patch.display_order = i;
+      if (idOf(row) in visDraft) patch[visibilityColumn] = visDraft[idOf(row)];
+      if (Object.keys(patch).length > 0) updates.push({ id: idOf(row), patch });
+    });
+
     try {
-      await mutate(async () => {
-        const { error: updateError } = await supabase
-          .from(table)
-          .update({ [visibilityColumn]: newVal })
-          .eq('id', row.id as string);
-        if (updateError) throw updateError;
+      await mutateBatch(async () => {
+        const results = await Promise.all(
+          updates.map(({ id, patch }) => supabase.from(table).update(patch).eq('id', id))
+        );
+        const failed = results.find((r) => r.error);
+        if (failed?.error) throw failed.error;
       });
-      refetch();
+      /* Refetch before clearing the drafts, so the list never shows the old
+         order for a frame between the two. */
+      await refetch();
+      setOrderDraft(null);
+      setVisDraft({});
+      setSavedAt(Date.now());
     } catch {
-      // error set by hook
+      // Shown via batchError. Drafts stay, so Save can be pressed again.
     }
   };
 
-  const handleSave = async (formData: Record<string, unknown>, file: File | null) => {
+  const handleSave = async (formData: Row, file: File | null) => {
     try {
       await mutate(async () => {
         let payload = { ...formData };
@@ -165,6 +294,11 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
               `Maximum of ${limit} ${displayName.toLowerCase()} reached. Delete an item first.`
             );
           }
+          /* A new row goes to the end, not to 0 alongside every other new
+             row, which is how the ties behind the dead Up/Down came about. */
+          if (orderable) {
+            payload.display_order = rows.reduce((max, r) => Math.max(max, orderOf(r)), -1) + 1;
+          }
           const { error: insertError } = await supabase.from(table).insert(payload);
           if (insertError) throw insertError;
         }
@@ -173,13 +307,13 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
       setShowForm(false);
       setEditingRow(null);
       resetMutError();
-      refetch();
+      await refetch();
     } catch {
       // error shown via mutError
     }
   };
 
-  const handleDelete = async (row: Record<string, unknown>) => {
+  const handleDelete = async (row: Row) => {
     try {
       await mutate(async () => {
         if (hasStorage) {
@@ -190,38 +324,12 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
         }
       });
       setDeleteConfirm(null);
-      refetch();
-    } catch {
-      // error set by hook
-    }
-  };
-
-  const handleMove = async (row: Record<string, unknown>, direction: 'up' | 'down') => {
-    if (!orderable) return;
-    const sorted = [...rows].sort(
-      (a, b) => ((a.display_order as number) ?? 0) - ((b.display_order as number) ?? 0)
-    );
-    const idx = sorted.findIndex((r) => r.id === row.id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
-
-    const thisOrder = (sorted[idx].display_order as number) ?? 0;
-    const otherOrder = (sorted[swapIdx].display_order as number) ?? 0;
-
-    try {
-      await mutate(async () => {
-        const { error: e1 } = await supabase
-          .from(table)
-          .update({ display_order: otherOrder })
-          .eq('id', sorted[idx].id as string);
-        if (e1) throw e1;
-        const { error: e2 } = await supabase
-          .from(table)
-          .update({ display_order: thisOrder })
-          .eq('id', sorted[swapIdx].id as string);
-        if (e2) throw e2;
+      setVisDraft((prev) => {
+        const rest = { ...prev };
+        delete rest[idOf(row)];
+        return rest;
       });
-      refetch();
+      await refetch();
     } catch {
       // error set by hook
     }
@@ -229,15 +337,16 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
 
   const tableFields = useMemo(() => fields.filter((f) => f.showInTable !== false), [fields]);
 
-  const sortedRows = useMemo(
-    () =>
-      orderable
-        ? [...rows].sort(
-            (a, b) => ((a.display_order as number) ?? 0) - ((b.display_order as number) ?? 0)
-          )
-        : rows,
-    [rows, orderable]
-  );
+  /* One grid shared by the header and every row, so columns line up
+     without a table (Reorder needs a plain list). */
+  const gridTemplateColumns = [
+    orderable ? '2.75rem' : null,
+    ...tableFields.map((f) => (f.type === 'image' ? '3.5rem' : 'minmax(0,1fr)')),
+    '7.5rem',
+    '9.5rem',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const visibilityLabel =
     visibilityColumn === 'published' ? 'Published' : visibilityColumn === 'active' ? 'Active' : 'Visible';
@@ -250,7 +359,7 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
     setShowForm(true);
   };
 
-  const openEdit = (row: Record<string, unknown>) => {
+  const openEdit = (row: Row) => {
     setEditingRow(row);
     resetMutError();
     setShowForm(true);
@@ -261,20 +370,80 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
     setEditingRow(null);
   };
 
-  return (
-    <div>
-      {/* Section header */}
-      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-        <div>
-          <h2 className="title-sm text-ink">{displayName}</h2>
-          <p className="meta text-ink-faint mt-1">
-            {rows.length} / {limit} items
-          </p>
+  const rowName = (row: Row) =>
+    (row.title as string) ||
+    (row.name as string) ||
+    (row.label as string) ||
+    `this ${singular.toLowerCase()}`;
+
+  const cells = (row: Row) => (
+    <>
+      {tableFields.map((f) => (
+        <div key={f.name} className="min-w-0">
+          {f.type === 'image' ? (
+            row[f.name] ? (
+              <div className="relative h-10 w-10 overflow-hidden rounded-sm bg-page">
+                <Image
+                  src={getPublicUrl(bucket!, row[f.name] as string) ?? ''}
+                  alt=""
+                  fill
+                  sizes="40px"
+                  className={configKey === 'sponsors' ? 'object-contain' : 'object-cover'}
+                />
+              </div>
+            ) : (
+              <span className="body-sm text-ink-faint">None</span>
+            )
+          ) : (
+            <span className="body-sm text-ink block truncate">
+              {displayCell(f, row[f.name]) || <span className="text-ink-faint">None</span>}
+            </span>
+          )}
         </div>
-        <Button onClick={openAdd} disabled={atLimit || mutating}>
-          Add {singular.toLowerCase()}
+      ))}
+      <div>
+        <button
+          type="button"
+          aria-pressed={visibleOf(row)}
+          aria-label={`${rowName(row)}: ${visibleOf(row) ? visibilityLabel : hiddenLabel}. Press to change.`}
+          onClick={() => toggleVisibility(row)}
+          disabled={saving}
+          className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Chip status={visibleOf(row) ? 'ok' : 'neutral'}>
+            {visibleOf(row) ? visibilityLabel : hiddenLabel}
+            {idOf(row) in visDraft ? ' *' : ''}
+          </Chip>
+        </button>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        <Button variant="tertiary" className="!px-3 !py-1.5" onClick={() => openEdit(row)}>
+          Edit
+        </Button>
+        <Button variant="tertiary" className="!px-3 !py-1.5" onClick={() => setDeleteConfirm(row)}>
+          Delete
         </Button>
       </div>
+    </>
+  );
+
+  return (
+    <div>
+      <SaveBar
+        title={displayName}
+        hint={`${rows.length} / ${limit} items${orderable ? '. Drag the handle to reorder.' : ''}`}
+        pending={pending}
+        saving={saving}
+        savedAt={savedAt}
+        onSave={saveAll}
+        onDiscard={discardAll}
+      >
+        <Button variant="secondary" onClick={openAdd} disabled={atLimit || mutating || saving}>
+          Add {singular.toLowerCase()}
+        </Button>
+      </SaveBar>
+
+      {batchError && <p className="body-sm text-alert mb-5">{batchError.message}</p>}
 
       <Slab tone="raised">
         <AsyncStateWrapper
@@ -285,102 +454,66 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
           emptyMessage={`No ${displayName.toLowerCase()} yet. Add one to get started.`}
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-separate border-spacing-y-2">
-              <thead>
-                <tr>
-                  {orderable && <th className="label px-3 pb-2 w-16">Order</th>}
-                  {tableFields.map((f) => (
-                    <th key={f.name} className="label px-3 pb-2">
-                      {f.label}
-                    </th>
-                  ))}
-                  <th className="label px-3 pb-2 w-28">{visibilityLabel}</th>
-                  <th className="label px-3 pb-2 w-40">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedRows.map((row, idx) => (
-                  <tr key={row.id as string} className="bg-sunken">
-                    {orderable && (
-                      <td className="px-3 py-3 rounded-l-md">
-                        <div className="flex gap-1">
-                          <button
-                            disabled={idx === 0 || mutating}
-                            onClick={() => handleMove(row, 'up')}
-                            className="label px-1.5 py-0.5 text-ink-muted hover:text-accent-ink disabled:text-ink-faint disabled:cursor-not-allowed cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter"
-                            aria-label={`Move ${singular.toLowerCase()} up`}
-                          >
-                            Up
-                          </button>
-                          <button
-                            disabled={idx === sortedRows.length - 1 || mutating}
-                            onClick={() => handleMove(row, 'down')}
-                            className="label px-1.5 py-0.5 text-ink-muted hover:text-accent-ink disabled:text-ink-faint disabled:cursor-not-allowed cursor-pointer transition-colors duration-[var(--d-hover)] ease-enter"
-                            aria-label={`Move ${singular.toLowerCase()} down`}
-                          >
-                            Down
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                    {tableFields.map((f, colIdx) => (
-                      <td
-                        key={f.name}
-                        className={`px-3 py-3 text-ink ${!orderable && colIdx === 0 ? 'rounded-l-md' : ''}`}
-                      >
-                        {f.type === 'image' ? (
-                          row[f.name] ? (
-                            <div className="relative h-10 w-10 overflow-hidden rounded-sm bg-page">
-                              <Image
-                                src={getPublicUrl(bucket!, row[f.name] as string) ?? ''}
-                                alt=""
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <span className="text-ink-faint">None</span>
-                          )
-                        ) : (
-                          <span className="body-sm text-ink">
-                            {displayCell(f, row[f.name]) || (
-                              <span className="text-ink-faint">None</span>
-                            )}
-                          </span>
-                        )}
-                      </td>
-                    ))}
-                    <td className="px-3 py-3">
-                      <button
-                        type="button"
-                        aria-pressed={!!row[visibilityColumn]}
-                        onClick={() => handleToggleVisibility(row)}
-                        disabled={mutating}
-                        className="cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Chip status={row[visibilityColumn] ? 'ok' : 'neutral'}>
-                          {row[visibilityColumn] ? visibilityLabel : hiddenLabel}
-                        </Chip>
-                      </button>
-                    </td>
-                    <td className="px-3 py-3 rounded-r-md">
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="tertiary" className="!px-3 !py-1.5" onClick={() => openEdit(row)}>
-                          Edit
-                        </Button>
-                        <Button
-                          variant="tertiary"
-                          className="!px-3 !py-1.5"
-                          onClick={() => setDeleteConfirm(row)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+            <div className="min-w-[720px]">
+              <div className="grid gap-3 px-3 pb-2" style={{ gridTemplateColumns }}>
+                {orderable && <span className="label">Order</span>}
+                {tableFields.map((f) => (
+                  <span key={f.name} className="label">
+                    {f.label}
+                  </span>
                 ))}
-              </tbody>
-            </table>
+                <span className="label">{visibilityLabel}</span>
+                <span className="label">Actions</span>
+              </div>
+
+              {segments.map((seg) => (
+                <div key={seg.key}>
+                  {seg.heading && (
+                    <h3 className="label text-accent-ink px-3 pt-5 pb-1">{seg.heading}</h3>
+                  )}
+                  {orderable ? (
+                    <Reorder.Group
+                      as="ul"
+                      axis="y"
+                      values={seg.rows.map(idOf)}
+                      onReorder={(ids: string[]) => reorderSegment(seg.key, ids)}
+                      className="flex flex-col gap-2 pt-2"
+                    >
+                      {seg.rows.map((row, i) => (
+                        <ReorderRow
+                          key={idOf(row)}
+                          id={idOf(row)}
+                          name={rowName(row)}
+                          gridTemplateColumns={gridTemplateColumns}
+                          disabled={saving}
+                          onStep={(dir) => {
+                            const ids = seg.rows.map(idOf);
+                            const j = i + dir;
+                            if (j < 0 || j >= ids.length) return;
+                            [ids[i], ids[j]] = [ids[j], ids[i]];
+                            reorderSegment(seg.key, ids);
+                          }}
+                        >
+                          {cells(row)}
+                        </ReorderRow>
+                      ))}
+                    </Reorder.Group>
+                  ) : (
+                    <ul className="flex flex-col gap-2 pt-2">
+                      {seg.rows.map((row) => (
+                        <li
+                          key={idOf(row)}
+                          className="grid items-center gap-3 rounded-md bg-sunken px-3 py-3"
+                          style={{ gridTemplateColumns }}
+                        >
+                          {cells(row)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </AsyncStateWrapper>
       </Slab>
@@ -426,13 +559,7 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
           >
             <h3 className="label text-alert mb-4">Confirm delete</h3>
             <p className="body text-ink mb-6">
-              Delete{' '}
-              <strong className="text-ink">
-                {(deleteConfirm.title as string) ||
-                  (deleteConfirm.name as string) ||
-                  `this ${singular.toLowerCase()}`}
-              </strong>
-              ?
+              Delete <strong className="text-ink">{rowName(deleteConfirm)}</strong>?
               {hasStorage && !!deleteConfirm[pathColumn!] && (
                 <> The associated image will also be permanently deleted.</>
               )}{' '}
@@ -451,5 +578,79 @@ export default function AdminSection({ configKey, config }: AdminSectionProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/*
+  One draggable row. Only the handle starts a drag (dragListener off), so
+  the chip and the Edit and Delete buttons stay clickable and text in the
+  row stays selectable. The handle also takes ArrowUp and ArrowDown, one
+  step at a time, for keyboard editors; focus stays on it as the row moves.
+
+  Rows slide aside on D.move / E.move, the system's "something changes
+  position" budget. The held row takes --sh-3 so it reads as lifted.
+*/
+function ReorderRow({
+  id,
+  name,
+  gridTemplateColumns,
+  disabled,
+  onStep,
+  children,
+}: {
+  id: string;
+  name: string;
+  gridTemplateColumns: string;
+  disabled: boolean;
+  onStep: (dir: -1 | 1) => void;
+  children: React.ReactNode;
+}) {
+  const controls = useDragControls();
+  const [held, setHeld] = useState(false);
+
+  return (
+    <Reorder.Item
+      as="li"
+      value={id}
+      dragListener={false}
+      dragControls={controls}
+      onDragStart={() => setHeld(true)}
+      onDragEnd={() => setHeld(false)}
+      transition={{ duration: D.move, ease: E.move }}
+      style={{ gridTemplateColumns, position: 'relative', zIndex: held ? 1 : 0 }}
+      className={`grid items-center gap-3 rounded-md bg-sunken px-3 py-3 transition-shadow duration-[var(--d-hover)] ease-enter ${
+        held ? 'shadow-3' : ''
+      }`}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={`Reorder ${name}. Drag, or use the up and down arrow keys.`}
+        onPointerDown={(e) => {
+          if (disabled) return;
+          e.preventDefault();
+          controls.start(e);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            onStep(e.key === 'ArrowUp' ? -1 : 1);
+          }
+        }}
+        className={`flex h-9 w-9 items-center justify-center rounded-sm text-ink-muted touch-none transition-colors duration-[var(--d-hover)] ease-enter hover:text-accent-ink hover:bg-accent-veil disabled:cursor-not-allowed disabled:text-ink-faint ${
+          held ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M2.5 4h11M2.5 8h11M2.5 12h11"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+      {children}
+    </Reorder.Item>
   );
 }

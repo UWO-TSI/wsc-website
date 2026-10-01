@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/providers/admin-auth-provider';
 import { CONTENT_CONFIG } from '@/lib/admin-config';
 import Button from '@/components/ui/button';
@@ -9,6 +10,7 @@ import AdminSection from './components/admin-section';
 import AdminSiteContent from './components/admin-site-content';
 import AdminImages from './components/admin-images';
 import AdminUsers from './components/admin-users';
+import { UnsavedChangesProvider, useConfirmLeave } from './unsaved-changes';
 
 /**
  * Tabs are grouped so the sidebar reads as three jobs rather than one
@@ -55,7 +57,22 @@ const TAB_GROUPS: { heading: string; tabs: Tab[] }[] = [
 const ALL_TABS: Tab[] = TAB_GROUPS.flatMap((g) => g.tabs);
 
 export default function AdminDashboard() {
+  return (
+    <UnsavedChangesProvider>
+      <Dashboard />
+    </UnsavedChangesProvider>
+  );
+}
+
+/*
+  Every way out of an editor (a sidebar tab, Back to site, Sign out) goes
+  through confirmLeave, so pending edits are never dropped without a word.
+  Switching tabs remounts the editor (key={tab.key}), which is the discard.
+*/
+function Dashboard() {
   const { signOut } = useAdminAuth();
+  const router = useRouter();
+  const confirmLeave = useConfirmLeave();
   const [activeTab, setActiveTab] = useState<string>('events');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -93,8 +110,11 @@ export default function AdminDashboard() {
                 <button
                   key={t.key}
                   onClick={() => {
-                    setActiveTab(t.key);
-                    setSidebarOpen(false);
+                    if (t.key === activeTab) return setSidebarOpen(false);
+                    confirmLeave(() => {
+                      setActiveTab(t.key);
+                      setSidebarOpen(false);
+                    });
                   }}
                   className={`label w-full text-left rounded-md px-3 py-2.5 transition-colors duration-[var(--d-hover)] ease-enter cursor-pointer ${
                     activeTab === t.key
@@ -111,10 +131,16 @@ export default function AdminDashboard() {
 
         {/* Sidebar footer */}
         <div className="px-3 py-4 flex flex-col gap-1">
-          <Button variant="tertiary" href="/" className="!justify-start !px-3 !py-2.5 w-full">
+          <Button
+            variant="tertiary"
+            onClick={() => confirmLeave(() => router.push('/'))}
+            className="!justify-start !px-3 !py-2.5 w-full">
             Back to site
           </Button>
-          <Button variant="tertiary" onClick={signOut} className="!justify-start !px-3 !py-2.5 w-full">
+          <Button
+            variant="tertiary"
+            onClick={() => confirmLeave(() => void signOut())}
+            className="!justify-start !px-3 !py-2.5 w-full">
             Sign out
           </Button>
         </div>

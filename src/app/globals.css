@@ -41,6 +41,14 @@
   /* a tile inside an inverse slab: the slab's ink at 7 percent */
   --inverse-tile: color-mix(in srgb, var(--on-inverse) 7%, transparent);
 
+  /*
+    The inverse ground at a fixed strength, laid over a photo that has text
+    on it (the hero). 75 percent is the least that keeps the slab's secondary
+    ink (--on-inverse at 70 percent) at 4.5:1 over a pure white photo, so any
+    photo passes AA; full --on-inverse measures 7.6:1 there.
+  */
+  --inverse-veil: color-mix(in srgb, var(--inverse) 75%, transparent);
+
   /* fixed brand marks: the Western lockup and the sponsor tiers */
   --velvet: #3a1a57;
   --gold: #8a6a1c;
@@ -108,7 +116,7 @@
 
   /* fluid type: 4 roles, nothing between them */
   --t-title-hero: clamp(2.6rem, 11.5vw, 9rem);
-  --t-title: clamp(1.75rem, 5vw, 3.25rem);
+  --t-title: clamp(2rem, 1.275rem + 3.094vw, 3.75rem); /* 32px at 375, 60px from 1280 */
   --t-title-sm: 19px;
   --t-subtitle: 19px;
   --t-body: 16px;
@@ -118,6 +126,13 @@
 
   /* page gutter: the inline padding inside every full-width container */
   --gut: 16px;
+
+  /*
+    Section padding: the block padding of a section that reads as one. The
+    page head's and the hero's bottom, the footer, and every bare content
+    section on an inner page.
+  */
+  --pad-section: clamp(3rem, 7vw, 5.5rem);
 
   /*
     Signature texture, Lit velvet. One unit for every mark: a dot is --tex-dot
@@ -159,6 +174,7 @@
   --color-on-inverse: var(--on-inverse);
   --color-on-accent: var(--on-accent);
   --color-inverse-tile: var(--inverse-tile);
+  --color-inverse-veil: var(--inverse-veil);
   --color-velvet: var(--velvet);
   --color-gold: var(--gold);
   --color-logo-ground: var(--logo-ground);
@@ -833,13 +849,21 @@ img {
   deliberate: a static grey block reads as broken layout rather than as
   pending. It stops under reduced motion and once the content behind it has
   loaded.
+
+  The base rule is in the components layer so a caller's utilities win.
+  Unlayered, its `position: relative` beat the `absolute inset-0` RevealImage
+  puts on its skeleton, which collapsed it to 0 by 0 and left every photo
+  frame blank while loading and when empty. Its corner beat `rounded-full`
+  on the roster's discs the same way.
 */
 
-.skeleton {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--r-sm);
-  background: color-mix(in srgb, currentColor 9%, transparent);
+@layer components {
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, currentColor 9%, transparent);
+  }
 }
 
 .skeleton::after {

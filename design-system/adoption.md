@@ -23,7 +23,7 @@ Spend these. Never a hex, never a raw number, never a new curve.
 Tailwind utilities resolve through `@theme inline`:
 
 - Surfaces: `bg-page`, `bg-raised`, `bg-sunken`, `bg-inverse`, `bg-accent`, `bg-accent-veil`, and
-  `bg-inverse-tile` for a tile inside an inverse slab
+  `bg-inverse-tile` for a tile inside an inverse slab, and `bg-inverse-veil` over a photo with text on it
 - Ink: `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-on-inverse`, `text-on-accent`, `text-accent-ink`
 - Fixed marks: `text-velvet`, `text-gold`, `bg-gold`: the Western lockup and sponsor tiers only
 - Logo ground: `bg-logo-ground` with `text-on-logo-ground`, the third fixed mark. Every supplied
@@ -60,7 +60,7 @@ All in `src/components/`. Compose from these; do not rebuild them.
 | `ui/button` | `variant: 'primary' \| 'secondary' \| 'tertiary'`, `href`, `arrow`, `disabled`. Magnetic Pull is built in. One primary per section. Inside an inverse, accent or logo `Slab` the primary takes the page fill on its own; `onAccent` is deprecated and does nothing. |
 | `ui/eyebrow` | `index` renders the section numeral in `--accent-ink`. |
 | `ui/slab` | `tone: 'page' \| 'raised' \| 'sunken' \| 'inverse' \| 'accent' \| 'logo'`, `texture` (inverse and accent only: `sweep`, `rise`, `arc`, `waist`, `pair`), `clip` for Slab Clip, `overflowHidden`, `as`. Provides its tone to `useSlabTone()`. |
-| `ui/section-head` | `title` is an **array, one entry per visual line**. Owns its own Line Mask Reveal. |
+| `ui/section-head` | The left-aligned head. `titleKeys` (editable) or `title`, each an **array, one entry per visual line**. Owns its own Line Mask Reveal. |
 | `ui/chip` | `status: 'ok' \| 'warn' \| 'alert' \| 'neutral'`. The word is the signal. |
 | `ui/stat-figure` | `value: number`, `label`, `suffix`. Counter Roll at 70% visible. Real numbers only, three in a row at most. |
 | `ui/avatar` | `name`, `src`, `size`. Missing headshot renders initials on `--sunken`, by design. |
@@ -72,9 +72,16 @@ A section is a full-width container: it spans the viewport with no side gap, tak
 puts `--gut` inside itself as inline padding. `.slab` does all three. Containers that meet are 2px
 apart: wrap them in `.stack`. Do not add `mx-[var(--gut)]` or any side margin to a slab.
 
-- **Selling sections are centred:** the hero, section heads and closing bands. Eyebrow, then the
-  Archivo title, then at most three lines of copy, then the buttons.
-- **Reading content is left-aligned:** long paragraphs and the event ledger.
+On an inner page the page head and the closing band are the only containers. A content section
+between them is a bare `<section>` with `px-[var(--gut)] py-[var(--pad-section)]`, no tone. The
+contact form (`sunken`) and the Partners logo wall (`logo`) keep their slabs. Home keeps its slabs.
+
+- **Selling moments are centred:** the hero, page heads, closing bands, and a home section head
+  whose section is one message and a link. Eyebrow, then the Archivo title, then at most three
+  lines of copy, then the buttons. `CentredHead`.
+- **Reading or scanning content is left-aligned, head included:** the About story, the event
+  ledger, the team roster, the contact form, the legal text, every long paragraph. The eyebrow and
+  title sit on the content's left edge. `SectionHead`.
 
 On an inverse, accent or logo slab the focus ring and the primary button adapt on their own (see
 `Slab` and `Button` in `components.md`). A loud slab that sells takes `texture`; see the shape
@@ -113,7 +120,7 @@ It is the page's one loud slab, except for the page head: a page other than home
 
 **Page head.** `src/components/layout/page-head.tsx`, `PageHead`, the first child of every public
 page other than home: an `inverse` slab with the `waist` ribbon and a `CentredHead` as the `h1`. It owns
-the padding (the hero's, `clamp(7.5rem,14vw,11rem)` top and `clamp(3rem,7vw,5.5rem)` bottom), so pages
+the padding (the hero's, `clamp(7.5rem,14vw,11rem)` top and `--pad-section` bottom), so pages
 never set one.
 
 | Prop | Default | Use |
@@ -127,7 +134,7 @@ never set one.
 <PageHead id="about-title" eyebrowKey="about.header.eyebrow" titleKeys={['about.header.title']} />
 ```
 
-**Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for every section head on a selling page. `SectionHead` stays for left-aligned heads whose title is not editable copy.
+**Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for a selling moment only. A section whose job is reading or scanning takes `SectionHead`, `src/components/ui/section-head.tsx`, which takes the same `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `id`, `as` and children, left-aligned.
 
 **The one action.** Apply to join is always `<EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />`. The nav already carries it at every width. Never give a page its own Apply to join key.
 
@@ -208,7 +215,8 @@ Three things follow from it, and all three were wrong before:
    holds its aspect ratio from the first paint, skeletons behind the picture, and gates the reveal
    on `useReveal`'s `ready` flag so the sequence waits for the bytes rather than just the viewport.
    `sequence="clip"` is Clip Reveal and is right for photography; `sequence="fade"` is for a
-   supplied logo, which has no meaningful moment of arrival.
+   supplied logo, which has no meaningful moment of arrival. An empty slot is never blank: the
+   still skeleton surface runs the same reveal at the frame's size, for visitors too.
 
 A component that already has a designed fallback does not need a skeleton on top of it. `Avatar`
 layers the headshot over its initials disc rather than swapping between them, so the fallback is
@@ -283,7 +291,7 @@ Complete. Every component on the public site and in `/admin` is on Floor, the pr
 1. Look at it rendered, on every tone it can be placed on.
 2. Keyboard only. Every row, chip and control reachable, focus ring never removed.
 3. No borders. Not on a section, a row, an input or an image.
-4. One primary button per section, adjacent slabs never the same tone, one loud slab per page. The one exception is the page head: an inverse page head with the waist ribbon may open a page that ends with the closing band.
+4. One primary button per section, adjacent slabs never the same tone, one loud slab per page. The one exception is the page head: an inverse page head with the waist ribbon (or the home hero) may open a page that ends with the closing band. On an inner page nothing between the page head and the closing band is a slab, apart from the contact form and the logo wall.
 5. Reduced motion on. Nothing is invisible, nothing loops, and the grain is still.
 6. `npx tsc --noEmit` and `npm run lint` clean, `npm run build` passing.
 7. Its card exists in `floor.html`. If it is not in `floor.html`, it does not exist.

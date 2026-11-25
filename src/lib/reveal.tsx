@@ -97,7 +97,14 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
   */
   useBeforePaint(() => {
     const el = ref.current;
-    if (!el || !active) return;
+    if (!el) return;
+    /* Going inactive puts the element at rest. Edit mode loads after the
+       first paint, so an element stamped "off" before it loaded would
+       otherwise stay hidden for the whole session. */
+    if (!active) {
+      el.removeAttribute('data-run');
+      return;
+    }
     if (reducedMotion()) return;
     if (!el.hasAttribute('data-run')) el.setAttribute('data-run', 'off');
   }, [active]);

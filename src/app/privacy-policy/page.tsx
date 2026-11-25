@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
     <div className="stack">
     <PageHead id="privacy-title" titleLines={["Privacy Policy"]} />
     <div className="px-[var(--gut)] py-[clamp(5rem,10vw,9rem)]">
-      <div className="mx-auto flex max-w-[720px] flex-col gap-10">
+      <div className="flex max-w-[720px] flex-col gap-10">
 
         <div className="flex flex-col gap-10">
           <Section index="01" title="Introduction">

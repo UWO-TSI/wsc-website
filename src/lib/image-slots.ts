@@ -38,6 +38,16 @@ export interface ImageSlot {
 }
 
 export const IMAGE_SLOTS = {
+  /* The hero's background: the frame is the whole hero, so its shape follows
+     the hero's (wide on a desktop, taller than wide on a phone). 16/9 is the
+     desktop shape. `sizes` is 100vw, and 1920 is a full HD screen at 1x: the
+     photo sits under --inverse-veil, which hides the softness 2x would cure. */
+  'home.hero.image1': {
+    page: 'Home', section: 'Hero', label: 'Background',
+    aspect: 16 / 9, aspectClass: 'aspect-[16/9]', minWidth: 1920,
+    alt: 'Western Sales Club members at a club event',
+    note: 'Fills the hero behind the headline and is cropped to the hero at each width.',
+  },
   'home.about.image1': {
     page: 'Home', section: 'About', label: 'Strip, left',
     aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,

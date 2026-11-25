@@ -8,7 +8,9 @@ import { EditableText, useEditMode } from "@/edit";
 
 /*
   Footer: a --sunken slab, flat elevation, no shadow, full width and 2px
-  under the page's closing band. Three columns on a
+  under the page's closing band. Its block padding is --pad-section, the
+  page head's bottom, so it reads as a section of the page rather than a
+  strip under it. Three columns on a
   shared rhythm: wordmark and socials on the left, the nav stacked in the
   center, and the Tethos mark right-aligned above "Website by Tethos".
   Social links are --r-disc buttons that go --accent on hover.
@@ -49,7 +51,7 @@ export default function Footer() {
     <Slab
       as="footer"
       tone="sunken"
-      className="flex flex-col gap-4 pb-5! md:pb-6!"
+      className="flex flex-col gap-4 py-[var(--pad-section)]!"
     >
       <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-x-10">
         <div className="flex flex-col items-start gap-4">

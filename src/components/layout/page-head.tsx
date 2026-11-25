@@ -36,7 +36,7 @@ export default function PageHead({ titleKeys, titleLines, eyebrowKey, bodyKey, i
       texture="waist"
       overflowHidden
       aria-labelledby={id}
-      className="pt-[clamp(7.5rem,14vw,11rem)]! pb-[clamp(3rem,7vw,5.5rem)]!"
+      className="pt-[clamp(7.5rem,14vw,11rem)]! pb-[var(--pad-section)]!"
     >
       <CentredHead
         as="h1"

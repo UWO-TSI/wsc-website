@@ -29,11 +29,20 @@ import { useReveal } from '@/lib/reveal';
   flight): that is ordinary loading, and the sweep runs.
 
   An empty slot (`src` null) is a frame with nothing to wait for. It is
-  loaded from the first paint, so the skeleton's sweep is already stopped
-  and what shows is the still skeleton surface at the frame's own size:
-  the page keeps its shape, nothing shimmers forever, and next/image is
-  never handed an empty src. It still reports ready, so a held group
-  that contains an empty slot is not stuck waiting on it.
+  loaded from the first paint, so the sweep is stopped, and the still
+  skeleton surface takes the photo's place inside the clip cell: it runs
+  the same reveal a photo would, at the frame's own size, so the layout and
+  the motion read before any photo exists. There is no skeleton behind it,
+  or the reveal would draw a surface over the same surface and show
+  nothing. next/image is never handed an empty src. It still reports
+  ready, so a held group that contains an empty slot is not stuck waiting
+  on it.
+
+  `veil` lays --inverse-veil over a photo, outside the clip cell, so text
+  set on it keeps its contrast before, during and after the reveal. An empty
+  slot takes no veil: the placeholder is already a 9 percent wash of the
+  ground's own ink, which text on that ground clears, and the veil would
+  hide the placeholder.
 */
 
 interface RevealImageProps {
@@ -69,6 +78,8 @@ interface RevealImageProps {
    * colour-shift line of the motion budget rather than a thirteenth sequence.
    */
   sequence?: 'clip' | 'fade';
+  /** Lay --inverse-veil over the photo, for a frame with text on it. */
+  veil?: boolean;
 }
 
 export default function RevealImage({
@@ -82,6 +93,7 @@ export default function RevealImage({
   sequence = 'clip',
   hold = false,
   onReady,
+  veil = false,
 }: RevealImageProps) {
   const empty = src === null;
   const [loaded, setLoaded] = useState(empty);
@@ -122,13 +134,19 @@ export default function RevealImage({
       style={index ? ({ '--i': index } as React.CSSProperties) : undefined}
       className={`reveal-frame relative block overflow-hidden ${className}`.trim()}
     >
-      <span className="skeleton absolute inset-0 rounded-[inherit]" aria-hidden="true" />
+      {!empty && <span className="skeleton absolute inset-0 rounded-[inherit]" aria-hidden="true" />}
 
       <span
         className={`${
           sequence === 'clip' ? 'clip-cell' : 'fade-cell'
         } absolute inset-0 block overflow-hidden rounded-[inherit]`}
       >
+        {empty && (
+          <span
+            className={`skeleton ${sequence === 'clip' ? 'clip-inner' : ''} absolute inset-0 block rounded-[inherit]`}
+            aria-hidden="true"
+          />
+        )}
         {src && (
         <Image
           src={src}
@@ -145,6 +163,8 @@ export default function RevealImage({
         />
         )}
       </span>
+
+      {veil && !empty && <span className="absolute inset-0 rounded-[inherit] bg-inverse-veil" aria-hidden="true" />}
     </span>
   );
 }

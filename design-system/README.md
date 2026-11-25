@@ -44,6 +44,7 @@ Running copy holds a 62 character measure. `.meta` and any figure set `tabular-n
 - Text on `--page`, `--raised` and `--sunken` is `--ink`; secondary is `--ink-muted`. `--ink-faint` is near 3.4:1 and is for 24px-and-up marks, disabled labels and index numerals only, never running copy.
 - On `--inverse` use `--on-inverse`. On `--accent` use `--on-accent`. Neither ever appears on the page ground.
 - A tile inside an inverse slab is `--inverse-tile`: `--on-inverse` at 7 percent.
+- A photo with text set on it (the hero) takes `--inverse-veil`: `--inverse` at 75 percent over the photo. That strength keeps the slab's secondary ink (`--on-inverse` at 70 percent) at 4.7:1 over a pure white photo, so any photo passes AA.
 - The accent as a **shape** is `--accent`. The accent as a **word** is `--accent-ink`. On a loud slab the word falls back to the slab's own ink (`.accent-mark`), because `--accent-ink` is the ground itself there.
 - The focus ring is `--focus` (velvet). On an inverse, accent or logo slab it takes the slab's text colour, because velvet does not show on those grounds.
 - `--logo-ground` is the constant near-black behind every supplied logo, with `--on-logo-ground` as its ink.
@@ -74,12 +75,18 @@ A page is a stack of containers on `--page`. A section is a container that spans
 
 Rounded shapes stay for the things inside a container: photos, fields, buttons and chips.
 
-Adjacent containers never share a tone. `--inverse` and `--accent` never touch, and there is one of them per page. Not every section is a slab: the hero and at least one section per page are bare on `--page`, which is what stops the stack reading as a list of cards.
+Adjacent containers never share a tone. `--inverse` and `--accent` never touch, and there is one of them per page. The page head (or the home hero) above the closing band is the one exception.
+
+A container carries weight only where it marks a change of role. On the inner pages (About, Events, Executive team, Partners, Contact and the legal pages) the page head and the closing band are the containers. Every content section between them sits bare on `--page`, with no raised or sunken tint, and is separated from its neighbours by room: `--pad-section` above and below. Two content sections keep a ground: the contact form, because its fields are a group on a `--sunken` bed, and the Partners logo wall, because supplied logos are light marks that need `--logo-ground`. The home page keeps its slabs.
+
+The hero is a full-width inverse container with a photo slot (`home.hero.image1`) as its background, under `--inverse-veil`. The footer takes `--pad-section` top and bottom, so it reads as a section.
+
+A photo slot with no photo shows a placeholder at the slot's frame and aspect ratio: the skeleton surface, still, with no label. It runs the same reveal a photo would, so the layout and the motion read before photos exist. Visitors see it too.
 
 ## Alignment
 
-- **Selling sections are centred:** the hero, section heads and closing bands. The order is the eyebrow, the bold Archivo title, at most three lines of copy, then the buttons.
-- **Reading content is left-aligned:** long paragraphs and the event ledger.
+- **Selling moments are centred:** the hero, page heads, closing bands, and a home section head whose section is one message and a link (About, Partners). The order is the eyebrow, the bold Archivo title, at most three lines of copy, then the buttons. Use `CentredHead`.
+- **A section whose job is reading or scanning content is left-aligned, head included:** its eyebrow and title sit on the same left edge as the content below them. This covers the About story, the event ledger and the home events preview, the team roster, the contact form, the legal text and every long paragraph. Use `SectionHead`. A centred head over left-aligned content leaves the reader without one edge to return to.
 
 ## Signature texture
 

@@ -18,9 +18,13 @@ import { useReveal } from '@/lib/reveal';
   floating above it.
 */
 
-export type SlabTone = 'raised' | 'sunken' | 'inverse' | 'accent' | 'logo';
+export type SlabTone = 'page' | 'raised' | 'sunken' | 'inverse' | 'accent' | 'logo';
+
+/** Lit velvet ribbon shapes, allowed on the inverse and accent tones only. */
+export type SlabTexture = 'sweep' | 'rise' | 'arc' | 'waist' | 'pair';
 
 const tones: Record<SlabTone, string> = {
+  page: 'bg-page shadow-none',
   raised: '',
   sunken: 'slab-sunk',
   inverse: 'slab-inv',
@@ -30,9 +34,17 @@ const tones: Record<SlabTone, string> = {
   logo: 'slab-logo',
 };
 
-interface SlabProps {
+/*
+  `texture` is accepted on the two loud tones only, so a textured raised or
+  sunken slab is a type error. The texture is not drawn yet; the design
+  system build adds it behind this prop.
+*/
+type SlabToneProps =
+  | { tone?: Exclude<SlabTone, 'inverse' | 'accent'>; texture?: never }
+  | { tone: 'inverse' | 'accent'; texture?: SlabTexture };
+
+type SlabProps = SlabToneProps & {
   children: React.ReactNode;
-  tone?: SlabTone;
   /** Sequence 3, Slab Clip. At most four per page: `round` is not cheap. */
   clip?: boolean;
   /** A slab that clips its children sets overflow:hidden so the child inherits the corner. */
@@ -41,7 +53,7 @@ interface SlabProps {
   id?: string;
   className?: string;
   'aria-labelledby'?: string;
-}
+};
 
 export default function Slab({
   children,

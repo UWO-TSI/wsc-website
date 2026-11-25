@@ -6,22 +6,24 @@
   Source of truth: design-system/floor.html (open it in a browser).
   Spec: design-system/README.md, motion.md, components.md.
 
-  Theme is stamped on <html> as data-theme="light" | "dark" by the blocking
-  script in src/app/layout.tsx. Showroom (light) is declared on bare :root so
-  it applies before anything is stamped.
+  One theme, Showroom: white and velvet. There is no dark palette, and
+  color-scheme is light so form controls and scrollbars stay light on a
+  device set to dark mode.
 
   Do not add a hex, a radius, a duration or an easing curve to this file.
   Extending the system is a design decision: see README.md.
 */
 
 :root {
+  color-scheme: light;
+
   /* surfaces */
   --page: #ffffff;
   --raised: #f6f6f7;
   --sunken: #ececed;
   --inverse: #150920;
 
-  /* accent: velvet in Showroom, gold in Afterhours */
+  /* accent: velvet */
   --accent: #3a1a57;
   --accent-deep: #23102f;
   --accent-ink: #3a1a57;
@@ -36,27 +38,24 @@
   --on-inverse: #f1ecf6;
   --on-accent: #f4f0f8;
 
-  /* fixed brand marks, do not flip with the accent */
+  /* a tile inside an inverse slab: the slab's ink at 7 percent */
+  --inverse-tile: color-mix(in srgb, var(--on-inverse) 7%, transparent);
+
+  /* fixed brand marks: the Western lockup and the sponsor tiers */
   --velvet: #3a1a57;
   --gold: #8a6a1c;
 
   /*
-    The one surface that does not flip with the theme, and the third fixed
-    mark alongside --velvet and --gold.
+    The constant near-black ground, the third fixed mark alongside --velvet
+    and --gold.
 
     Sponsor and affiliate logos are supplied artwork we are not allowed to
-    redraw, and most of them are light-on-transparent. On the Showroom page
-    ground they disappear. Every logo therefore sits on this constant dark
-    ground in both themes, which is the same value as the Afterhours page
-    ground rather than a new colour.
+    redraw, and most of them are light-on-transparent. On the white page
+    ground they disappear, so every logo is placed on this ground.
   */
   --logo-ground: #0a0a09;
 
-  /*
-    Ink for the one surface that does not flip. --on-inverse is wrong here
-    because it flips with the theme and would put dark text on this dark
-    ground in Afterhours. Same value as the Afterhours ink.
-  */
+  /* Ink for --logo-ground. */
   --on-logo-ground: #f7f4ee;
 
   /* status: always shipped with a word, never hue alone */
@@ -117,8 +116,21 @@
   --t-label: 11px;
   --t-meta: 13px;
 
-  /* page gutter: the slab inset, and the only horizontal page padding */
+  /* page gutter: the inline padding inside every full-width container */
   --gut: 16px;
+
+  /*
+    Signature texture, Lit velvet. One unit for every mark: a dot is --tex-dot
+    across, a ribbon line is --tex-dot thick, and both repeat every
+    --tex-pitch. src/components/ui/texture.tsx reads these two when it draws.
+    Copied from the approved texture in docs/redesign/reference.html.
+  */
+  --tex-dot: 1.6px;
+  --tex-pitch: 7px;
+  --dot-strength: 0.16;
+  --wave-strength: 0.3;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-coarse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
 }
 
 @media (min-width: 700px) {
@@ -127,64 +139,9 @@
   }
 }
 
-/* Afterhours via OS preference, unless an explicit light choice is stamped */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --page: #0a0a09;
-    --raised: #161513;
-    --sunken: #211f1b;
-    --inverse: #f7f4ee;
-    --accent: #d4a843;
-    --accent-deep: #a8801f;
-    --accent-ink: #e7c670;
-    --accent-veil: rgba(212, 168, 67, 0.12);
-    --ink: #f7f4ee;
-    --ink-muted: #a9a396;
-    --ink-faint: #6d675d;
-    --on-inverse: #0a0a09;
-    --on-accent: #191204;
-    --velvet: #9b7bc4;
-    --gold: #d4a843;
-    --ok: #6fd3a2;
-    --warn: #e8b05c;
-    --alert: #ff8f83;
-    --focus: #d4a843;
-    --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 5px 14px -8px rgba(0, 0, 0, 0.7);
-    --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
-    --sh-3: 0 6px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -22px rgba(0, 0, 0, 0.9);
-  }
-}
-
-/* Afterhours via the toggle, wins over the OS in both directions */
-:root[data-theme="dark"] {
-  --page: #0a0a09;
-  --raised: #161513;
-  --sunken: #211f1b;
-  --inverse: #f7f4ee;
-  --accent: #d4a843;
-  --accent-deep: #a8801f;
-  --accent-ink: #e7c670;
-  --accent-veil: rgba(212, 168, 67, 0.12);
-  --ink: #f7f4ee;
-  --ink-muted: #a9a396;
-  --ink-faint: #6d675d;
-  --on-inverse: #0a0a09;
-  --on-accent: #191204;
-  --velvet: #9b7bc4;
-  --gold: #d4a843;
-  --ok: #6fd3a2;
-  --warn: #e8b05c;
-  --alert: #ff8f83;
-  --focus: #d4a843;
-  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 5px 14px -8px rgba(0, 0, 0, 0.7);
-  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
-  --sh-3: 0 6px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -22px rgba(0, 0, 0, 0.9);
-}
-
 /*
   Tailwind v4 mapping. `inline` is required: every value is a var()
-  reference, and that indirection is what makes one class name resolve to
-  velvet in Showroom and gold in Afterhours.
+  reference, so each utility resolves to the runtime variable above.
 */
 
 @theme inline {
@@ -201,6 +158,7 @@
   --color-ink-faint: var(--ink-faint);
   --color-on-inverse: var(--on-inverse);
   --color-on-accent: var(--on-accent);
+  --color-inverse-tile: var(--inverse-tile);
   --color-velvet: var(--velvet);
   --color-gold: var(--gold);
   --color-logo-ground: var(--logo-ground);
@@ -363,37 +321,44 @@ img {
   max-width: 62ch;
 }
 
-/* ── Slab: the only divider. ── */
+/*
+  ── Slab: the only divider. ──
+
+  A slab spans the full viewport width with no side gap and takes --r-xl,
+  the corner step for a full-width container. Containers that meet sit 2px
+  apart, and that 2px of page ground plus the tone change is the divider.
+  The gutter is inline padding inside the slab, so content keeps its inset.
+  Slabs are flat: a shadow would fill the 2px join.
+*/
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 2px;
 }
 
 .slab {
   background: var(--raised);
-  border-radius: var(--r-lg);
-  padding: 28px 22px;
-  box-shadow: var(--sh-1);
+  border-radius: var(--r-xl);
+  padding-block: 28px;
+  padding-inline: max(var(--gut), env(safe-area-inset-left, 0px))
+    max(var(--gut), env(safe-area-inset-right, 0px));
+  box-shadow: none;
 }
 
 @media (min-width: 700px) {
   .slab {
-    border-radius: var(--r-xl);
-    padding: 44px 40px;
+    padding-block: 44px;
   }
 }
 
 .slab-sunk {
   background: var(--sunken);
-  box-shadow: none;
 }
 
 .slab-inv {
   background: var(--inverse);
   color: var(--on-inverse);
-  box-shadow: var(--sh-2);
 }
 
 .slab-inv .label,
@@ -406,23 +371,26 @@ img {
 .slab-acc {
   background: var(--accent);
   color: var(--on-accent);
-  box-shadow: var(--sh-2);
 }
 
 /*
   A slab on the constant logo ground, for a section built entirely around
-  supplied marks. The whole panel is dark in both themes rather than each tile
-  carrying its own dark patch, which read as a grid of stickers.
-
-  In Afterhours this tone equals --page, so the slab stops reading as a raised
-  surface and the section sits bare on the page ground. That is allowed and is
-  in fact the rule: at least one section per page sits bare. The shadow keeps
-  the edge legible where the tones do coincide.
+  supplied marks. The whole panel is dark rather than each tile carrying its
+  own dark patch, which read as a grid of stickers.
 */
 .slab-logo {
   background: var(--logo-ground);
   color: var(--on-logo-ground);
-  box-shadow: var(--sh-1);
+}
+
+/* --focus is velvet, which disappears on the two loud grounds, so the ring
+   takes the slab's own ink there. */
+.slab-inv :focus-visible {
+  outline-color: var(--on-inverse);
+}
+
+.slab-acc :focus-visible {
+  outline-color: var(--on-accent);
 }
 
 .slab-logo .label,
@@ -469,7 +437,9 @@ img {
    derived from whatever ink the button is already carrying. */
 .slab-inv .btn-tertiary:hover,
 .slab-acc .btn-tertiary:hover,
-.slab-logo .btn-tertiary:hover {
+.slab-logo .btn-tertiary:hover,
+.slab-inv .btn-secondary:hover,
+.slab-acc .btn-secondary:hover {
   background: color-mix(in srgb, currentColor 14%, transparent);
 }
 
@@ -568,36 +538,19 @@ img {
 /* Sequence 3: Slab Clip. The `round` value appears in both keyframes or the
    corner pops square mid-animation. At most four per page. */
 [data-run="off"] .clip-slab {
-  clip-path: inset(0 0 100% 0 round var(--r-lg));
+  clip-path: inset(0 0 100% 0 round var(--r-xl));
 }
 
 [data-run="on"] .clip-slab {
-  animation: wsc-unclip-lg var(--d-arrive) var(--e-enter) both;
+  animation: wsc-unclip-xl var(--d-arrive) var(--e-enter) both;
 }
 
-@keyframes wsc-unclip-lg {
+@keyframes wsc-unclip-xl {
   from {
-    clip-path: inset(0 0 100% 0 round var(--r-lg));
-  }
-  to {
-    clip-path: inset(0 0 0 0 round var(--r-lg));
-  }
-}
-
-@media (min-width: 700px) {
-  [data-run="off"] .clip-slab {
     clip-path: inset(0 0 100% 0 round var(--r-xl));
   }
-  [data-run="on"] .clip-slab {
-    animation-name: wsc-unclip-xl;
-  }
-  @keyframes wsc-unclip-xl {
-    from {
-      clip-path: inset(0 0 100% 0 round var(--r-xl));
-    }
-    to {
-      clip-path: inset(0 0 0 0 round var(--r-xl));
-    }
+  to {
+    clip-path: inset(0 0 0 0 round var(--r-xl));
   }
 }
 
@@ -981,10 +934,10 @@ img {
   ── Monochrome marks ──
 
   The club shark and the two social glyphs are white-on-transparent artwork, so
-  they vanish on the Showroom ground. Rather than ship a second copy of each in
-  the opposite colour, the file is used as a mask and filled with currentColor,
-  which makes one asset correct in both themes and lets it take --accent on
-  hover like any other coloured thing.
+  they vanish on the white page ground. Rather than ship a second copy of each
+  in the opposite colour, the file is used as a mask and filled with
+  currentColor, which makes one asset correct on every ground and lets it take
+  --accent on hover like any other coloured thing.
 
   This is only for our own single-ink marks. A sponsor's logo is never
   recoloured: it goes on --logo-ground untouched.
@@ -1035,46 +988,97 @@ img {
   }
 }
 
-/* ── Theme toggle. The knob tracks the stamped theme rather than React state,
-      so it travels as part of the Theme Wipe. The one overshoot in the whole
-      system lives here: --e-snap. ── */
+/*
+  ── Signature texture: Lit velvet ──
 
-.tt {
+  Ported from the "Production texture: Lit velvet" section of
+  docs/redesign/reference.html, the approved render. Drawn by
+  src/components/ui/texture.tsx inside a Slab with `texture` set, on the
+  inverse and accent tones only. These are the only gradients on the site.
+
+  Layers, back to front: the lit ground (the container's background), the
+  grain, the ribbon, the dot matrix. The layers are at z-index -1 inside the
+  container's isolated stacking context, so they paint over its background,
+  the grain blends with it, and the content stays above all three.
+*/
+
+.textured {
   position: relative;
-  width: 62px;
-  height: 32px;
-  border: 0;
-  padding: 0;
-  border-radius: var(--r-pill);
-  background: var(--sunken);
-  cursor: pointer;
-  flex: none;
+  isolation: isolate;
 }
 
-.tt .knob {
+/* The ground, lit from one point. --lx and --ly are where the light falls;
+   the dot matrix reads the same point, so it brightens there too. */
+.lit-velvet {
+  background: radial-gradient(130% 150% at 14% 8%, var(--accent) 0%, var(--accent) 40%, var(--inverse) 108%);
+  color: var(--on-accent);
+  --lx: 14%;
+  --ly: 8%;
+}
+
+.lit-black {
+  background: radial-gradient(120% 140% at 88% 92%, var(--accent) 0%, var(--inverse) 58%, var(--inverse) 100%);
+  color: var(--on-inverse);
+  --lx: 88%;
+  --ly: 92%;
+}
+
+/* No z-index here: a stacking context on this wrapper would stop the grain
+   blending with the container's ground. It clips the layers to the corner. */
+.texture {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-disc);
-  background: var(--accent);
-  transition: transform var(--d-move) var(--e-snap);
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
 }
 
-:root[data-theme="dark"] .tt .knob {
-  transform: translateX(30px);
+.texture > * {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .tt .knob {
-    transform: translateX(30px);
-  }
+/* Grain: fine and coarse fractal noise together, blended over the ground. */
+.texture > .billboard {
+  background-image: var(--grain), var(--grain-coarse);
+  background-size: 180px 180px, 420px 420px;
+  mix-blend-mode: overlay;
+  opacity: 0.8;
+  animation: grain-shift 0.9s steps(6) infinite;
+}
+
+.texture > svg.waves {
+  width: 100%;
+  height: 100%;
+  color: var(--on-inverse);
+}
+
+/* Dot matrix: a regular grid of dots in the ground's text colour, brightest
+   under the light, like an LED billboard. */
+.texture > .dots {
+  background-image: radial-gradient(circle, currentColor calc(var(--tex-dot) / 2), transparent calc(var(--tex-dot) / 2 + 0.5px));
+  background-size: var(--tex-pitch) var(--tex-pitch);
+  opacity: var(--dot-strength);
+  -webkit-mask-image: radial-gradient(120% 110% at var(--lx) var(--ly), #000 0%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.12) 100%);
+  mask-image: radial-gradient(120% 110% at var(--lx) var(--ly), #000 0%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.12) 100%);
+}
+
+/* The grain moves, six positions a second. The second loop in Floor beside
+   Marquee Drift. The ribbon and the dots never move. */
+@keyframes grain-shift {
+  0% { background-position: 0 0, 0 0; }
+  17% { background-position: -47px 23px, 61px -38px; }
+  33% { background-position: 31px -52px, -83px 17px; }
+  50% { background-position: -12px 64px, 29px 71px; }
+  67% { background-position: 58px 9px, -44px -66px; }
+  83% { background-position: -66px -31px, 92px 12px; }
+  100% { background-position: 0 0, 0 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tt .knob {
-    transition: none;
+  .texture > .billboard {
+    animation: none;
   }
 }
 
@@ -1114,7 +1118,7 @@ img {
 /*
   Reduced motion is honoured per sequence in the components, never as a
   blanket animation:none, which would leave masked content invisible.
-  Only the two ambient loops are stopped globally.
+  The grain stops in its own block above.
 */
 
 @media (prefers-reduced-motion: reduce) {

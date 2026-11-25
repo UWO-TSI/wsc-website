@@ -1,5 +1,5 @@
 /*
-  WSC Floor — design tokens.
+  WSC Floor: design tokens.
 
   These are the same values as design-system/floor.html. That file is the
   visual source of truth; this file is what the app consumes.
@@ -8,24 +8,24 @@
   of this file. Tailwind v4 is CSS-first, so there is no tailwind.config.js to
   touch.
 
-  Theme is stamped on <html> as data-theme="light" | "dark". Read it from
-  localStorage in a blocking inline script before hydration or the page
-  flashes the wrong theme on every load.
+  One theme, Showroom: white and velvet. There is no dark palette.
 */
 
 /* ─────────────────────────────────────────────────────────────
-   Runtime variables. Showroom (light) is the default and is
-   declared on bare :root so it applies when nothing is stamped.
+   Runtime variables.
    ───────────────────────────────────────────────────────────── */
 
 :root {
+  /* form controls and scrollbars stay light on a device set to dark mode */
+  color-scheme: light;
+
   /* surfaces */
   --page: #ffffff;
   --raised: #f6f6f7;
   --sunken: #ececed;
   --inverse: #150920;
 
-  /* accent — velvet in Showroom, gold in Afterhours */
+  /* accent: velvet */
   --accent: #3a1a57;
   --accent-deep: #23102f;
   --accent-ink: #3a1a57;
@@ -40,18 +40,25 @@
   --on-inverse: #f1ecf6;
   --on-accent: #f4f0f8;
 
-  /* fixed brand marks, do not flip with the accent */
+  /* a tile inside an inverse slab: the slab's ink at 7 percent */
+  --inverse-tile: color-mix(in srgb, var(--on-inverse) 7%, transparent);
+
+  /* fixed brand marks: the Western lockup and the sponsor tiers */
   --velvet: #3a1a57;
   --gold: #8a6a1c;
 
-  /* status — always shipped with a word, never hue alone */
+  /* the constant near-black ground behind every supplied logo, and its ink */
+  --logo-ground: #0a0a09;
+  --on-logo-ground: #f7f4ee;
+
+  /* status: always shipped with a word, never hue alone */
   --ok: #1a6b47;
   --warn: #8a5a00;
   --alert: #a8241a;
 
   --focus: #3a1a57;
 
-  /* elevation — shadows make the layers, there are no borders */
+  /* elevation: shadows make the layers, there are no borders */
   --sh-1: 0 1px 2px rgba(20, 16, 26, 0.05), 0 5px 14px -8px rgba(20, 16, 26, 0.10);
   --sh-2: 0 2px 4px rgba(20, 16, 26, 0.06), 0 12px 26px -12px rgba(20, 16, 26, 0.16);
   --sh-3: 0 4px 8px rgba(20, 16, 26, 0.07), 0 28px 56px -22px rgba(20, 16, 26, 0.24);
@@ -79,7 +86,7 @@
   --e-snap: cubic-bezier(0.22, 1.2, 0.36, 1);
   --e-drift: linear;
 
-  /* stacking — never write a raw z-index */
+  /* stacking: never write a raw z-index */
   --layer-base: 0;
   --layer-sticky: 20;
   --layer-nav: 60;
@@ -92,7 +99,7 @@
   --f-text: "Instrument Sans", system-ui, -apple-system, sans-serif;
   --f-data: "Geist Mono", ui-monospace, Menlo, monospace;
 
-  /* fluid type — the scale is 4 roles, nothing between them */
+  /* fluid type: the scale is 4 roles, nothing between them */
   --t-title-hero: clamp(2.6rem, 11.5vw, 9rem);
   --t-title: clamp(1.75rem, 5vw, 3.25rem);
   --t-title-sm: 19px;
@@ -101,66 +108,29 @@
   --t-body-sm: 14px;
   --t-label: 11px;
   --t-meta: 13px;
+
+  /* page gutter: the inline padding inside every full-width container */
+  --gut: 16px;
+
+  /* Signature texture, Lit velvet. One unit for every mark: a dot is
+     --tex-dot across, a ribbon line is --tex-dot thick, and both repeat
+     every --tex-pitch. */
+  --tex-dot: 1.6px;
+  --tex-pitch: 7px;
+  --dot-strength: 0.16;
+  --wave-strength: 0.3;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-coarse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
 }
 
-/* Afterhours via OS preference, unless an explicit light choice is stamped */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --page: #0a0a09;
-    --raised: #161513;
-    --sunken: #211f1b;
-    --inverse: #f7f4ee;
-    --accent: #d4a843;
-    --accent-deep: #a8801f;
-    --accent-ink: #e7c670;
-    --accent-veil: rgba(212, 168, 67, 0.12);
-    --ink: #f7f4ee;
-    --ink-muted: #a9a396;
-    --ink-faint: #6d675d;
-    --on-inverse: #0a0a09;
-    --on-accent: #191204;
-    --velvet: #9b7bc4;
-    --gold: #d4a843;
-    --ok: #6fd3a2;
-    --warn: #e8b05c;
-    --alert: #ff8f83;
-    --focus: #d4a843;
-    --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 5px 14px -8px rgba(0, 0, 0, 0.7);
-    --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
-    --sh-3: 0 6px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -22px rgba(0, 0, 0, 0.9);
-  }
-}
-
-/* Afterhours via the toggle, wins over the OS in both directions */
-:root[data-theme="dark"] {
-  --page: #0a0a09;
-  --raised: #161513;
-  --sunken: #211f1b;
-  --inverse: #f7f4ee;
-  --accent: #d4a843;
-  --accent-deep: #a8801f;
-  --accent-ink: #e7c670;
-  --accent-veil: rgba(212, 168, 67, 0.12);
-  --ink: #f7f4ee;
-  --ink-muted: #a9a396;
-  --ink-faint: #6d675d;
-  --on-inverse: #0a0a09;
-  --on-accent: #191204;
-  --velvet: #9b7bc4;
-  --gold: #d4a843;
-  --ok: #6fd3a2;
-  --warn: #e8b05c;
-  --alert: #ff8f83;
-  --focus: #d4a843;
-  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 5px 14px -8px rgba(0, 0, 0, 0.7);
-  --sh-2: 0 2px 6px rgba(0, 0, 0, 0.55), 0 14px 30px -12px rgba(0, 0, 0, 0.8);
-  --sh-3: 0 6px 12px rgba(0, 0, 0, 0.6), 0 32px 64px -22px rgba(0, 0, 0, 0.9);
+@media (min-width: 700px) {
+  :root { --gut: 40px; }
 }
 
 /* ─────────────────────────────────────────────────────────────
    Tailwind v4 mapping. `inline` is required because every value
-   is a var() reference, which is what makes one class name
-   resolve to velvet in Showroom and gold in Afterhours.
+   is a var() reference, so each utility resolves to the runtime
+   variable above.
    ───────────────────────────────────────────────────────────── */
 
 @theme inline {
@@ -177,8 +147,11 @@
   --color-ink-faint: var(--ink-faint);
   --color-on-inverse: var(--on-inverse);
   --color-on-accent: var(--on-accent);
+  --color-inverse-tile: var(--inverse-tile);
   --color-velvet: var(--velvet);
   --color-gold: var(--gold);
+  --color-logo-ground: var(--logo-ground);
+  --color-on-logo-ground: var(--on-logo-ground);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-alert: var(--alert);

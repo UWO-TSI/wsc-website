@@ -9,11 +9,10 @@ Open `floor.html` in a browser first. Nothing in here substitutes for that.
 
 | Concern | Where | Notes |
 | --- | --- | --- |
-| Tokens | `src/app/globals.css` | Every runtime var, the `@theme inline` map, the four type roles, `.slab`, `.stack`, the reveal keyframes. |
+| Tokens | `src/app/globals.css` | Every runtime var, the `@theme inline` map, the four type roles, `.slab`, `.stack`, the reveal keyframes, the texture styles. |
 | Fonts | `src/app/layout.tsx` | `next/font` → `--font-archivo`, `--font-instrument`, `--font-geist-mono`, consumed by `--f-display` / `--f-text` / `--f-data`. |
-| Theme stamp | `src/app/layout.tsx` | Blocking script reads `localStorage['wsc-theme']`, falls back to `prefers-color-scheme`, writes `data-theme` on `<html>` before paint. |
-| Theme state | `src/providers/theme-provider.tsx` | `useTheme()` → `{ theme, setTheme, toggleTheme }`. Reads the stamped attribute through `useSyncExternalStore`; do not mirror it in state anywhere else. |
-| Theme Wipe | `src/lib/theme.ts` | Sequence 11. Pass the toggle element as `origin`. |
+| One theme | `src/app/globals.css` | Showroom only. `color-scheme: light` on `:root`. There is no theme stamp, provider or toggle. |
+| Texture | `src/components/ui/texture.tsx` | Lit velvet, drawn by `Slab` when `texture` is set. Check it at `/texture-lab` in development. |
 | Reveals | `src/lib/reveal.tsx` | `useReveal()`: one shared IntersectionObserver per threshold. |
 | Framer variants | `src/lib/motion.ts` | `E`, `D`, `STAGGER`, and the variants CSS cannot express. |
 
@@ -21,26 +20,24 @@ Open `floor.html` in a browser first. Nothing in here substitutes for that.
 
 Spend these. Never a hex, never a raw number, never a new curve.
 
-Tailwind utilities resolve through `@theme inline`, so one class name is velvet in Showroom
-and gold in Afterhours:
+Tailwind utilities resolve through `@theme inline`:
 
-- Surfaces: `bg-page`, `bg-raised`, `bg-sunken`, `bg-inverse`, `bg-accent`, `bg-accent-veil`
+- Surfaces: `bg-page`, `bg-raised`, `bg-sunken`, `bg-inverse`, `bg-accent`, `bg-accent-veil`, and
+  `bg-inverse-tile` for a tile inside an inverse slab
 - Ink: `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-on-inverse`, `text-on-accent`, `text-accent-ink`
 - Fixed marks: `text-velvet`, `text-gold`, `bg-gold`: the Western lockup and sponsor tiers only
-- Logo ground: `bg-logo-ground` with `text-on-logo-ground`, the third fixed mark and the one
-  surface that does **not** flip with the theme. Every supplied logo sits on it: sponsor tiles on
-  the partners page and in the landing marquee, and the Tethos lockup in the footer. A sponsor's mark
-  is artwork we may not redraw and most are light-on-transparent, so they wash out on the Showroom
-  ground. Ink on it is `--on-logo-ground`, never `--on-inverse`, which flips and would put dark
-  text on a dark ground in Afterhours.
+- Logo ground: `bg-logo-ground` with `text-on-logo-ground`, the third fixed mark. Every supplied
+  logo is placed on it: sponsor tiles on the partners page and in the landing marquee, and the
+  Tethos lockup in the footer. A sponsor's mark is artwork we may not redraw and most are
+  light-on-transparent, so they wash out on the white page ground.
 - The accent **as a word** is `.accent-mark`, not the `text-accent-ink` utility. `--accent-ink` is
   legible on `--page`, `--raised` and `--sunken` and nowhere else: on an `accent` slab it is the
   ground itself, and on `inverse` or `logo` it is a near match. `.accent-mark` falls back to that
   slab's own ink automatically, and a tertiary `Button` does the same through `.btn-tertiary`. Use
   it for section numerals, stat suffixes, and anything else spending the accent as type.
 - Our own single-ink marks (the club shark, the two social glyphs) are the opposite case: they are
-  masked and filled with `currentColor` via `.mark-mask`, so one white asset reads correctly in
-  both themes and can take `--accent` on hover. Never recolour a sponsor's mark this way.
+  masked and filled with `currentColor` via `.mark-mask`, so one white asset reads correctly on
+  every ground and can take `--accent` on hover. Never recolour a sponsor's mark this way.
 - Status: `text-ok`, `text-warn`, `text-alert`, always with a word
 - Corners: `rounded-xs|sm|md|lg|xl|pill`, `rounded-full` for a disc
 - Elevation: `shadow-1`, `shadow-2`, `shadow-3`
@@ -60,15 +57,29 @@ All in `src/components/`. Compose from these; do not rebuild them.
 
 | Import | Props worth knowing |
 | --- | --- |
-| `ui/button` | `variant: 'primary' \| 'secondary' \| 'tertiary'`, `href`, `arrow`, `onAccent`, `disabled`. Magnetic Pull is built in. One primary per section. |
+| `ui/button` | `variant: 'primary' \| 'secondary' \| 'tertiary'`, `href`, `arrow`, `disabled`. Magnetic Pull is built in. One primary per section. Inside an inverse or accent `Slab` the primary takes the page fill on its own; `onAccent` is deprecated and does nothing. |
 | `ui/eyebrow` | `index` renders the section numeral in `--accent-ink`. |
-| `ui/slab` | `tone: 'raised' \| 'sunken' \| 'inverse' \| 'accent'`, `clip` for Slab Clip, `overflowHidden`, `as`. |
+| `ui/slab` | `tone: 'page' \| 'raised' \| 'sunken' \| 'inverse' \| 'accent' \| 'logo'`, `texture` (inverse and accent only: `sweep`, `rise`, `arc`, `waist`, `pair`), `clip` for Slab Clip, `overflowHidden`, `as`. Provides its tone to `useSlabTone()`. |
 | `ui/section-head` | `title` is an **array, one entry per visual line**. Owns its own Line Mask Reveal. |
 | `ui/chip` | `status: 'ok' \| 'warn' \| 'alert' \| 'neutral'`. The word is the signal. |
 | `ui/stat-figure` | `value: number`, `label`, `suffix`. Counter Roll at 70% visible. Real numbers only, three in a row at most. |
 | `ui/avatar` | `name`, `src`, `size`. Missing headshot renders initials on `--sunken`, by design. |
-| `ui/theme-toggle` | Lives in the nav bar at every breakpoint, outside the mobile panel. |
 | `shared/async-state-wrapper` | Loading, error with retry, empty. Empty copy names what is missing. |
+
+## Layout and alignment
+
+A section is a full-width container: it spans the viewport with no side gap, takes `--r-xl`, and
+puts `--gut` inside itself as inline padding. `.slab` does all three. Containers that meet are 2px
+apart: wrap them in `.stack`. Do not add `mx-[var(--gut)]` or any side margin to a slab. Some
+sections still pass it from before this change; the page redesign removes it.
+
+- **Selling sections are centred:** the hero, section heads and closing bands. Eyebrow, then the
+  Archivo title, then at most three lines of copy, then the buttons.
+- **Reading content is left-aligned:** long paragraphs and the event ledger.
+
+On an inverse or accent slab the focus ring and the primary button adapt on their own (see
+`Slab` and `Button` in `components.md`). A loud slab that sells takes `texture`; see the shape
+table in `components.md`.
 
 ## Running a sequence
 
@@ -109,7 +120,7 @@ Both follow from hard rule 1, never touch `supabase/`. Revisit them only with a 
 
 - **Sponsor tiers.** `sponsors` has no `tier` column, so LogoWall ships one `--gold` tier bar
   reading "Partners" and takes tile scale from `display_order` rather than inventing a tier.
-  `--gold`, not `--accent`, because a sponsor's standing must read the same in both themes.
+  `--gold`, not `--accent`, because a sponsor's standing must read the same on every page.
 - **Event status.** `events` has no status column, so the Open / Closed chip derives from
   `date`. Future or today is `ok` "Open". Past events drop the chip, take `--ink-muted` and
   lose the hover expand, because they are reference and should not look pressable.
@@ -146,7 +157,7 @@ below it down.
 
 ## Motion deviations from the spec
 
-Two of the twelve sequences ship differently from `motion.md`. Both were design calls, not
+Two of the sequences ship differently from `motion.md`. Both were design calls, not
 oversights, and both are reversible.
 
 - **Sequence 7, Marquee Drift, has no scroll skew.** The spec gives the track a `skewX` up to 4
@@ -206,11 +217,11 @@ Complete. Every component on the public site and in `/admin` is on Floor, the pr
 
 ## Before you call a component done
 
-1. Both themes. Toggle it and look.
+1. Look at it rendered, on every tone it can be placed on.
 2. Keyboard only. Every row, chip and control reachable, focus ring never removed.
 3. No borders. Not on a section, a row, an input or an image.
 4. One primary button per section, one loud slab per page, adjacent slabs never the same tone.
-5. Reduced motion on. Nothing is invisible, nothing loops.
+5. Reduced motion on. Nothing is invisible, nothing loops, and the grain is still.
 6. `npx tsc --noEmit` and `npm run lint` clean, `npm run build` passing.
 7. Its card exists in `floor.html`. If it is not in `floor.html`, it does not exist.
 

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { indicatorTransition, navItem, navPanelTransition } from "@/lib/motion";
 
 /*
@@ -32,8 +31,8 @@ const PILL_BACKGROUND = "color-mix(in srgb, var(--page) 88%, transparent)";
 
 /*
   The club shark, filled with currentColor through a mask so the one white
-  asset reads correctly on both the Showroom and Afterhours grounds. See
-  .mark-mask in globals.css.
+  asset reads correctly on the white page ground. See .mark-mask in
+  globals.css.
 */
 function Glyph() {
   return (
@@ -177,8 +176,6 @@ export default function Nav() {
                 );
               })}
             </div>
-
-            <ThemeToggle />
 
             {/* Hamburger, hidden at 1024 and up. Cross-fades to an X. */}
             <button

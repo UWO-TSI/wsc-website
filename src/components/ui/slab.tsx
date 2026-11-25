@@ -1,21 +1,26 @@
 'use client';
 
+import { createContext, useContext } from 'react';
 import { useReveal } from '@/lib/reveal';
+import Texture from './texture';
 
 /*
   Slab: the only divider.
 
-  Inset from the viewport by the page gutter, --r-xl from tablet up and --r-lg
-  below, separated from its neighbours by 24px of visible --page. That gap plus
-  the tone change is the divider; there is no line.
+  A slab spans the full viewport width with no side gap and takes --r-xl,
+  the corner step for a full-width container. Slabs that meet are 2px apart
+  (`.stack`), and that 2px of page ground plus the tone change is the
+  divider; there is no line. The page gutter is the slab's inline padding, so
+  its content keeps the inset. Photos, fields, buttons and chips inside keep
+  their own rounded shapes.
 
   Rules this component cannot enforce for you, from design-system/README.md:
   adjacent slabs never share a tone, --inverse and --accent never touch, there
   is one loud slab per page, and the hero plus at least one section per page
-  sit bare on --page so the stack does not read as a list of cards.
+  are bare on --page so the stack does not read as a list of cards.
 
-  Never put a shadow above --sh-1 on a slab. A slab is the page, not a thing
-  floating above it.
+  A slab is flat. A shadow would fill the 2px join, and a slab is the page,
+  not a thing floating above it.
 */
 
 export type SlabTone = 'page' | 'raised' | 'sunken' | 'inverse' | 'accent' | 'logo';
@@ -24,20 +29,37 @@ export type SlabTone = 'page' | 'raised' | 'sunken' | 'inverse' | 'accent' | 'lo
 export type SlabTexture = 'sweep' | 'rise' | 'arc' | 'waist' | 'pair';
 
 const tones: Record<SlabTone, string> = {
-  page: 'bg-page shadow-none',
+  page: 'bg-page',
   raised: '',
   sunken: 'slab-sunk',
   inverse: 'slab-inv',
   accent: 'slab-acc',
-  /* The constant dark ground, for a section built around supplied logos.
-     Unlike the other four it does not flip with the theme. */
+  /* The constant near-black ground, for a section built around supplied logos. */
   logo: 'slab-logo',
 };
 
+/* The lit ground each loud tone takes when it is textured. */
+const litGround = {
+  inverse: 'lit-black',
+  accent: 'lit-velvet',
+} as const;
+
+/*
+  The tone of the nearest enclosing Slab. Button reads it so a primary on an
+  inverse or accent slab takes the page fill without the page passing a flag.
+  Outside any Slab it is 'page'.
+*/
+const SlabToneContext = createContext<SlabTone>('page');
+
+export function useSlabTone() {
+  return useContext(SlabToneContext);
+}
+
 /*
   `texture` is accepted on the two loud tones only, so a textured raised or
-  sunken slab is a type error. The texture is not drawn yet; the design
-  system build adds it behind this prop.
+  sunken slab is a type error. When set, the slab takes its lit ground and
+  draws the Lit velvet texture in that shape behind its content
+  (src/components/ui/texture.tsx).
 */
 type SlabToneProps =
   | { tone?: Exclude<SlabTone, 'inverse' | 'accent'>; texture?: never }
@@ -58,6 +80,7 @@ type SlabProps = SlabToneProps & {
 export default function Slab({
   children,
   tone = 'raised',
+  texture,
   clip = false,
   overflowHidden = false,
   as: Tag = 'section',
@@ -66,6 +89,7 @@ export default function Slab({
   'aria-labelledby': ariaLabelledBy,
 }: SlabProps) {
   const ref = useReveal<HTMLElement>({ enabled: clip });
+  const textured = texture && (tone === 'inverse' || tone === 'accent');
 
   return (
     <Tag
@@ -75,6 +99,7 @@ export default function Slab({
       className={[
         'slab',
         tones[tone],
+        textured ? `textured ${litGround[tone]}` : '',
         clip ? 'clip-slab' : '',
         overflowHidden ? 'overflow-hidden' : '',
         className,
@@ -82,7 +107,8 @@ export default function Slab({
         .filter(Boolean)
         .join(' ')}
     >
-      {children}
+      {textured && <Texture shape={texture} />}
+      <SlabToneContext.Provider value={tone}>{children}</SlabToneContext.Provider>
     </Tag>
   );
 }

@@ -19,7 +19,9 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
 
 interface PageHeadProps {
   /** One key per visual line. */
-  titleKeys: SiteContentKey[];
+  titleKeys?: SiteContentKey[];
+  /** Fixed lines for a page whose copy is not in site_content. */
+  titleLines?: string[];
   eyebrowKey?: SiteContentKey;
   /** At most three lines of copy under the title. */
   bodyKey?: SiteContentKey;
@@ -27,7 +29,7 @@ interface PageHeadProps {
   id: string;
 }
 
-export default function PageHead({ titleKeys, eyebrowKey, bodyKey, id }: PageHeadProps) {
+export default function PageHead({ titleKeys, titleLines, eyebrowKey, bodyKey, id }: PageHeadProps) {
   return (
     <Slab
       tone="inverse"
@@ -36,7 +38,14 @@ export default function PageHead({ titleKeys, eyebrowKey, bodyKey, id }: PageHea
       aria-labelledby={id}
       className="pt-[clamp(7.5rem,14vw,11rem)]! pb-[clamp(3rem,7vw,5.5rem)]!"
     >
-      <CentredHead as="h1" id={id} eyebrowKey={eyebrowKey} titleKeys={titleKeys} bodyKey={bodyKey} />
+      <CentredHead
+        as="h1"
+        id={id}
+        eyebrowKey={eyebrowKey}
+        titleKeys={titleKeys}
+        titleLines={titleLines}
+        bodyKey={bodyKey}
+      />
     </Slab>
   );
 }

@@ -21,7 +21,12 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
 */
 
 interface CentredHeadProps {
-  titleKeys: SiteContentKey[];
+  /** One key per visual line. */
+  titleKeys?: SiteContentKey[];
+  /** Fixed lines, for a page whose copy is not in site_content (the legal
+      pages). They take the same Line Mask Reveal and are not fields in edit
+      mode. Pass this or titleKeys, not both. */
+  titleLines?: string[];
   eyebrowKey?: SiteContentKey;
   /** Section numeral, rendered by Eyebrow in the accent. */
   index?: string;
@@ -37,7 +42,8 @@ interface CentredHeadProps {
 }
 
 export default function CentredHead({
-  titleKeys,
+  titleKeys = [],
+  titleLines,
   eyebrowKey,
   index,
   bodyKey,
@@ -48,6 +54,7 @@ export default function CentredHead({
   className = '',
 }: CentredHeadProps) {
   const ref = useReveal<HTMLDivElement>();
+  const Title = as;
 
   return (
     <div
@@ -60,7 +67,17 @@ export default function CentredHead({
         </Eyebrow>
       )}
 
-      <EditableLines keys={titleKeys} as={as} id={id} className="title" />
+      {titleLines ? (
+        <Title id={id} className="title">
+          {titleLines.map((line) => (
+            <span key={line} className="ln">
+              <i>{line}</i>
+            </span>
+          ))}
+        </Title>
+      ) : (
+        <EditableLines keys={titleKeys} as={as} id={id} className="title" />
+      )}
 
       {bodyKey && <EditableText k={bodyKey} as="p" className={`${bodyRole} measure`} />}
 

@@ -80,7 +80,7 @@ Apart from the page head (inverse, waist ribbon), it is the page's one loud slab
 
 The first section of every public page other than home: an `inverse` slab with the `waist` ribbon holding a CentredHead as the page's `h1` (eyebrow, title, optional copy). One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `clamp(3rem,7vw,5.5rem)` bottom. Pages pass keys only, never a padding or a tone.
 
-Props: `titleKeys`, `eyebrowKey`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page).
+Props: `titleKeys`, `eyebrowKey`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page). The legal pages, whose copy is not in `site_content`, pass `titleLines` (fixed strings, same Line Mask Reveal, not fields in edit mode) instead of `titleKeys`; CentredHead takes the same prop.
 
 With the ClosingBand it is the only other loud slab a page may carry.
 

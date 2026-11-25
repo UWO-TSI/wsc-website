@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ClosingBand from "@/components/layout/closing-band";
+import PageHead from "@/components/layout/page-head";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -7,10 +8,10 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <>
-    <div className="px-[var(--gut)] pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
+    <div className="stack">
+    <PageHead id="terms-title" titleLines={["Terms of Service"]} />
+    <div className="px-[var(--gut)] py-[clamp(5rem,10vw,9rem)]">
       <div className="mx-auto flex max-w-[720px] flex-col gap-10">
-        <h1 className="title">Terms of Service</h1>
 
         <div className="flex flex-col gap-10">
           <Section index="01" title="Acceptance of Terms">
@@ -117,7 +118,7 @@ export default function TermsOfServicePage() {
       </div>
     </div>
     <ClosingBand />
-    </>
+    </div>
   );
 }
 

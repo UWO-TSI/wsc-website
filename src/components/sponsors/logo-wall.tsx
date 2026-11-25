@@ -49,9 +49,10 @@ function WallSkeleton() {
   that group, taken from display_order rather than an invented tier
   (design-system/adoption.md, Data decisions).
 
-  The wall sits on a raised slab between the dark page head and the closing
-  band, so those two stay the page's loud slabs, and the marks sit directly
-  on it with no plate (design-system/components.md, LogoWall).
+  The whole wall sits on the constant --logo-ground slab and the marks sit
+  directly on it, the same treatment as the landing marquee. A dark plate
+  per logo on a light bed read as a grid of stickers
+  (design-system/components.md, LogoWall).
 
   The slab and the tier bar are outside the async wrapper: both are known
   before the query resolves, so they paint immediately and only the grid
@@ -103,10 +104,10 @@ export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWall
   const { editing } = useEditMode();
 
   return (
-    <Slab tone="raised" aria-labelledby="partners-wall-label">
+    <Slab tone="logo" aria-labelledby="partners-wall-label">
       <div className="flex items-center justify-center gap-3">
         <span className="h-1 w-10 rounded-pill bg-gold" aria-hidden="true" />
-        {/* The tier mark is gold, not the label's muted ink. */}
+        {/* Important: the logo slab mutes every .label, and the tier mark is gold. */}
         <EditableText k="partners.wall.label" id="partners-wall-label" className="label text-gold!" />
       </div>
 

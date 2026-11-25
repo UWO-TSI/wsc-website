@@ -44,8 +44,9 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
   const scale = scaleFor(rank, total);
 
   /*
-    No plate behind the mark: it sits directly on the wall's raised slab. The
-    tile keeps its frame and corner only for layout and the focus ring.
+    No plate behind the mark: the wall itself is the --logo-ground slab, so a
+    light-on-transparent mark has the ground it was drawn for. The tile keeps
+    its frame and corner only for layout and the focus ring.
   */
   const tileClass = [
     'group flex flex-none items-center justify-center overflow-hidden rounded-md p-2',
@@ -77,7 +78,7 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
       onReady={onReady}
     />
   ) : (
-    <span className="text-center font-display font-bold uppercase text-ink">
+    <span className="text-center font-display font-bold uppercase text-on-logo-ground">
       {sponsor.name}
     </span>
   );

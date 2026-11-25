@@ -9,7 +9,8 @@ import LogoCard, { TILE_SIZE } from '@/components/sponsors/logo-card';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
 import { useSiteContent } from '@/providers/site-content-provider';
-import { EditableText } from '@/edit';
+import { EditableText, useEditMode } from '@/edit';
+import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 
 interface LogoWallProps {
   sponsors: Sponsor[];
@@ -64,7 +65,13 @@ function WallSkeleton() {
   it once, so the marks arrive together instead of each one popping in as
   its response lands.
 */
-function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
+function LogoGrid(props: { sponsors: Sponsor[] }) {
+  /* While editing, the engine's wall editor renders instead (src/edit/list-draft.ts). */
+  if (useListEditBranch()) return <ListEditBranch name="sponsors" props={props} />;
+  return <LogoGridView {...props} />;
+}
+
+function LogoGridView({ sponsors }: { sponsors: Sponsor[] }) {
   const ids = sponsors.flatMap((sponsor) =>
     getPublicUrl('sponsor-logos', sponsor.logo_path ?? null) ? [sponsor.id] : []
   );
@@ -94,6 +101,7 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
 
 export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWallProps) {
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   return (
     <Slab tone="logo" aria-labelledby="partners-wall-label">
@@ -106,7 +114,8 @@ export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWall
       <AsyncStateWrapper
         loading={loading}
         error={error}
-        data={sponsors}
+        /* An empty wall still shows the editor, so its Add tile is there. */
+        data={editing ? [editing] : sponsors}
         onRetry={onRetry}
         emptyMessage={text('partners.wall.empty')}
         skeleton={<WallSkeleton />}

@@ -10,6 +10,7 @@ import ClosingBand from '@/components/layout/closing-band';
 import ExecutiveGrid, { ExecutiveGridSkeleton } from '@/components/team/executive-grid';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
+import { useEditMode } from '@/edit';
 
 /*
   One roster, read left to right. The groups are an ordering, not labelled
@@ -35,7 +36,10 @@ export default function ExecutiveTeamPage() {
   } = useSupabaseQuery<Executive>('executives', {
     /* Not redundant with RLS: a signed-in admin can read hidden rows. */
     filters: [{ column: 'visible', operator: 'eq', value: true }],
+    editList: true,
   });
+  /* While editing, hidden rows stay on the page with their chip. */
+  const { editing } = useEditMode();
   const { data: groups, loading: groupsLoading, error: groupsError } =
     useSupabaseQuery<ExecGroup>('exec_groups');
   const { text } = useSiteContent();
@@ -60,9 +64,9 @@ export default function ExecutiveTeamPage() {
       return i === -1 ? groupOrder.length : i;
     };
     return [...executives]
-      .filter((executive) => executive.visible)
+      .filter((executive) => editing || executive.visible)
       .sort((a, b) => rank(a.group) - rank(b.group));
-  }, [executives, groupOrder]);
+  }, [executives, groupOrder, editing]);
 
   return (
     <div className="stack">
@@ -78,7 +82,8 @@ export default function ExecutiveTeamPage() {
         <AsyncStateWrapper
           loading={loading}
           error={error}
-          data={ordered}
+          /* An empty roster still shows the editor, so its Add tile is there. */
+          data={editing ? [editing] : ordered}
           onRetry={refetch}
           emptyMessage={text('team.header.empty')}
           skeleton={<ExecutiveGridSkeleton count={8} />}

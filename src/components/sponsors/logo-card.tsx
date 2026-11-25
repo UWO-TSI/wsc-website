@@ -20,7 +20,7 @@ type Scale = 'lead' | 'mid' | 'std';
   the first third of the wall reads large, the next third medium, the rest
   standard. Tile scale carries the hierarchy, not a border.
 */
-function scaleFor(rank: number, total: number): Scale {
+export function scaleFor(rank: number, total: number): Scale {
   if (total <= 3) return rank === 0 ? 'lead' : 'std';
   const third = Math.ceil(total / 3);
   if (rank < third) return 'lead';

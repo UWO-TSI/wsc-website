@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { ListTable } from '@/edit/list-draft';
 
 /*
   What the edit bar and the tray show. Fields write their focus here; the
@@ -11,7 +12,11 @@ export type TrayContext =
   | { type: 'text'; key: string }
   | { type: 'lines'; keys: string[]; tooWide: boolean }
   | { type: 'button'; labelKey: string; hrefKey: string }
-  | { type: 'photo'; slot: string };
+  | { type: 'photo'; slot: string }
+  /* A field, chip or grip of one list row; the tray shows the row and Remove. */
+  | { type: 'row'; table: ListTable; id: string; field: string }
+  /* The Add an area input of one executive. */
+  | { type: 'area'; id: string };
 
 export type Tone = 'info' | 'ok' | 'warn' | 'alert';
 
@@ -69,14 +74,22 @@ export function useUi(): UiState {
    the tray does not flicker between two fields. */
 let blurTimer: ReturnType<typeof setTimeout> | undefined;
 
-const target = (ctx: TrayContext) =>
-  ctx.type === 'text'
-    ? ctx.key
-    : ctx.type === 'lines'
-      ? ctx.keys.join()
-      : ctx.type === 'button'
-        ? ctx.labelKey
-        : ctx.slot;
+const target = (ctx: TrayContext) => {
+  switch (ctx.type) {
+    case 'text':
+      return ctx.key;
+    case 'lines':
+      return ctx.keys.join();
+    case 'button':
+      return ctx.labelKey;
+    case 'photo':
+      return ctx.slot;
+    case 'row':
+      return `${ctx.table}:${ctx.id}:${ctx.field}`;
+    case 'area':
+      return `area:${ctx.id}`;
+  }
+};
 
 /** The last field that had focus, kept across a blur. */
 let lastTarget = '';

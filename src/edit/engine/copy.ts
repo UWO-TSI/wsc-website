@@ -85,6 +85,85 @@ export const COPY = {
 
   // Areas, used by the list editors in phase 3
   duplicateArea: (name: string) => `${name} already exists. Pick it from the list.`,
+
+  /* Lists: executives, events, partners and the counted figures. Lines the
+     spec table does not give follow the edit-mode demo in
+     docs/redesign/reference.html. */
+  visible: 'Visible',
+  hidden: 'Hidden',
+  unpublished: 'Unpublished',
+  willBeRemoved: 'Will be removed',
+  gripLabel: (who: string, i: number, n: number) => `Reorder ${who}, position ${i} of ${n}. Drag, or use arrow keys.`,
+  moved: (who: string, i: number, n: number) => `Moved ${who} to position ${i} of ${n}`,
+  gripHint: 'Drag to move, or use the arrow keys.',
+  rowHead: (kind: string, name: string) => `${kind} · ${name}`,
+  showsAs: (shown: string) => `Shows on the site as ${shown}.`,
+  roleHint: (shown: string) => `Roles are added in Settings. Shows as ${shown}.`,
+  rowPhotoHint: 'Opens your files or photo library.',
+  rowPhotoName: (action: string, what: string, who: string) => `${action}, ${what} for ${who}`,
+  photoTooLarge: (width: number, height: number, max: number) =>
+    `This photo is ${width} by ${height}px. Use one at most ${max}px on each side.`,
+  replaceLogo: 'Replace logo',
+  addLogo: 'Add logo',
+  noArea: 'No area',
+  addArea: 'Add an area',
+  newArea: 'New area',
+  newAreaName: 'New area name',
+  newAreaHint: 'Type the area name and press Enter. Escape cancels.',
+  registerLink: (title: string) => `Register link for ${title}`,
+  partnerLink: (name: string) => `Link for ${name}`,
+  linkPlaceholder: 'https://',
+  list: {
+    executives: {
+      kind: 'Executive',
+      fresh: 'New executive',
+      add: 'Add executive',
+      show: 'Show on team page',
+      remove: 'Remove from team',
+      keep: 'Keep on team',
+    },
+    events: {
+      kind: 'Event',
+      fresh: 'New event',
+      add: 'Add event',
+      show: 'Show on events page',
+      remove: 'Remove event',
+      keep: 'Keep event',
+    },
+    sponsors: {
+      kind: 'Partner',
+      fresh: 'New partner',
+      add: 'Add partner',
+      show: 'Show on partners page',
+      remove: 'Remove partner',
+      keep: 'Keep partner',
+    },
+    site_stats: {
+      kind: 'Figure',
+      fresh: 'New figure',
+      add: 'Add figure',
+      show: 'Show on home page',
+      remove: 'Remove figure',
+      keep: 'Keep figure',
+    },
+  },
+  /** Names of the row fields, for screen readers and placeholders. */
+  field: {
+    name: 'Name',
+    fullName: 'Full name',
+    role: 'Role',
+    area: 'Area',
+    title: 'Event title',
+    date: 'Date',
+    time: 'Time',
+    location: 'Location',
+    description: 'Description',
+    value: 'Number',
+    suffix: 'Suffix',
+    label: 'Label',
+    headshot: 'headshot',
+    logo: 'logo',
+  },
 };
 
 /**

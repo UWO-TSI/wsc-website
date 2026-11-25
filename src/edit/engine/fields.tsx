@@ -256,7 +256,14 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
     el.style.font = cs.font;
     el.style.letterSpacing = cs.letterSpacing;
     el.style.color = cs.color;
-    const cap = Math.max(40, columnWidth(face.current!) - BUTTON_CHROME);
+    /* The cap is the width of the region the button is placed in. A button
+       row is often a flex item sized to its content, which would make the
+       cap depend on the label it limits, so the row itself is not used. */
+    const region = face.current!.closest<HTMLElement>('li, section, nav, footer, form');
+    const regionWidth = region
+      ? region.clientWidth - parseFloat(getComputedStyle(region).paddingLeft) - parseFloat(getComputedStyle(region).paddingRight)
+      : columnWidth(face.current!.parentElement!);
+    const cap = Math.max(40, regionWidth - BUTTON_CHROME);
     const width = Math.min(textWidth(el, sample(pub, m.max)) + 2, cap);
     sp.style.width = `${width}px`;
     el.style.width = `${width}px`;

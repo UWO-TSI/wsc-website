@@ -143,16 +143,46 @@ const sidesX = (cs: CSSStyleDeclaration) =>
  * column: measured against it, the hero greeting kept its 487px desktop
  * width after the window went to 375px and the page scrolled sideways.
  * A skipped ancestor's max-width still caps the result.
+ *
+ * Collapsing a field and reading its ancestors costs two forced layouts.
+ * Inside a measure pass (runPass: a resize, or the fonts arriving) every
+ * field measured before is collapsed, read and restored together, once,
+ * and each field's call returns its width from that batch. A field
+ * measured outside a pass (on mount) is measured alone, and joins the
+ * batch from then on.
  */
 export function columnWidth(field: HTMLElement): number {
-  const chain: HTMLElement[] = [];
-  for (let node = field.parentElement; node && node !== document.body; node = node.parentElement) chain.push(node);
-  const before = chain.map((n) => n.getBoundingClientRect().width);
-  const width = field.style.width;
-  field.style.width = '0px';
-  const after = chain.map((n) => n.getBoundingClientRect().width);
-  field.style.width = width;
+  columnFields.add(field);
+  const hit = batch?.get(field);
+  if (hit !== undefined) return hit;
+  return columnWidths([field]).get(field)!;
+}
 
+/** Every field columnWidth has measured, so a pass can batch them. */
+const columnFields = new Set<HTMLElement>();
+/** The widths of the current pass, or null outside one. */
+let batch: Map<HTMLElement, number> | null = null;
+
+function columnWidths(fields: HTMLElement[]): Map<HTMLElement, number> {
+  const chains = fields.map((field) => {
+    const chain: HTMLElement[] = [];
+    for (let node = field.parentElement; node && node !== document.body; node = node.parentElement) chain.push(node);
+    return chain;
+  });
+  /* Read every width, collapse every field, read again, then restore every
+     field: two layouts for the whole batch. */
+  const before = chains.map((chain) => chain.map((n) => n.getBoundingClientRect().width));
+  const widths = fields.map((field) => field.style.width);
+  fields.forEach((field) => (field.style.width = '0px'));
+  const after = chains.map((chain) => chain.map((n) => n.getBoundingClientRect().width));
+  fields.forEach((field, i) => (field.style.width = widths[i]));
+
+  const result = new Map<HTMLElement, number>();
+  fields.forEach((field, f) => result.set(field, columnOf(chains[f], before[f], after[f])));
+  return result;
+}
+
+function columnOf(chain: HTMLElement[], before: number[], after: number[]): number {
   let between = 0;
   let cap = Infinity;
   for (let i = 0; i < chain.length; i++) {
@@ -201,23 +231,52 @@ export function wrapsOnPhones(el: HTMLElement, line: string): boolean {
   return textWidth(el, line, phoneFontSize(el)) > column;
 }
 
-/* One debounced resize listener and one fonts-ready callback for every field. */
+/* One debounced resize listener and one fonts-ready pass for every field. */
 const measurers = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | undefined;
 
+/** Runs `fns` as one measure pass, every field's column read in one batch. */
+function runPass(fns: (() => void)[]) {
+  if (fns.length === 0) return;
+  for (const field of columnFields) if (!field.isConnected) columnFields.delete(field);
+  batch = columnWidths([...columnFields]);
+  try {
+    fns.forEach((fn) => fn());
+  } finally {
+    batch = null;
+  }
+}
+
 function onResize() {
   clearTimeout(timer);
-  timer = setTimeout(() => measurers.forEach((fn) => fn()), 120);
+  timer = setTimeout(() => runPass([...measurers]), 120);
+}
+
+/* Fields that register in the same task wait for the fonts together and
+   measure again in one pass. */
+const afterFonts = new Set<() => void>();
+let fontsPending = false;
+
+function measureAfterFonts(fn: () => void) {
+  if (!document.fonts) return;
+  afterFonts.add(fn);
+  if (fontsPending) return;
+  fontsPending = true;
+  document.fonts.ready.then(() => {
+    fontsPending = false;
+    const fns = [...afterFonts].filter((f) => measurers.has(f));
+    afterFonts.clear();
+    runPass(fns);
+  });
 }
 
 export function onRemeasure(fn: () => void): () => void {
   if (measurers.size === 0) window.addEventListener('resize', onResize);
   measurers.add(fn);
-  document.fonts?.ready.then(() => {
-    if (measurers.has(fn)) fn();
-  });
+  measureAfterFonts(fn);
   return () => {
     measurers.delete(fn);
+    afterFonts.delete(fn);
     if (measurers.size === 0) window.removeEventListener('resize', onResize);
   };
 }

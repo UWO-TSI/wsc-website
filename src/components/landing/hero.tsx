@@ -1,6 +1,7 @@
 'use client';
 
 import Eyebrow from '@/components/ui/eyebrow';
+import RevealImage from '@/components/ui/reveal-image';
 import Slab from '@/components/ui/slab';
 import { EditableButton, EditableImage, EditableLines, EditableText, useEditMode } from '@/edit';
 import { usePreloader } from '@/providers/preloader-provider';
@@ -45,15 +46,28 @@ import { useSiteContent } from '@/providers/site-content-provider';
   running ancestor, so inside the head it would unclip with the title whether
   its bytes had landed or not. It runs its own Clip Reveal, held under the
   Curtain like the title.
+
+  For visitors the photo is decoration under the veil and the h1 carries
+  the meaning, so it renders with an empty alt inside an aria-hidden
+  wrapper. While editing, the photo slot renders instead, with its Replace
+  photo control and the slot's label.
 */
 
 const NAME_KEYS = ['home.hero.title_line2', 'home.hero.title_line3', 'home.hero.title_line4'] as const;
+const PHOTO = 'home.hero.image1';
 
 export default function Hero() {
   const { complete } = usePreloader();
   const ref = useReveal<HTMLDivElement>({ immediate: true, enabled: complete });
-  const { text } = useSiteContent();
+  const { text, image } = useSiteContent();
   const { editing } = useEditMode();
+  const frame = {
+    sizes: '100vw',
+    className: 'absolute! inset-0 rounded-[inherit]',
+    hold: !complete,
+    priority: true,
+    veil: true,
+  };
   const greeting = text('home.hero.title_line1');
   const names = NAME_KEYS.map((k) => ({ k, value: text(k) })).filter((line) => line.value);
 
@@ -65,14 +79,13 @@ export default function Hero() {
       aria-labelledby="hero-title"
       className="relative pt-[clamp(7.5rem,14vw,11rem)]! pb-[var(--pad-section)]!"
     >
-      <EditableImage
-        slot="home.hero.image1"
-        sizes="100vw"
-        className="absolute! inset-0 rounded-[inherit]"
-        hold={!complete}
-        priority
-        veil
-      />
+      {editing ? (
+        <EditableImage slot={PHOTO} {...frame} />
+      ) : (
+        <div aria-hidden="true" className="absolute inset-0 rounded-[inherit]">
+          <RevealImage src={image(PHOTO).src} alt="" {...frame} />
+        </div>
+      )}
 
       <div ref={ref} className="relative flex flex-col items-center gap-7 text-center">
         <Eyebrow>

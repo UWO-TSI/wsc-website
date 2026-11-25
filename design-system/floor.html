@@ -602,6 +602,8 @@
   .e16-f.lines .title { margin: 0; display: block; }
   .e16-lbl { background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-xs); padding: 3px 8px; cursor: text; }
   .e16-lbl.on { outline: 2px solid currentColor; outline-offset: 1px; }
+  /* The button itself focused: the route to its link address (.ed-btn-link). */
+  .e16-ring { outline: 2px solid var(--focus); outline-offset: 3px; }
   .e16-ph { position: relative; aspect-ratio: 4 / 3; border-radius: var(--r-md); }
   .e16-ph > .img, .e16-ph > .sk { position: absolute; inset: 0; border-radius: inherit; }
   .e16-ph > button { position: absolute; inset: 0; z-index: 2; display: flex; align-items: flex-end; justify-content: flex-start; padding: 10px; border: 0; border-radius: inherit; background: transparent; cursor: pointer; }
@@ -643,8 +645,8 @@
   .e16-seg button { padding: 8px 12px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-muted); font-family: var(--f-text); font-size: var(--t-body-sm); font-weight: 500; cursor: pointer; }
   @media (min-width: 900px) { .e16-seg button { padding: 8px 16px; } }
   .e16-seg button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .e16-tray { grid-area: tray; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: 'label actions' 'body body'; align-items: center; column-gap: 10px; row-gap: 6px; height: 110px; min-width: 0; overflow: hidden; margin-block: 10px; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
-  @media (min-width: 900px) { .e16-tray { grid-template-areas: 'label label' 'body actions'; row-gap: 3px; height: 76px; margin-block: 0; } }
+  .e16-tray { grid-area: tray; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: 'label actions' 'body body'; align-items: center; column-gap: 10px; row-gap: 6px; font-size: var(--t-body); height: calc(18px + 6px + 5.375em); min-width: 0; overflow-x: hidden; overflow-y: auto; margin-block: 10px; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
+  @media (min-width: 900px) { .e16-tray { grid-template-areas: 'label label' 'body actions'; row-gap: 3px; height: calc(18px + 3px + 3.4375em); margin-block: 0; } }
   /* Two lines below 900px (the refused-link head, a row name beside Remove), one line from 900px. */
   .e16-tray .tl { grid-area: label; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
   @media (min-width: 900px) { .e16-tray .tl { display: block; white-space: nowrap; text-overflow: ellipsis; } }
@@ -1400,8 +1402,9 @@ Sales Team</span></span>
         <div class="mags">
           <div class="e16-pair"><span class="meta">At rest</span><span class="btn b1"><span class="e16-lbl">Apply to join</span> <span class="aw">&#8594;</span></span></div>
           <div class="e16-pair"><span class="meta">Focused</span><span class="btn b1"><span class="e16-lbl on">Apply to join</span> <span class="aw">&#8594;</span></span></div>
+          <div class="e16-pair"><span class="meta">Link</span><span class="btn b1 e16-ring"><span class="e16-lbl">Apply to join</span> <span class="aw">&#8594;</span></span></div>
         </div>
-        <p class="body-sm">The label is a field inside the button, sized to the longest allowed label so the button never resizes. The ring takes the label's colour, which is the colour that shows on the button's fill. The link address is in the tray.</p>
+        <p class="body-sm">The label is a field inside the button, sized to the longest allowed label so the button never resizes. The ring takes the label's colour, which is the colour that shows on the button's fill. The link address is in the tray. Tab from the label focuses the button itself, ringed as any control; Enter or a click there moves focus to the link address in the tray, and Escape or Enter in the address returns to the label.</p>
       </div>
 
       <div class="e16-cell">
@@ -1544,7 +1547,9 @@ Sales Team</span></span>
       a list row with its Remove, a new area, confirmations and results.
       There are no dialogs. It is a grid of label, body and actions: on
       phones the actions share the label row and the body has three lines
-      (110px); from 900px the actions end the body row (76px). The Publish button is
+      (110px); from 900px the actions end the body row (76px). Both heights
+      are set in em of the tray's text plus its fixed padding, so text-only
+      zoom grows the tray with its text. The Publish button is
       wide enough for <b>Publish 99 changes</b>, so its label changes to
       Publishing and Published in place without moving the bar.
     </p>

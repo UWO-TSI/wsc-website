@@ -5,6 +5,8 @@ export interface Event {
   time?: string;
   location?: string;
   description?: string;
+  /** Optional registration link, http or https. */
+  register_url?: string | null;
   published: boolean;
   display_order: number;
 }
@@ -22,12 +24,16 @@ export interface Sponsor {
 export interface Executive {
   id: string;
   name: string;
+  /**
+   * Legacy free-text title. Shown only while area_id is null; dropped once
+   * the area backfill has been reviewed.
+   */
   title: string;
   /** FK to exec_groups.slug. No longer a fixed union: roles are data. */
   group: string;
+  /** FK to exec_areas.id. Null means the title is the role alone. */
+  area_id?: string | null;
   headshot_path?: string;
-  /** Optional, 1 to 6. */
-  year_of_study?: number | null;
   visible: boolean;
   display_order: number;
 }
@@ -40,7 +46,19 @@ export interface ExecGroup {
   label: string;
   /** Admin dropdown option, e.g. 'Vice President'. */
   singular_label: string;
+  /**
+   * Role in a built title, e.g. 'VP' in "VP, Marketing". Always set in the
+   * database; absent only from the compiled-in fallbacks.
+   */
+  short_label?: string;
   visible: boolean;
+  display_order: number;
+}
+
+/** The portfolio an executive leads, e.g. 'Marketing'. Unique by lower(name). */
+export interface ExecArea {
+  id: string;
+  name: string;
   display_order: number;
 }
 
@@ -78,10 +96,16 @@ export interface AdminRow {
   email: string | null;
   note: string | null;
   added_at: string | null;
-  /** NULL only for the owner, who never expires. */
-  expires_at: string | null;
   is_owner: boolean;
   invited_by: string | null;
+}
+
+/** A row from the admin_last_sign_ins() RPC. Callable only by an admin at aal2. */
+export interface AdminLastSignIn {
+  user_id: string;
+  email: string | null;
+  /** Null when the account has never completed a sign-in. */
+  last_sign_in_at: string | null;
 }
 
 export interface AdminInvite {
@@ -90,6 +114,7 @@ export interface AdminInvite {
   note: string | null;
   invited_by: string | null;
   created_at: string;
+  /** An unclaimed invite stops working 14 days after it is created. */
   expires_at: string;
   used_at: string | null;
   used_by: string | null;

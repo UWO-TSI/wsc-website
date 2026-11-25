@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { FormField } from '../form-config';
-import type { QueryError } from '@/types/database';
+import type { ExecArea, QueryError } from '@/types/database';
 import { getPublicUrl } from '@/lib/supabase/storage';
+import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { normalizeFor, validateField } from '@/lib/normalize';
 import { FIELD_ERROR_RING, FIELD_WELL } from '@/components/contact/field';
 import Button from '@/components/ui/button';
@@ -24,7 +25,7 @@ import CharCount from './char-count';
   - Errors appear once a field has been left or the form submitted, never
     on the first keystroke.
   - Empty optional fields are sent as NULL, numbers as integers, so an
-    empty time or year never reaches a format CHECK as ''.
+    empty time, link or area never reaches a CHECK or foreign key as ''.
 */
 
 interface AdminFormProps {
@@ -77,6 +78,15 @@ export default function AdminForm({
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  /* Areas are data, so the Area dropdown is filled from exec_areas here.
+     Fetched only by a form that has such a field. */
+  const needsAreas = fields.some((f) => f.optionsSource === 'exec_areas');
+  const { data: areas } = useSupabaseQuery<ExecArea>('exec_areas', { enabled: needsAreas });
+  const optionsFor = (field: FormField) =>
+    field.optionsSource === 'exec_areas'
+      ? areas.map((a) => ({ value: a.id, label: a.name }))
+      : field.options;
 
   const fieldId = (name: string) => `${idPrefix}-${name}`;
 
@@ -278,14 +288,14 @@ export default function AdminForm({
                   onBlur={() => handleBlur(field)}
                   className={FIELD_WELL}
                 >
-                  <option value="">Select</option>
-                  {field.options?.map((opt) => (
+                  <option value="">{field.emptyLabel ?? 'Select'}</option>
+                  {optionsFor(field)?.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
                   ))}
                 </select>
-                {field.options?.length === 0 && (
+                {field.optionsSource === 'exec_groups' && field.options?.length === 0 && (
                   <p className="body-sm text-warn mt-1.5">
                     No roles exist yet. Add one under the Roles tab first.
                   </p>

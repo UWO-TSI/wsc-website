@@ -10,10 +10,12 @@ export interface FormField {
   options?: { value: string; label: string }[];
   /**
    * Fill `options` at runtime from a table instead of hardcoding them.
-   * Executive roles live in `exec_groups`, so the dropdown has to follow
-   * whatever the club has created.
+   * Executive roles live in `exec_groups` and areas in `exec_areas`, so the
+   * dropdowns follow whatever the club has created.
    */
-  optionsSource?: 'exec_groups';
+  optionsSource?: 'exec_groups' | 'exec_areas';
+  /** Text of a select's empty choice. Defaults to "Select". */
+  emptyLabel?: string;
   defaultValue?: string;
   help?: string;
   /**
@@ -34,6 +36,7 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
     { name: 'date',        label: 'Date',        type: 'date',     required: true,  showInTable: true },
     { name: 'time',        label: 'Start time',  type: 'time',     required: false, showInTable: true, format: 'time', help: 'Optional. Shown on the site as, for example, 6:30 PM.' },
     { name: 'location',    label: 'Location',    type: 'text',     required: false, showInTable: true, maxLength: 60 },
+    { name: 'register_url', label: 'Registration link', type: 'text', required: false, showInTable: false, placeholder: 'https://', maxLength: 200, format: 'https', help: 'Optional. Where people sign up for the event.' },
     { name: 'description', label: 'Description', type: 'textarea', required: false, showInTable: false, maxLength: 800 },
   ],
 
@@ -46,17 +49,6 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
 
   executives: [
     { name: 'name',  label: 'Name',  type: 'text', required: true, showInTable: true, maxLength: 40 },
-    { name: 'title', label: 'Title', type: 'text', required: true, showInTable: true, maxLength: 40, placeholder: 'e.g. VP Events', help: 'Free text, shown under the name.' },
-    {
-      name: 'year_of_study',
-      label: 'Year of study',
-      type: 'number',
-      required: false,
-      showInTable: true,
-      min: 1,
-      max: 6,
-      help: 'Optional, 1 to 6.',
-    },
     {
       name: 'group',
       label: 'Role',
@@ -66,6 +58,17 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
       optionsSource: 'exec_groups',
       help: 'Sets where they sit in the roster. Manage roles under the Roles tab.',
     },
+    {
+      name: 'area_id',
+      label: 'Area',
+      type: 'select',
+      required: false,
+      showInTable: false,
+      optionsSource: 'exec_areas',
+      emptyLabel: 'No area',
+      help: 'With an area the site shows the role and area, e.g. VP, Marketing. With no area it shows the title below.',
+    },
+    { name: 'title', label: 'Title', type: 'text', required: true, showInTable: true, maxLength: 40, placeholder: 'e.g. VP Events', help: 'Shown under the name while no area is chosen.' },
     { name: 'headshot_path', label: 'Headshot', type: 'image', required: false, showInTable: true, help: 'Shown in a circle, so keep the face centred.' },
   ],
 
@@ -91,6 +94,16 @@ export const FORM_FIELDS: Record<string, FormField[]> = {
       maxLength: 40,
       placeholder: 'e.g. Director',
       help: 'Shown in the dropdown when adding a team member.',
+    },
+    {
+      name: 'short_label',
+      label: 'Short name',
+      type: 'text',
+      required: true,
+      showInTable: true,
+      maxLength: 40,
+      placeholder: 'e.g. VP',
+      help: 'Used in titles on the team page, e.g. VP, Marketing.',
     },
     {
       name: 'label',

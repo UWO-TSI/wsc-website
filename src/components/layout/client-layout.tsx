@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider } from '@/providers/theme-provider';
 import { PreloaderProvider, usePreloader } from '@/providers/preloader-provider';
 import { CursorProvider } from '@/providers/cursor-provider';
 import { LenisProvider } from '@/providers/lenis-provider';
@@ -42,18 +41,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/auth');
 
-  /* The theme sits outside the admin branch: /admin ships in both themes too,
-     and the toggle in the dashboard header needs the same context. The
-     preloader does not, so /admin gets the default `complete: true`. */
+  /* The preloader is for the public site only, so /admin gets the default
+     `complete: true`. */
   if (isAdmin) {
-    return <ThemeProvider>{children}</ThemeProvider>;
+    return <>{children}</>;
   }
 
   return (
-    <ThemeProvider>
-      <PreloaderProvider>
-        <Shell>{children}</Shell>
-      </PreloaderProvider>
-    </ThemeProvider>
+    <PreloaderProvider>
+      <Shell>{children}</Shell>
+    </PreloaderProvider>
   );
 }

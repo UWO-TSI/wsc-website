@@ -41,7 +41,7 @@ function WallSkeleton() {
   The sponsors table has no tier column, and hard rule 1 forbids touching
   supabase/, so every sponsor ships in one tier group: the gold bar and label
   reading "Partners". --gold, not --accent, because a sponsor's standing has
-  to read the same in both themes. Tile scale carries the hierarchy inside
+  to read the same on every page. Tile scale carries the hierarchy inside
   that group, taken from display_order rather than an invented tier
   (design-system/adoption.md, Data decisions).
 

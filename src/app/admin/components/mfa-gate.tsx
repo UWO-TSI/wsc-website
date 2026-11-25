@@ -226,8 +226,8 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
       {qrCode && (
         <>
           {/* Supabase returns the QR as an inline SVG data URI, which
-              next/image cannot optimise. The white ground is required for
-              a scanner in the dark theme. */}
+              next/image cannot optimise. The white plate gives a scanner
+              the contrast it needs. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCode} alt="Two-factor setup QR code" className="h-48 w-48 rounded-sm bg-white p-3" />
         </>

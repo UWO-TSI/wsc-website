@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, Instrument_Sans, Geist_Mono } from "next/font/google";
 import ClientLayout from "@/components/layout/client-layout";
-import { THEME_STORAGE_KEY } from "@/lib/theme";
 import "./globals.css";
 
 /* Three families, each with one job. Mixing the jobs is how this stops
@@ -24,26 +23,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   display: "swap",
 });
-
-/*
-  Read the stored theme and stamp it on <html> before the first paint.
-  Without this the page flashes Showroom on every load for an Afterhours
-  viewer. It runs blocking in <head>, so it stays small and throws nothing:
-  a private window with blocked storage falls through to the OS preference.
-*/
-const themeScript = `
-(function(){
-  try {
-    var t = localStorage.getItem('${THEME_STORAGE_KEY}');
-    if (t === 'light' || t === 'dark') {
-      document.documentElement.setAttribute('data-theme', t);
-      return;
-    }
-  } catch (e) {}
-  var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-})();
-`;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://westernsalesclub.ca"),
@@ -87,12 +66,8 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      suppressHydrationWarning
       className={`${archivo.variable} ${instrumentSans.variable} ${geistMono.variable}`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body>
         <ClientLayout>{children}</ClientLayout>
       </body>

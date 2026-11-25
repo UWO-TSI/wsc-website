@@ -25,11 +25,24 @@ before building. `plan.md` is the build plan.
   them are removed; content inside a container keeps the gutter as padding.
 - Rounded shapes stay for photos, fields, buttons and chips.
 - Slab Clip keeps its motion.
+- Containers carry weight only where they mark a change of role. On the inner pages the page head
+  and the closing band are the containers; the content sections between them sit bare on `--page`
+  with room around them. The contact form and the Partners logo wall are the exceptions: a form
+  field group and supplied logos need their ground.
+- The hero carries a background photo (slot `home.hero.image1`) under its centred head.
+- A photo slot with no photo shows a placeholder surface at the slot's frame and aspect ratio and
+  runs the slot's reveal, so the layout and the motion read before photos exist. This holds for
+  visitors too.
+- Section titles (`--t-title`) run 32px to 60px. The footer is taller than the Phase 2 build.
 
 ### Alignment
-- Selling sections are centred: hero, section heads, closing bands. The order is eyebrow, bold
-  Archivo title, at most three lines of copy, then the buttons.
-- Reading content stays left-aligned: long paragraphs, the event ledger.
+- Selling moments are centred: the hero, page heads, closing bands, and a home section head whose
+  section is one message and a link. The order is eyebrow, bold Archivo title, at most three lines
+  of copy, then the buttons.
+- A section whose job is reading or scanning content is left-aligned, head included: its eyebrow
+  and title sit on the same left edge as the content below them. This covers the About story, the
+  event ledger, the team roster, the contact form, the legal text and every long paragraph.
+  Centring a head over left-aligned content breaks the edge the eye returns to.
 
 ### Signature texture
 The "Production texture: Lit velvet" section of `reference.html` is the approved texture, and

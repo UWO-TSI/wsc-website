@@ -28,16 +28,15 @@ function scaleFor(rank: number, total: number): Scale {
   return 'std';
 }
 
-const logoHeights: Record<Scale, string> = {
-  lead: 'h-16 sm:h-24',
-  mid: 'h-12 sm:h-16',
-  std: 'h-10 sm:h-12',
-};
-
-const spanClass: Record<Scale, string> = {
-  lead: 'col-span-2',
-  mid: '',
-  std: '',
+/*
+  Each scale is a fixed box the mark is contained in, so a wide wordmark and
+  a square mark of the same scale read at about the same weight. The wall's
+  skeleton uses the same boxes.
+*/
+export const TILE_SIZE: Record<Scale, string> = {
+  lead: 'h-20 w-56 sm:h-24 sm:w-72',
+  mid: 'h-16 w-44 sm:h-20 sm:w-56',
+  std: 'h-12 w-36 sm:h-16 sm:w-44',
 };
 
 export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProps) {
@@ -45,13 +44,13 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
   const scale = scaleFor(rank, total);
 
   /*
-    The tile is the constant dark logo ground. The wall behind it is sunken,
-    so the black plate is visible against it, and a light-on-transparent
-    mark still has the ground it was drawn for.
+    No plate behind the mark: the wall itself is the --logo-ground slab, so a
+    light-on-transparent mark has the ground it was drawn for. The tile keeps
+    its frame and corner only for layout and the focus ring.
   */
   const tileClass = [
-    'group flex aspect-[3/2] items-center justify-center overflow-hidden rounded-md bg-logo-ground p-4',
-    spanClass[scale],
+    'group flex flex-none items-center justify-center overflow-hidden rounded-md p-2',
+    TILE_SIZE[scale],
   ]
     .filter(Boolean)
     .join(' ');
@@ -62,8 +61,8 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     it shifts, and only far enough to notice.
   */
   const markClass = sponsor.link
-    ? 'flex w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
-    : 'flex w-full items-center justify-center';
+    ? 'flex h-full w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
+    : 'flex h-full w-full items-center justify-center';
 
   // Never redraw a sponsor's mark: use their file, or fall back to the name
   // set in the display face, in the same tile.
@@ -72,7 +71,7 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
       src={logoUrl}
       alt={`${sponsor.name} logo`}
       sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
-      className={`w-full ${logoHeights[scale]}`}
+      className="h-full w-full"
       fit="contain"
       sequence="fade"
       hold

@@ -147,6 +147,8 @@ export const SITE_CONTENT = {
   'partners.header.title': { value: 'The businesses that support Western Sales Club.', kind: 'text', page: 'Partners', section: 'Header', label: 'Page title', max: 60 },
   'partners.wall.label': { value: 'Partners', kind: 'text', page: 'Partners', section: 'Logo wall', label: 'Label', max: 24 },
   'partners.wall.empty': { value: 'No partners listed yet.', kind: 'text', page: 'Partners', section: 'Logo wall', label: 'Empty message', max: 60 },
+  'sponsors.cta.partner_label': { value: 'Become a partner', kind: 'text', page: 'Partners', section: 'Join', label: 'Partner button text', max: 28 },
+  'sponsors.cta.partner_href': { value: '/contact-us?type=sponsor', kind: 'url', page: 'Partners', section: 'Join', label: 'Partner button link', max: 200, help: 'The type parameter preselects the organization type on the contact form.' },
 
   // Contact
   'contact.header.eyebrow': { value: 'Contact', kind: 'text', page: 'Contact', section: 'Header', label: 'Eyebrow', max: 24 },
@@ -155,6 +157,7 @@ export const SITE_CONTENT = {
   'contact.form.submit_label': { value: 'Send message', kind: 'text', page: 'Contact', section: 'Form', label: 'Send button', max: 28 },
   'contact.form.sent_title': { value: 'Message sent', kind: 'text', page: 'Contact', section: 'Form', label: 'Sent heading', max: 40 },
   'contact.form.sent_body': { value: 'It went to sales.club@westernusc.ca.', kind: 'text', page: 'Contact', section: 'Form', label: 'Sent message', max: 90 },
+  'contact.cta.form_href': { value: '#contact-form', kind: 'url', page: 'Contact', section: 'Join', label: 'Business button link', max: 200, help: 'Points to the form on this page.' },
 
   // Footer
   'footer.contact.email': { value: 'sales.club@westernusc.ca', kind: 'email', page: 'Footer', section: 'Contact', label: 'Email address', max: 80 },

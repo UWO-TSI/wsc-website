@@ -5,10 +5,11 @@ import type { Sponsor, QueryError } from '@/types/database';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import Slab from '@/components/ui/slab';
 import Skeleton from '@/components/ui/skeleton';
-import LogoCard from '@/components/sponsors/logo-card';
+import LogoCard, { TILE_SIZE } from '@/components/sponsors/logo-card';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
 import { useSiteContent } from '@/providers/site-content-provider';
+import { EditableText } from '@/edit';
 
 interface LogoWallProps {
   sponsors: Sponsor[];
@@ -17,20 +18,22 @@ interface LogoWallProps {
   onRetry?: () => void;
 }
 
-const GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4';
+/* Centred rows, the same spacing as the still marquee on the home page. */
+const WALL =
+  'flex flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8 py-[clamp(1rem,4vw,2.5rem)]';
 
 /*
-  Built to the same grid as the wall, including the lead tile spanning two
-  columns, so the layout does not reshuffle when the sponsors arrive.
+  Built to the same rows and tile sizes as the wall, so the layout does not
+  reshuffle when the sponsors arrive.
 */
 function WallSkeleton() {
   return (
-    <div className={GRID}>
-      {Array.from({ length: 8 }, (_, i) => (
+    <div className={WALL}>
+      {Array.from({ length: 6 }, (_, i) => (
         <Skeleton
           key={i}
           index={i}
-          className={`aspect-[3/2] rounded-md ${i === 0 ? 'col-span-2' : ''}`}
+          className={`rounded-md ${i < 2 ? TILE_SIZE.lead : TILE_SIZE.mid}`}
         />
       ))}
     </div>
@@ -45,9 +48,10 @@ function WallSkeleton() {
   that group, taken from display_order rather than an invented tier
   (design-system/adoption.md, Data decisions).
 
-  The bed is --sunken, a lighter gray than the tiles. Each mark keeps the
-  constant --logo-ground tile, so a black plate still reads against the bed
-  and a light mark still has the dark ground it was drawn for.
+  The whole wall sits on the constant --logo-ground slab and the marks sit
+  directly on it, the same treatment as the landing marquee. A dark plate
+  per logo on a light bed read as a grid of stickers
+  (design-system/components.md, LogoWall).
 
   The slab and the tier bar are outside the async wrapper: both are known
   before the query resolves, so they paint immediately and only the grid
@@ -74,7 +78,7 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
   };
 
   return (
-    <div ref={ref} className={GRID}>
+    <div ref={ref} className={WALL}>
       {sponsors.map((sponsor, index) => (
         <LogoCard
           key={sponsor.id}
@@ -92,10 +96,11 @@ export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWall
   const { text } = useSiteContent();
 
   return (
-    <Slab tone="sunken">
-      <div className="mb-6 flex items-center gap-3">
+    <Slab tone="logo" aria-labelledby="partners-wall-label">
+      <div className="flex items-center justify-center gap-3">
         <span className="h-1 w-10 rounded-pill bg-gold" aria-hidden="true" />
-        <span className="label text-gold">{text('partners.wall.label')}</span>
+        {/* Important: the logo slab mutes every .label, and the tier mark is gold. */}
+        <EditableText k="partners.wall.label" id="partners-wall-label" className="label text-gold!" />
       </div>
 
       <AsyncStateWrapper

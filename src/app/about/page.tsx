@@ -1,36 +1,34 @@
 'use client';
 
-import Eyebrow from '@/components/ui/eyebrow';
-import { useReveal } from '@/lib/reveal';
+import Slab from '@/components/ui/slab';
+import CentredHead from '@/components/ui/centred-head';
 import StorySection from '@/components/about/story-section';
-import { useSiteContent } from '@/providers/site-content-provider';
+import ClosingBand from '@/components/layout/closing-band';
 
 /*
-  The title sits bare on --page. StorySection is the one grid under it:
-  four text cells and two photographs. Nothing else wraps the page.
+  Page head, the four facts, then the default closing band.
 */
 export default function AboutPage() {
-  const titleRef = useReveal<HTMLDivElement>();
-  const { text } = useSiteContent();
-
   return (
-    <main
-      style={{
-        paddingInline: 'var(--gut)',
-        paddingTop: 'clamp(6rem, 10vw, 9rem)',
-        paddingBottom: 'clamp(4rem, 8vw, 7rem)',
-      }}
-    >
-      <div ref={titleRef} className="mb-10">
-        <Eyebrow className="mb-3 block">{text('about.header.eyebrow')}</Eyebrow>
-        <h1 className="title">
-          <span className="ln">
-            <i>{text('about.header.title')}</i>
-          </span>
-        </h1>
-      </div>
+    <div className="stack">
+      <Slab
+        tone="inverse"
+        texture="waist"
+        overflowHidden
+        aria-labelledby="about-title"
+        className="pt-[clamp(7.5rem,12vw,10rem)]! pb-[clamp(3.5rem,7vw,5.5rem)]!"
+      >
+        <CentredHead
+          as="h1"
+          id="about-title"
+          eyebrowKey="about.header.eyebrow"
+          titleKeys={['about.header.title']}
+        />
+      </Slab>
 
       <StorySection />
-    </main>
+
+      <ClosingBand />
+    </div>
   );
 }

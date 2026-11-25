@@ -1,12 +1,8 @@
-'use client';
+import type { Metadata } from 'next';
+import SignIn from './sign-in';
 
-import AdminAuthProvider from '@/providers/admin-auth-provider';
-import AdminDashboard from './admin-dashboard';
+export const metadata: Metadata = { title: 'Sign in' };
 
 export default function AdminPage() {
-  return (
-    <AdminAuthProvider>
-      <AdminDashboard />
-    </AdminAuthProvider>
-  );
+  return <SignIn />;
 }

@@ -10,7 +10,7 @@
 - **Affiliation**: Tethos (formerly TSI, Tech for Social Impact)
 
 **Pages**: Home, About, Executive Team, Events, Partners (Sponsors), Contact, Terms, Privacy Policy
-**Protected**: `/admin`, the content management dashboard. Google OAuth plus mandatory TOTP 2FA; invite-only by Google email; access does not expire. See `supabase/README.md`.
+**Protected**: `/admin` is sign-in only (Google OAuth plus mandatory TOTP 2FA) and opens the site in edit mode; `/admin/settings` holds admin accounts, roles and areas. Invite-only by Google email; access does not expire. See `supabase/README.md`.
 
 ---
 

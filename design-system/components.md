@@ -35,7 +35,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | PhotoSlot | `edit/engine/fields.tsx` (`EditImage`), via `edit/editable-image.tsx` | none |
 | EditBar, Tray | `edit/engine/edit-bar.tsx`, `edit/engine/edit.css` | Publish label changes in place |
 | InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile | `edit/engine/list-parts.tsx`, used by `edit/engine/list-editors.tsx` | Reorder (card 15 move row), Add tile (Clip Reveal), removal on Publish |
-| Settings page | not built yet | later phases |
+| Settings page | `app/admin/settings/` (was the dashboard's Admins tab, `app/admin/components/admin-users.tsx`) | none |
 
 ## Nav
 
@@ -122,7 +122,7 @@ The signature Lit velvet texture, in `ui/texture.tsx`, drawn only by `Slab`. Lay
 | `waist` | Page head. Wide, narrow, wide. |
 | `pair` | Wide, short band. Two ribbons, one following the other. |
 
-Accent gives lit velvet, inverse gives lit velvet black. Every shape works on both. The numbers, the `RIBBONS` table and the `SPREAD` table are copied from `docs/redesign/reference.html`; change them there first. The dev-only route `/texture-lab` renders every shape on both grounds at its band size.
+Accent gives lit velvet, inverse gives lit velvet black. Every shape works on both. The numbers, the `RIBBONS` table and the `SPREAD` table are copied from `docs/redesign/reference.html`; change them there first. Card 17 in `floor.html` renders every shape on both grounds.
 
 ## ExecutiveGrid
 
@@ -184,9 +184,9 @@ Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover
 
 ## Editor (admin)
 
-`src/app/admin/components/save-bar.tsx`, `admin-section.tsx` (`ReorderRow`), `src/app/admin/unsaved-changes.tsx`. Card 15 in `floor.html`.
+Card 15 in `floor.html`. The dashboard that used it was removed: content is edited in place in edit mode (card 16), and the Settings page uses card 15's list rows. The card stays as the reference for the list rows and for the reorder move (`--d-move`, `--e-move`).
 
-Every content manager tab is a Save bar over a list, and every change in it is staged until one Save. Save rests disabled as "Save changes", reads "Save all changes" with Discard beside it while edits are pending, and "Saved" for two seconds after writing. The list updates in place; a refetch never drops it to a loading state. Reorderable rows carry a three-line grip that alone starts a drag (Framer Motion `Reorder` with drag controls) and takes the arrow keys; the held row lifts to `--sh-3` and neighbours move on `--d-move` / `--e-move`. Executives reorder within their role, because the team page sorts by role first. Leaving an editor with edits pending asks once (Stay, or Discard and leave) and never refuses.
+The dashboard worked like this: every content manager tab is a Save bar over a list, and every change in it is staged until one Save. Save rests disabled as "Save changes", reads "Save all changes" with Discard beside it while edits are pending, and "Saved" for two seconds after writing. The list updates in place; a refetch never drops it to a loading state. Reorderable rows carry a three-line grip that alone starts a drag (Framer Motion `Reorder` with drag controls) and takes the arrow keys; the held row lifts to `--sh-3` and neighbours move on `--d-move` / `--e-move`. Executives reorder within their role, because the team page sorts by role first. Leaving an editor with edits pending asks once (Stay, or Discard and leave) and never refuses.
 
 ## Edit mode
 
@@ -212,3 +212,7 @@ Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in t
 - **StateChip.** Unpublished (warn) or Will be removed (alert). Its slot is always reserved.
 - **Grip.** Card 15's grip on a 36px disc at the item's corner. Drag by mouse or touch, or one place per arrow key, announced ("Moved Mei Chen to position 2 of 5"). The held item lifts to `--sh-3` and neighbours move on `--d-move`, `--e-move`. Executives move within their role. Events have no grip: the ledger is ordered by date.
 - **AddTile.** The empty photo-slot surface with a tertiary label, the size of an item, arriving with Clip Reveal when an add moves it along.
+
+Settings and Sign out are tertiary buttons at the meta size, 24px tall: under Edit and Preview from 900px, and the last row of the bar on phones. Settings opens `/admin/settings`. Sign out leaves edit mode, ends the session and reloads the page (`src/edit/sign-out.ts`), so no edit code stays in memory; drafts stay in the browser. A link address the database would refuse (anything but `https://`, `http://`, `/`, `#` or `mailto:`) is refused when the field is left: the address goes back to what it was and the tray says how to write one. On iOS and iPadOS, edit mode adds `maximum-scale=1` to the viewport tag so focusing a field under 16px does not zoom the page (`edit/engine/ios-zoom.ts`); iOS still allows pinch zoom with it, and other platforms never get it.
+
+**Settings page.** `/admin/settings`, opened from the bar. Admin accounts (email, last sign-in, Remove on every row but the owner's, pending invites with Withdraw, one invite field), roles (role, short label, team page heading; Edit, Add a role, Delete when unused) and areas (Rename, Add an area, Delete when unused; a name that matches another ignoring case is refused). Built from card 15's list rows: a `--raised` list of `--sunken` rows at `--r-md`, each the name, one meta line and its actions. Each action writes when pressed. A confirmation, a rename or an invite replaces its own row; there are no dialogs. The route shows the sign-in flow until the visitor is an admin at aal2, then imports the page with a dynamic import, so its reads and writes are in a chunk visitors never download. Never indexed.

@@ -164,6 +164,18 @@ export const COPY = {
     headshot: 'headshot',
     logo: 'logo',
   },
+  // Bar: Settings and Sign out. Not in the spec table.
+  settings: 'Settings',
+  signOut: 'Sign out',
+  accountGroup: 'Settings and sign out',
+
+  /* A link address the site cannot use (the database accepts https://,
+     http://, /, # and mailto: only). Shown in the tray when the field is
+     left; the address goes back to what it was. Not in the spec table. */
+  linkRefusedLabel: 'Link not changed',
+  linkRefused: 'Use https:// for another site, or / for a page on this site, as in /events.',
+  /** The tray head while the editor is back on that button. */
+  linkRefusedHead: 'Link not changed. Start it with https:// or /',
 };
 
 /**

@@ -325,8 +325,7 @@ function readWidth(file: File): Promise<number> {
 /**
  * Today's uploader rules: type and size first, then resolution. Below the
  * slot's minWidth the photo is accepted with a warning; below half of it
- * the photo is refused. Exported so the lab can run a generated file
- * through the same path.
+ * the photo is refused.
  */
 export async function choosePhoto(slot: ImageSlotKey, file: File) {
   const def = IMAGE_SLOTS[slot];

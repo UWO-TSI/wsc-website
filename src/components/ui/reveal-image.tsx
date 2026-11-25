@@ -40,9 +40,11 @@ import { useReveal } from '@/lib/reveal';
 
   `veil` lays --inverse-veil over a photo, outside the clip cell, so text
   set on it keeps its contrast before, during and after the reveal. An empty
-  slot takes no veil: the placeholder is already a 9 percent wash of the
-  ground's own ink, which text on that ground clears, and the veil would
-  hide the placeholder.
+  veiled slot (the hero) shows the placeholder every other empty slot shows,
+  the 9 percent ink wash on --page, as an opaque surface under the same
+  veil, so the area reads as a photo area and the text over it keeps its
+  contrast. Without the page ground under it, the wash would take the
+  inverse slab's light ink and vanish under the veil.
 */
 
 interface RevealImageProps {
@@ -143,7 +145,9 @@ export default function RevealImage({
       >
         {empty && (
           <span
-            className={`skeleton ${sequence === 'clip' ? 'clip-inner' : ''} absolute inset-0 block rounded-[inherit]`}
+            className={`skeleton ${sequence === 'clip' ? 'clip-inner' : ''} ${
+              veil ? 'bg-[color-mix(in_srgb,var(--ink)_9%,var(--page))]' : ''
+            } absolute inset-0 block rounded-[inherit]`}
             aria-hidden="true"
           />
         )}
@@ -164,7 +168,7 @@ export default function RevealImage({
         )}
       </span>
 
-      {veil && !empty && <span className="absolute inset-0 rounded-[inherit] bg-inverse-veil" aria-hidden="true" />}
+      {veil && <span className="absolute inset-0 rounded-[inherit] bg-inverse-veil" aria-hidden="true" />}
     </span>
   );
 }

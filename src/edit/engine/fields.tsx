@@ -17,9 +17,11 @@ import { COPY } from '@/edit/engine/copy';
 import { setDraftPhoto, setDraftText } from '@/edit/engine/draft-store';
 import {
   columnWidth,
+  fieldHeight,
   lineHeightOf,
   onRemeasure,
   sample,
+  samples,
   textHeight,
   textWidth,
   wrapsOnPhones,
@@ -136,7 +138,7 @@ const joinLines = (lines: string[]) => {
   return out.join('\n');
 };
 
-export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLinesProps) {
+export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }: EditableLinesProps) {
   const { text, published } = useSiteContent();
   const metas = keys.map(meta);
   const joined = joinLines(keys.map((k) => text(k)));
@@ -164,14 +166,45 @@ export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLines
     focusField({ type: 'lines', keys, tooWide });
   };
 
-  /* Full column width, one line-height per key. Lines never wrap inside
-     the field (wrap="off"), so a long line cannot push the next one out. */
+  /* Full column width. A line wider than the column wraps inside the
+     field, so no text is ever hidden. The reserve, a min-height, is every
+     line at its longest allowed value wrapped at this width, taken from the
+     tallest of several realistic samples, so typing to the limit leaves the
+     field's size alone and a long line 1 moves line 2 down only inside
+     space the field already holds.
+
+     A line whose samples wrap to three rows or more gets one row more:
+     each row end can fall a word earlier for other words of the same
+     length, and over three row ends that adds up to a row (a 60-character
+     page title at 375 needed six rows for some words where its samples
+     took five). Only a value that still wraps past the reserve grows the
+     field, because hiding text is the worse failure. */
+  const pubs = keys.map((k) => published.text(k));
+  const fit = () => {
+    const el = ref.current;
+    if (el) el.style.height = `${fieldHeight(el, el.value)}px`;
+  };
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
-    const pad = parseFloat(getComputedStyle(el).paddingTop) * 2;
-    el.style.height = `${lineHeightOf(el) * keys.length + pad}px`;
-  }, [keys.length]);
+    const row = lineHeightOf(el);
+    const oneRow = fieldHeight(el, 'W');
+    /* The extra row is one more row of text, measured with the rest, so the
+       reserve matches what a textarea of that many rows needs. An empty row
+       measures about a pixel short in a title face, whose glyphs reach
+       past its tight line-height. */
+    const longest = pubs
+      .map((p, i) => {
+        const tallest = samples(p, metas[i].max)
+          .map((s) => ({ s, h: fieldHeight(el, s) }))
+          .reduce((a, b) => (b.h > a.h ? b : a));
+        return Math.round((tallest.h - oneRow) / row) + 1 >= 3 ? `${tallest.s}\nW` : tallest.s;
+      })
+      .join('\n');
+    el.style.minHeight = `${fieldHeight(el, longest)}px`;
+    fit();
+  }, [...pubs, ...metas.map((m) => m.max)]);
+  useLayoutEffect(fit, [raw]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const el = e.target;
@@ -200,14 +233,20 @@ export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLines
     if (e.key === 'Enter' && lines.length >= keys.length) e.preventDefault();
   };
 
+  /* The lines are one field here, so the type role a page sets on each
+     line span (the hero's name lines take .title-hero) goes on the field's
+     element instead, or the lines would show in body type. `ln` is left
+     off: it is the Line Mask, which is off in edit mode, and its clip
+     would cut the focus ring. */
+  const role = lineClassName?.split(/\s+/).filter((c) => c && c !== 'ln').join(' ');
+
   return (
-    <Tag id={id} className={className}>
+    <Tag id={id} className={[className, role].filter(Boolean).join(' ') || undefined}>
       <span className="ed ed-block" data-ed-field={keys.join(' ')}>
         <textarea
           ref={ref}
           className="ed-in ed-lines"
           rows={keys.length}
-          wrap="off"
           value={raw}
           maxLength={metas.reduce((n, m) => n + m.max, 0) + keys.length - 1}
           placeholder={label}
@@ -264,10 +303,11 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
       ? region.clientWidth - parseFloat(getComputedStyle(region).paddingLeft) - parseFloat(getComputedStyle(region).paddingRight)
       : columnWidth(face.current!.parentElement!);
     const cap = Math.max(40, regionWidth - BUTTON_CHROME);
-    const width = Math.min(textWidth(el, sample(pub, m.max)) + 2, cap);
+    const longest = sample(pub, m.max);
+    const width = Math.min(textWidth(el, longest) + 2, cap);
     sp.style.width = `${width}px`;
     el.style.width = `${width}px`;
-    el.style.height = `${lineHeightOf(el)}px`;
+    el.style.height = `${fieldHeight(el, longest)}px`;
     sh.style.marginLeft = `${sp.offsetLeft - INBTN_X}px`;
   };
   useMeasure(measure, [pub, m.max, variant, arrow, onAccent]);

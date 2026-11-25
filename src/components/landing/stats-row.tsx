@@ -13,7 +13,11 @@ import type { SiteStat } from '@/types/database';
   both sides rather than continuing the hero's ground.
 
   The figures are the club's own claims in site_stats. Three in a row at
-  most, so only the first three visible rows render. The fallback trio
+  most, so only the first three visible rows render. A selling moment, so
+  the row is centred as a group: each figure takes a column of the same
+  width (240px, a third of the old 720px row, shrinking on phones), and two
+  figures sit centred with the same spacing three have, never with an empty
+  third column. The fallback trio
   shows while the query is in flight and if it fails, so the row never
   appears half-built; once it answers, the database wins. `visible` is
   filtered here too: a signed-in admin's RLS can read hidden rows.
@@ -37,7 +41,7 @@ export default function StatsRow() {
       {editing && !loading && !error ? (
         <ListEditBranch name="stats" props={{ stats: data }} />
       ) : (
-        <div className="mx-auto grid max-w-[720px] grid-cols-3 gap-4">
+        <div className="grid auto-cols-[minmax(0,240px)] grid-flow-col justify-center gap-4">
           {stats.map((stat) => (
             <StatFigure
               key={stat.id}

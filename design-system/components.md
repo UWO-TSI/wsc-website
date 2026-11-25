@@ -78,7 +78,7 @@ Props: `titleKeys` (editable, one key per visual line) or `title` (fixed lines),
 
 ## Hero
 
-The home page's first section, `landing/hero.tsx`. An `inverse` slab with the `waist` ribbon, full width, with the photo slot `home.hero.image1` as its background: a RevealImage at `absolute inset-0` with `veil`, so `--inverse-veil` sits between the photo and the head. The head is centred and keeps KineticHeadline's motion (Line Mask Reveal, Word Cascade, held on the Curtain). The photo is a sibling of the head and runs its own Clip Reveal, held on the Curtain the same way. Empty, it shows the placeholder over the ribbon. In edit mode the photo is a PhotoSlot with Add photo or Replace photo at its bottom left.
+The home page's first section, `landing/hero.tsx`. An `inverse` slab with the `waist` ribbon, full width, with the photo slot `home.hero.image1` as its background: a RevealImage at `absolute inset-0` with `veil`, so `--inverse-veil` sits between the photo and the head. The head is centred and keeps KineticHeadline's motion (Line Mask Reveal, Word Cascade, held on the Curtain). The photo is a sibling of the head and runs its own Clip Reveal, held on the Curtain the same way. Empty, it shows the placeholder every other empty slot shows (the 9 percent ink wash on `--page`) as an opaque surface over the ribbon, under the same veil, so the area reads as a photo area; the hero's secondary ink measures 5.0:1 over it. In edit mode the photo is a PhotoSlot with Add photo or Replace photo at its bottom left.
 
 Padding is the page head's: `clamp(7.5rem,14vw,11rem)` top and `--pad-section` bottom. The stats row under it takes `--pad-section` on both sides.
 
@@ -160,6 +160,8 @@ Number in `--f-data` at 56px with `tabular-nums`, label under it in `.label`, op
 
 Only real numbers. If the figure is not something the club could defend in a room, use a SectionHead instead. Three in a row at most.
 
+The home stats row is a selling moment, so it is centred as a group: each figure takes a column of the same width (up to 240px), and the columns are centred together. Two figures sit in the middle with the spacing three have, never beside an empty third column.
+
 ## AsyncState
 
 Four states, and none of them is a blank screen: loading, error with a retry, empty, and 404. The spinner is a masked conic gradient, not a `border-top` trick, because borders are out. Empty states name what is missing and do not apologise.
@@ -184,7 +186,7 @@ Three states, all at the frame's own size:
 - **Loaded**: the photo, after Clip Reveal. The skeleton is still behind it and its sweep has stopped.
 - **Empty slot** (`src` null): the placeholder. The skeleton surface with the sweep stopped takes the photo's place inside the clip cell and runs the same Clip Reveal a photo runs, at the frame's size and aspect ratio, with no label. There is no skeleton behind it, since a surface revealed over the same surface shows no motion. No new token. The frame reports ready at once, so a held group is never stuck on it. Visitors, Preview and edit mode all see it, for every slot in `src/lib/image-slots.ts` that has not been filled.
 
-`veil` lays `--inverse-veil` over a photo for text set on it (the hero). An empty slot takes no veil: the placeholder is a 9 percent wash of the ground's own ink, which the text already clears.
+`veil` lays `--inverse-veil` over a photo for text set on it (the hero). An empty veiled slot keeps the veil, and its placeholder is set on `--page` with the page's ink, so it is the same surface every other empty slot shows. On the inverse slab the plain wash would take the slab's light ink and disappear under the veil.
 
 `.skeleton` is in the components layer, so the caller's utilities (`absolute inset-0`, `rounded-full`) win over its defaults.
 
@@ -212,7 +214,7 @@ Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in t
 
 **InlineText and InlineParagraph.** A one-line field is as wide as its longest allowed value, capped at the column. A paragraph takes the column and refuses Enter.
 
-**InlineHeading.** One field for a heading of two lines. Enter starts line 2, a third line is refused, and each line saves to its own key. Lines never wrap inside the field.
+**InlineHeading.** One field for a heading of two lines. Enter starts line 2, a third line is refused, and each line saves to its own key. A line wider than the column wraps inside the field, so no text is hidden. The field's reserved height is every line at its longest allowed value wrapped at the current width, taken from the tallest of several realistic samples and measured in a hidden textarea with the field's own font, plus one row for a line that wraps to three rows or more (where its words fall at the row ends varies), so typing up to the limit leaves its size alone. Only a value with unusually long words, which wraps to more rows than every sample, grows the field past the reserve, because hidden text is the worse failure. A page's line class (the hero's `.title-hero`) is set on the field, so the lines show at their page size.
 
 **InlineLabel.** A button label as a field inside an inert Button. The ring takes the label's colour. The link address is edited in the tray.
 

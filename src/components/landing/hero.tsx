@@ -21,21 +21,25 @@ import { useSiteContent } from '@/providers/site-content-provider';
   `.title` and the name takes `.title-hero`, so the name lands rather than
   the greeting. The scale goes on the `.ln` wrapper, not the inner span: the
   mask height and its descender allowance are computed from the wrapper's
-  own font size. Each name line's ceiling (14 characters) is what stops an
-  edit from wrapping it onto a second row.
+  own font size. A 14-character name line can still wrap at this size;
+  the tray warns when a line wraps on phones.
 
   Line Mask Reveal staggers by `.ln:nth-child()`, so all four lines must be
   direct children of the h1 for the name to rise at 60, 120 and 180ms after
   the greeting. The visitor branch renders the name lines itself for that
   reason; while editing the stagger is off, so the lines field takes their
-  place, as the subtitle's does below.
+  place, as the subtitle's does below. The field gets `.title-hero` from
+  lineClassName, so the name shows at its page size while editing. The h1
+  spans the column so that field takes the column's width, not the width
+  of its own text.
 
   The background is a photo slot (home.hero.image1) under the centred head,
   full bleed. The hero is an inverse slab with the waist ribbon, the page
   head's treatment, so the head takes the inverse ink and the primary button
   takes the page fill on its own. The photo covers the ribbon; an empty slot
-  shows the placeholder over it. --inverse-veil sits over the photo at a fixed
-  strength, which keeps every line of the head at AA over any photo.
+  shows the placeholder surface over it, under the same veil. --inverse-veil
+  sits over the photo at a fixed strength, which keeps every line of the head
+  at AA over any photo and over the placeholder.
 
   The photo is a sibling of the head, not a child: the clip rules match any
   running ancestor, so inside the head it would unclip with the title whether
@@ -76,7 +80,7 @@ export default function Hero() {
         </Eyebrow>
 
         {/* The h1 carries no scale of its own: each masked line sets its own. */}
-        <h1 id="hero-title" className="m-0">
+        <h1 id="hero-title" className="m-0 w-full">
           {(editing || greeting) && (
             <span className="ln title">
               <i>

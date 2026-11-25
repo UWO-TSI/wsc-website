@@ -598,7 +598,7 @@
   .e16-f.block { display: block; align-self: stretch; }
   .e16-f.on { outline: 2px solid var(--focus); outline-offset: 3px; }
   .e16-f.para { min-height: calc(1.6em * 4); }
-  .e16-f.lines { display: block; align-self: flex-start; white-space: pre; padding-block: 0.06em; padding-inline: 12px; }
+  .e16-f.lines { display: block; align-self: flex-start; white-space: pre-wrap; overflow-wrap: break-word; padding-block: 0.06em; padding-inline: 12px; }
   .e16-f.lines .title { margin: 0; display: block; }
   .e16-lbl { background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-xs); padding: 3px 8px; cursor: text; }
   .e16-lbl.on { outline: 2px solid currentColor; outline-offset: 1px; }
@@ -1164,7 +1164,8 @@
     inverse slab with the waist ribbon and the photo slot home.hero.image1 as
     its background, full bleed, under --inverse-veil, with the centred head on
     top. The stand-in photo here is the .img placeholder art. Empty, the slot
-    shows the skeleton placeholder over the ribbon and takes no veil.
+    shows the placeholder surface (the ink wash on --page) under the same
+    veil, so the area still reads as a photo area.
   -->
   <section class="slab band-c textured lit-black billboard dots alive" data-shape="waist" style="padding-top:clamp(7.5rem,14vw,11rem);padding-bottom:var(--pad-section)">
     <span class="img" style="position:absolute;inset:0;border-radius:inherit" aria-hidden="true"></span>
@@ -1376,7 +1377,7 @@
           <span class="e16-f lines on"><span class="title">Welcome to
 Sales Team</span></span>
         </div>
-        <p class="body-sm">Enter starts line 2, a third line is refused, and line 1 and line 2 save to their own two keys. The tray counts each line and warns when one wraps on phones.</p>
+        <p class="body-sm">Enter starts line 2, a third line is refused, and line 1 and line 2 save to their own two keys. A line wider than the column wraps inside the field; the field already holds both lines at their longest allowed length, so it never grows while someone types. The tray counts each line and warns when one wraps on phones.</p>
         <span class="meta">Tray: Line 1: 10 of 24. Line 2: 10 of 24. Enter starts line 2; leave it empty for one line.</span>
       </div>
 

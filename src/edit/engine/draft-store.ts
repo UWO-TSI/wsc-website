@@ -23,6 +23,8 @@ import { memoryDraftDb, openDraftDb, type DraftDb } from '@/edit/engine/idb';
     photo:<site_images slot>     { blob, type, width, at }
     list:<table>                 StoredListDraft
     file:<table>:<id>:<column>   { blob, type, width, at }
+    areas:new                    { [draft id]: { name, at } }, areas typed
+                                 in with Add an area, written on Publish
 
   The store keeps only object names and blobs. Published photos are
   resolved with getPublicUrl at runtime by the provider; drafted ones are
@@ -52,6 +54,16 @@ const lists = new Map<ListTable, StoredListDraft>();
 const files = new Map<string, PhotoDraft>();
 /** Rows each list query last returned, so a move knows the current order. */
 const seenIds = new Map<ListTable, string[]>();
+/* The published rows each list query last returned, by id: a patch back
+   to a published value is dropped, and Publish writes only the
+   display_order values that change. */
+const seenRows = new Map<ListTable, Map<string, Record<string, unknown>>>();
+/** Areas added in the draft, by draft id. Written before the rows that use them. */
+const areas = new Map<string, { name: string; at: number }>();
+/* Rows deleted by Publish in this session. They are left out until the
+   refetch drops them, so a removed row never shows again without its
+   Will be removed chip before it leaves. */
+const departed = new Set<string>();
 
 /* Values that went live in this session. They cover the gap between
    Publish and the provider's refetch, so a field never shows the old
@@ -107,6 +119,11 @@ export async function loadDrafts(userId: string): Promise<void> {
       files.set(name, { ...v, url: URL.createObjectURL(v.blob) });
     }
     if (kind === 'list') lists.set(name as ListTable, value as StoredListDraft);
+    if (kind === 'areas') {
+      for (const [id, a] of Object.entries(value as Record<string, { name: string; at: number }>)) {
+        areas.set(id, a);
+      }
+    }
   }
   emit();
 }
@@ -118,6 +135,7 @@ function clearMemory() {
   photos.clear();
   files.clear();
   lists.clear();
+  areas.clear();
 }
 
 /** Closes the session's view of the draft. The database keeps it. */
@@ -125,6 +143,7 @@ export function unloadDrafts() {
   clearMemory();
   publishedText.clear();
   publishedImage.clear();
+  departed.clear();
   db = memoryDraftDb;
 }
 
@@ -217,7 +236,7 @@ function listChangeCount(d: StoredListDraft): number {
 
 /** The number on the bar and on the Publish and Discard buttons. */
 export function changeCount(): number {
-  let n = texts.size + photos.size + files.size;
+  let n = texts.size + photos.size + files.size + areas.size;
   lists.forEach((d) => (n += listChangeCount(d)));
   return n;
 }
@@ -229,6 +248,7 @@ export function lastChangeAt(): number | null {
   photos.forEach((p) => (at = Math.max(at, p.at)));
   files.forEach((f) => (at = Math.max(at, f.at)));
   lists.forEach((l) => (at = Math.max(at, l.updatedAt)));
+  areas.forEach((a) => (at = Math.max(at, a.at)));
   return at || null;
 }
 
@@ -259,10 +279,7 @@ export async function discardAll() {
 
 const emptyList = (): StoredListDraft => ({ added: {}, updates: {}, order: null, removed: [], updatedAt: 0 });
 
-function editList(table: ListTable, change: (d: StoredListDraft) => void) {
-  const d = structuredClone(lists.get(table) ?? emptyList());
-  change(d);
-  d.updatedAt = Date.now();
+function saveList(table: ListTable, d: StoredListDraft) {
   if (listChangeCount(d) === 0) {
     lists.delete(table);
     persist(`list:${table}`, undefined);
@@ -270,11 +287,53 @@ function editList(table: ListTable, change: (d: StoredListDraft) => void) {
     lists.set(table, d);
     persist(`list:${table}`, d);
   }
+  if (table === 'executives') pruneAreas();
+}
+
+function editList(table: ListTable, change: (d: StoredListDraft) => void) {
+  const d = structuredClone(lists.get(table) ?? emptyList());
+  change(d);
+  d.updatedAt = Date.now();
+  saveList(table, d);
   emit();
 }
 
 function currentOrder(table: ListTable, d: StoredListDraft): string[] {
   return d.order ?? [...(seenIds.get(table) ?? []), ...Object.keys(d.added)];
+}
+
+function dropFiles(table: ListTable, id: string) {
+  const f = [...files.keys()].filter((k) => k.startsWith(`${table}:${id}:`));
+  f.forEach((k) => {
+    URL.revokeObjectURL(files.get(k)!.url);
+    files.delete(k);
+    persist(`file:${k}`, undefined);
+  });
+}
+
+/* A move is stored as the full order, and cleared when it puts every row
+   back where the database has it. */
+function placeAt(table: ListTable, d: StoredListDraft, id: string, place: (order: string[]) => number) {
+  const order = currentOrder(table, d).filter((x) => x !== id);
+  order.splice(Math.max(0, Math.min(place(order), order.length)), 0, id);
+  const published = seenIds.get(table) ?? [];
+  const unchanged =
+    Object.keys(d.added).length === 0 &&
+    order.length === published.length &&
+    order.every((x, i) => x === published[i]);
+  d.order = unchanged ? null : order;
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/* A patch on a published row keeps only the fields that differ from the
+   published row, so typing a value back the way it was is no change. */
+function patchPublished(table: ListTable, d: StoredListDraft, id: string, patch: Record<string, unknown>) {
+  const published = seenRows.get(table)?.get(id) ?? {};
+  const next = { ...d.updates[id], ...patch };
+  for (const k of Object.keys(next)) if (k in published && same(next[k], published[k])) delete next[k];
+  if (Object.keys(next).length) d.updates[id] = next;
+  else delete d.updates[id];
 }
 
 export function listApi(table: ListTable): ListDraftApi {
@@ -299,35 +358,27 @@ export function listApi(table: ListTable): ListDraftApi {
     update: (id, patch) =>
       editList(table, (d) => {
         if (isAdded(id)) d.added[id] = { ...d.added[id], ...patch, id };
-        else d.updates[id] = { ...d.updates[id], ...patch };
+        else patchPublished(table, d, id, patch);
       }),
-    move: (id, index) =>
-      editList(table, (d) => {
-        const order = currentOrder(table, d).filter((x) => x !== id);
-        order.splice(Math.max(0, Math.min(index, order.length)), 0, id);
-        const published = seenIds.get(table) ?? [];
-        const unchanged =
-          Object.keys(d.added).length === 0 &&
-          order.length === published.length &&
-          order.every((x, i) => x === published[i]);
-        d.order = unchanged ? null : order;
-      }),
+    move: (id, index) => editList(table, (d) => placeAt(table, d, id, () => index)),
+    moveNextTo: (id, targetId, after) =>
+      editList(table, (d) =>
+        placeAt(table, d, id, (order) => {
+          const i = order.indexOf(targetId);
+          return i === -1 ? order.length : after ? i + 1 : i;
+        })
+      ),
     hide: (id, hidden) =>
       editList(table, (d) => {
         if (isAdded(id)) d.added[id] = { ...d.added[id], [vis]: !hidden };
-        else d.updates[id] = { ...d.updates[id], [vis]: !hidden };
+        else patchPublished(table, d, id, { [vis]: !hidden });
       }),
     remove: (id) =>
       editList(table, (d) => {
         if (isAdded(id)) {
           delete d.added[id];
           if (d.order) d.order = d.order.filter((x) => x !== id);
-          const f = [...files.keys()].filter((k) => k.startsWith(`${table}:${id}:`));
-          f.forEach((k) => {
-            URL.revokeObjectURL(files.get(k)!.url);
-            files.delete(k);
-            persist(`file:${k}`, undefined);
-          });
+          dropFiles(table, id);
         } else if (!d.removed.includes(id)) {
           d.removed.push(id);
         }
@@ -335,12 +386,11 @@ export function listApi(table: ListTable): ListDraftApi {
     keep: (id) => editList(table, (d) => (d.removed = d.removed.filter((x) => x !== id))),
     state: (id): ListRowState => {
       const d = lists.get(table);
-      if (!d) return null;
+      const hasFile = [...files.keys()].some((k) => k.startsWith(`${table}:${id}:`));
+      if (!d) return hasFile ? 'changed' : null;
       if (d.removed.includes(id)) return 'removing';
       if (isAdded(id)) return 'added';
-      return d.updates[id] || [...files.keys()].some((k) => k.startsWith(`${table}:${id}:`))
-        ? 'changed'
-        : null;
+      return d.updates[id] || hasFile ? 'changed' : null;
     },
     setFile: async (id, column, file) => {
       const key = `${table}:${id}:${column}`;
@@ -376,19 +426,16 @@ export function listApi(table: ListTable): ListDraftApi {
 export function overlayRows<T>(table: string, rows: T[]): T[] {
   if (!(table in LIST_VISIBILITY_COLUMN)) return rows;
   const t = table as ListTable;
-  const withIds = rows as Array<T & { id?: string }>;
-  seenIds.set(
-    t,
-    withIds.map((r) => r.id).filter((id): id is string => typeof id === 'string')
+  const withIds = (rows as Array<T & { id?: string }>).filter(
+    (r) => typeof r.id === 'string' && !departed.has(r.id)
   );
+  seenIds.set(t, withIds.map((r) => r.id!));
+  seenRows.set(t, new Map(withIds.map((r) => [r.id!, r as Record<string, unknown>])));
   const d = lists.get(t);
-  if (!d) return rows;
+  if (!d) return withIds;
 
   const byId = new Map<string, T>();
-  for (const r of withIds) {
-    if (typeof r.id !== 'string') continue;
-    byId.set(r.id, d.updates[r.id] ? ({ ...r, ...d.updates[r.id] } as T) : r);
-  }
+  for (const r of withIds) byId.set(r.id!, d.updates[r.id!] ? ({ ...r, ...d.updates[r.id!] } as T) : r);
   for (const [id, fields] of Object.entries(d.added)) byId.set(id, fields as T);
 
   const order = currentOrder(t, d).filter((id) => byId.has(id));
@@ -403,4 +450,190 @@ export function overlayRows<T>(table: string, rows: T[]): T[] {
       const row = r as Record<string, unknown>;
       return !d.removed.includes(String(row.id)) && row[vis] !== false;
     });
+}
+
+/** One row as the editor sees it now: the published row with its patch, or the added row. */
+export function currentRow(table: ListTable, id: string): Record<string, unknown> | null {
+  const d = lists.get(table);
+  if (id.startsWith(DRAFT_ID_PREFIX)) return d?.added[id] ?? null;
+  const published = seenRows.get(table)?.get(id);
+  if (!published) return null;
+  return d?.updates[id] ? { ...published, ...d.updates[id] } : published;
+}
+
+/* ── Areas typed in with Add an area ── */
+
+const AREA_PREFIX = `${DRAFT_ID_PREFIX}area-`;
+
+function persistAreas() {
+  persist('areas:new', areas.size ? Object.fromEntries(areas) : undefined);
+}
+
+/** Areas added in this draft, for the area select. */
+export function draftAreas(): Array<{ id: string; name: string }> {
+  return [...areas].map(([id, a]) => ({ id, name: a.name }));
+}
+
+/** Adds an area to the draft and returns its draft id. The row is written on Publish. */
+export function addDraftArea(name: string): string {
+  const id = `${AREA_PREFIX}${crypto.randomUUID()}`;
+  areas.set(id, { name, at: Date.now() });
+  persistAreas();
+  emit();
+  return id;
+}
+
+/* An area nobody in the draft points at is dropped, so picking it and
+   then picking another area leaves no change behind. */
+function pruneAreas() {
+  if (!areas.size) return;
+  const d = lists.get('executives');
+  const used = new Set<unknown>();
+  if (d) {
+    Object.values(d.added).forEach((r) => used.add(r.area_id));
+    Object.values(d.updates).forEach((r) => used.add(r.area_id));
+  }
+  let dropped = false;
+  for (const id of [...areas.keys()]) {
+    if (!used.has(id)) {
+      areas.delete(id);
+      dropped = true;
+    }
+  }
+  if (dropped) persistAreas();
+}
+
+/* ── Publishing lists ── */
+
+export function pendingAreas(): Array<{ id: string; name: string }> {
+  return draftAreas();
+}
+
+export function pendingLists(): Array<[ListTable, StoredListDraft]> {
+  return [...lists].map(([t, d]) => [t, structuredClone(d)]);
+}
+
+/** Drafted files for one row: column to blob. */
+export function pendingRowFiles(table: ListTable, id: string): Array<{ column: string; blob: Blob; type: string }> {
+  const prefix = `${table}:${id}:`;
+  return [...files]
+    .filter(([k]) => k.startsWith(prefix))
+    .map(([k, f]) => ({ column: k.slice(prefix.length), blob: f.blob, type: f.type }));
+}
+
+/** Ids of the rows with a drafted file and no other change. */
+export function fileOnlyRows(table: ListTable): string[] {
+  const d = lists.get(table);
+  const ids = new Set<string>();
+  for (const k of files.keys()) {
+    const [t, id] = k.split(':');
+    if (t !== table || id.startsWith(DRAFT_ID_PREFIX)) continue;
+    if (d && (d.updates[id] || d.removed.includes(id))) continue;
+    ids.add(id);
+  }
+  return [...ids];
+}
+
+/**
+ * The display_order each row needs after Publish. After a move every row
+ * is numbered in tens in the draft order, and only rows whose number
+ * changes are returned. With no move, added rows go after the last row.
+ */
+export function orderTargets(table: ListTable, d: StoredListDraft, idFor: (id: string) => string): Map<string, number> {
+  const seen = new Map<string, number>();
+  seenRows.get(table)?.forEach((r, id) => {
+    if (typeof r.display_order === 'number') seen.set(id, r.display_order);
+  });
+  const out = new Map<string, number>();
+  const live = (id: string) => !d.removed.includes(id);
+  if (d.order) {
+    d.order.filter(live).forEach((id, i) => {
+      const n = (i + 1) * 10;
+      if (seen.get(id) !== n) out.set(idFor(id), n);
+    });
+    return out;
+  }
+  let last = Math.max(0, ...seen.values());
+  for (const id of Object.keys(d.added)) out.set(idFor(id), (last += 10));
+  return out;
+}
+
+/* Each mark below clears only what was sent, so a change typed while
+   Publish runs stays in the draft. */
+
+export function markAreaPublished(draftId: string, sentName: string, realId: string) {
+  const d = lists.get('executives');
+  if (d) {
+    const next = structuredClone(d);
+    for (const r of [...Object.values(next.added), ...Object.values(next.updates)]) {
+      if (r.area_id === draftId) r.area_id = realId;
+    }
+    lists.set('executives', next);
+    persist('list:executives', next);
+  }
+  if (areas.get(draftId)?.name === sentName) areas.delete(draftId);
+  persistAreas();
+}
+
+export function markInserted(table: ListTable, draftId: string, sent: Record<string, unknown>, realId: string) {
+  const d = lists.get(table);
+  if (!d) return;
+  const next = structuredClone(d);
+  const current = next.added[draftId];
+  delete next.added[draftId];
+  if (current) {
+    const left = Object.fromEntries(
+      Object.entries(current).filter(([k, v]) => k !== 'id' && !same(v, sent[k]))
+    );
+    if (Object.keys(left).length) next.updates[realId] = left;
+  }
+  if (next.order) next.order = next.order.map((x) => (x === draftId ? realId : x));
+  saveList(table, next);
+}
+
+export function markUpdated(table: ListTable, id: string, sent: Record<string, unknown>) {
+  const d = lists.get(table);
+  if (!d?.updates[id]) return;
+  const next = structuredClone(d);
+  for (const [k, v] of Object.entries(sent)) {
+    if (same(next.updates[id][k], v)) delete next.updates[id][k];
+  }
+  if (!Object.keys(next.updates[id]).length) delete next.updates[id];
+  saveList(table, next);
+}
+
+export function markOrderPublished(table: ListTable, sent: string[]) {
+  const d = lists.get(table);
+  if (!d?.order || !same(d.order, sent)) return;
+  saveList(table, { ...structuredClone(d), order: null });
+}
+
+export function markRemoved(table: ListTable, id: string) {
+  departed.add(id);
+  const d = lists.get(table);
+  if (!d) return;
+  const next = structuredClone(d);
+  next.removed = next.removed.filter((x) => x !== id);
+  delete next.updates[id];
+  if (next.order) next.order = next.order.filter((x) => x !== id);
+  dropFiles(table, id);
+  saveList(table, next);
+}
+
+export function markFilePublished(table: ListTable, id: string, column: string, sent: Blob, nowId = id) {
+  const key = `${table}:${id}:${column}`;
+  const current = files.get(key);
+  if (!current) return;
+  if (current.blob === sent) {
+    URL.revokeObjectURL(current.url);
+    files.delete(key);
+    persist(`file:${key}`, undefined);
+  } else if (nowId !== id) {
+    /* Replaced during Publish: keep the newer file on the row's real id. */
+    files.delete(key);
+    persist(`file:${key}`, undefined);
+    const moved = `${table}:${nowId}:${column}`;
+    files.set(moved, current);
+    persist(`file:${moved}`, { blob: current.blob, type: current.type, width: current.width, at: current.at });
+  }
 }

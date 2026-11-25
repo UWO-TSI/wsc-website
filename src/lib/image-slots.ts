@@ -64,12 +64,12 @@ export const IMAGE_SLOTS = {
     alt: 'Western Sales Club members together at a club event',
   },
   'about.story.image1': {
-    page: 'About', section: 'Story', label: 'Top right',
+    page: 'About', section: 'Fact 1', label: 'Below the paragraphs',
     aspect: 3 / 2, aspectClass: 'aspect-[3/2]', minWidth: 1400,
     alt: 'Western Sales Club members holding a competition prize cheque',
   },
   'about.story.image2': {
-    page: 'About', section: 'Story', label: 'Bottom left',
+    page: 'About', section: 'Fact 3', label: 'Below the paragraphs',
     aspect: 3 / 2, aspectClass: 'aspect-[3/2]', minWidth: 1400,
     alt: 'Western Sales Club members standing with the club banner',
   },

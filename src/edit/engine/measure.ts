@@ -19,8 +19,15 @@ function measureBox(): HTMLDivElement {
 
 function copyFont(from: HTMLElement, to: HTMLElement, fontSize?: string) {
   const cs = getComputedStyle(from);
-  to.style.font = cs.font;
-  if (fontSize) to.style.fontSize = fontSize;
+  /* Longhands, not cs.font: Chrome returns an empty font shorthand when a
+     value it cannot express is set (tabular-nums on .meta and the counted
+     figures), which measured those fields in the default font. */
+  to.style.fontFamily = cs.fontFamily;
+  to.style.fontSize = fontSize ?? cs.fontSize;
+  to.style.fontWeight = cs.fontWeight;
+  to.style.fontStyle = cs.fontStyle;
+  to.style.fontStretch = cs.fontStretch;
+  to.style.fontVariantNumeric = cs.fontVariantNumeric;
   to.style.letterSpacing = cs.letterSpacing;
   to.style.wordSpacing = cs.wordSpacing;
   to.style.textTransform = cs.textTransform;

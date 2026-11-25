@@ -7,7 +7,7 @@ import Slab from '@/components/ui/slab';
 import Timeline from '@/components/events/timeline';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import ClosingBand from '@/components/layout/closing-band';
-import { EditableImage } from '@/edit';
+import { EditableImage, useEditMode } from '@/edit';
 import type { Event } from '@/types/database';
 import { useSiteContent } from '@/providers/site-content-provider';
 import type { ImageSlotKey } from '@/lib/image-slots';
@@ -45,9 +45,11 @@ export default function EventsPage() {
       thenBy: 'created_at',
       /* Not redundant with RLS: a signed-in admin can read drafts. */
       filters: [{ column: 'published', operator: 'eq', value: true }],
+      editList: true,
     }
   );
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   return (
     <div className="stack">
@@ -84,7 +86,8 @@ export default function EventsPage() {
         <AsyncStateWrapper
           loading={loading}
           error={error}
-          data={events}
+          /* An empty ledger still shows the editor, so its Add tile is there. */
+          data={editing ? [editing] : events}
           onRetry={refetch}
           emptyMessage={text('events.header.empty')}
           skeleton={<RowSkeleton count={6} />}

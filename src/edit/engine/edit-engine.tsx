@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase/client';
 import { setEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
-import type { ListDraftApi, ListTable } from '@/edit/list-draft';
+import type { ListDraftApi, ListEngineApi, ListTable } from '@/edit/list-draft';
 import { COPY, draftDay } from '@/edit/engine/copy';
 import {
   changeCount,
@@ -18,6 +18,7 @@ import {
 } from '@/edit/engine/draft-store';
 import { EditButton, EditImage, EditLines, EditText } from '@/edit/engine/fields';
 import EditBar from '@/edit/engine/edit-bar';
+import { LIST_EDITORS } from '@/edit/engine/list-editors';
 import { supabasePublisher, type Publisher } from '@/edit/engine/publish';
 import { resetUi, setUi } from '@/edit/engine/ui-store';
 import '@/edit/engine/edit.css';
@@ -48,7 +49,7 @@ function preview(on: boolean) {
 
 const lists = new Map<ListTable, ListDraftApi>();
 
-const API: EditEngineApi = {
+const API: ListEngineApi = {
   text: overlayText,
   image: overlayImage,
   rows: overlayRows,
@@ -58,6 +59,8 @@ const API: EditEngineApi = {
   },
   preview,
   components: { Text: EditText, Lines: EditLines, Button: EditButton, Image: EditImage } as EditEngineApi['components'],
+  /* The list editors, reached through ListEditBranch in src/edit/list-draft.ts. */
+  listEditors: LIST_EDITORS as ListEngineApi['listEditors'],
 };
 
 export interface EditEngineProps {

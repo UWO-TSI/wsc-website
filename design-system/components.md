@@ -34,7 +34,8 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | InlineLabel | `edit/engine/fields.tsx` (`EditButton`), via `edit/editable-button.tsx` | none |
 | PhotoSlot | `edit/engine/fields.tsx` (`EditImage`), via `edit/editable-image.tsx` | none |
 | EditBar, Tray | `edit/engine/edit-bar.tsx`, `edit/engine/edit.css` | Publish label changes in place |
-| InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile, Settings page | not built yet | later phases |
+| InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile | `edit/engine/list-parts.tsx`, used by `edit/engine/list-editors.tsx` | Reorder (card 15 move row), Add tile (Clip Reveal), removal on Publish |
+| Settings page | not built yet | later phases |
 
 ## Nav
 
@@ -201,6 +202,13 @@ Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in t
 
 **PhotoSlot.** The photo with Replace photo, or Add photo when the slot is empty, as a chip at the bottom left. Clicking opens the device's file picker, and the chosen file fills the same frame before Publish. A photo below the slot's minimum width shows a warning, and below half of it is refused.
 
-**EditBar and Tray.** Change count, Edit and Preview, Discard, Publish, and the tray. The bar has one fixed size at each width and the tray is the only region whose content changes. There are no dialogs: confirmations, errors and results appear in the tray. Preview shows the visitor layout with fills removed.
+**EditBar and Tray.** Change count, Edit and Preview, Discard, Publish, and the tray. The bar has one fixed size at each width and the tray is the only region whose content changes. There are no dialogs: confirmations, errors, a list row with its Remove, a new area and results appear in the tray. The tray is a grid of label, body and actions, 110px tall below 900px (actions on the label row, three lines of body) and 76px from 900px (actions at the end of the body row). Preview shows the visitor layout with fills removed.
 
-**Not built yet.** InlineSelect, InlineNumber, VisibilityChip (Visible and Hidden, `aria-pressed`), StateChip (Unpublished, Will be removed), Grip for edit mode, AddTile, and the Settings page. Their sizes and behaviour are in spec section 3 and are drawn on the card when they are built.
+**Lists.** The roster, the event ledger, the logo wall and the counted figures each have an editor in `list-editors.tsx`, reached from the visitor component through `ListEditBranch` (`src/edit/list-draft.ts`), so a visitor downloads none of it. Every field of a row is inline and sized to the column's limit in the database. The Add tile is the last cell. A removed item stays with Will be removed until Publish.
+
+- **InlineSelect.** A native select in a Field, value centred, chevron in `--accent-ink` at rest, 16px on touch screens. Role and area on an executive; the built title is the role's short label, a comma and the area ("VP, Marketing"), or the role alone. The area list ends with Add an area, which turns into a text input in place and refuses a name that matches an existing area ignoring case.
+- **InlineNumber.** The figure's number in a Field as wide as 99999 in the figure's font. Counter Roll is off in edit mode.
+- **VisibilityChip.** A Chip in a toggle button, Visible or Hidden, `aria-pressed`, as wide as the longer word.
+- **StateChip.** Unpublished (warn) or Will be removed (alert). Its slot is always reserved.
+- **Grip.** Card 15's grip on a 36px disc at the item's corner. Drag by mouse or touch, or one place per arrow key, announced ("Moved Mei Chen to position 2 of 5"). The held item lifts to `--sh-3` and neighbours move on `--d-move`, `--e-move`. Executives move within their role. Events have no grip: the ledger is ordered by date.
+- **AddTile.** The empty photo-slot surface with a tertiary label, the size of an item, arriving with Clip Reveal when an add moves it along.

@@ -7,6 +7,7 @@ import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecArea, ExecGroup, Executive } from '@/types/database';
+import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 
 /*
   The roster, as one grid read left to right.
@@ -31,7 +32,7 @@ import type { ExecArea, ExecGroup, Executive } from '@/types/database';
   The initials disc is what shows until then.
 */
 
-const GRID = 'grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4';
+export const GRID = 'grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4';
 
 /*
   The headshot is capped rather than filling its column, and the cap is set so
@@ -42,8 +43,8 @@ const GRID = 'grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4';
   and left the photos looking like tiny tokens. This sits between the two: the
   disc reads as a portrait and the name still holds its own beneath it.
 */
-const AVATAR_WIDTH = 'w-[clamp(104px,18vw,176px)]';
-const AVATAR_SIZES = '(max-width: 640px) 128px, 176px';
+export const AVATAR_WIDTH = 'w-[clamp(104px,18vw,176px)]';
+export const AVATAR_SIZES = '(max-width: 640px) 128px, 176px';
 
 export function ExecutiveGridSkeleton({ count = 8 }: { count?: number }) {
   return (
@@ -66,7 +67,7 @@ export function ExecutiveGridSkeleton({ count = 8 }: { count?: number }) {
   which keeps the page as it was until the area backfill has been reviewed.
   The stored title is also used if the role or area has not loaded.
 */
-function titleOf(executive: Executive, groups: ExecGroup[], areas: ExecArea[]): string {
+export function titleOf(executive: Executive, groups: ExecGroup[], areas: ExecArea[]): string {
   if (!executive.area_id) return executive.title;
   const group = groups.find((g) => g.slug === executive.group);
   const area = areas.find((a) => a.id === executive.area_id);
@@ -74,7 +75,17 @@ function titleOf(executive: Executive, groups: ExecGroup[], areas: ExecArea[]): 
   return role && area ? `${role}, ${area.name}` : executive.title;
 }
 
-export default function ExecutiveGrid({ executives }: { executives: Executive[] }) {
+/*
+  While editing, the engine's roster editor renders instead, with the same
+  rows: every field inline, the Add tile last, the Grip, the chips, and
+  Remove in the tray. A visitor never downloads it (src/edit/list-draft.ts).
+*/
+export default function ExecutiveGrid(props: { executives: Executive[] }) {
+  if (useListEditBranch()) return <ListEditBranch name="executives" props={props} />;
+  return <ExecutiveGridView {...props} />;
+}
+
+function ExecutiveGridView({ executives }: { executives: Executive[] }) {
   /* Roles and areas are fetched only once someone has an area set. */
   const needsLookups = executives.some((executive) => !!executive.area_id);
   const { data: groups } = useSupabaseQuery<ExecGroup>('exec_groups', { enabled: needsLookups });

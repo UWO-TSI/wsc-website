@@ -16,6 +16,7 @@ import {
   useDraftVersion,
 } from '@/edit/engine/draft-store';
 import { publishDraft, type Publisher } from '@/edit/engine/publish';
+import { rowTrayView } from '@/edit/engine/list-parts';
 import { blurField, getUi, setUi, useUi, type Tone, type TrayContext } from '@/edit/engine/ui-store';
 
 /*
@@ -37,10 +38,18 @@ const PUBLISHED_FOR_MS = 2000;
 const meta = (k: string) => SITE_CONTENT[k as SiteContentKey];
 const baseLabel = (label: string) => label.replace(/,\s*line \d+$/i, '');
 
+/*
+  The tray is a grid of three areas: the label, the body (a line of copy,
+  a count, a link address) and the actions (tray buttons). On phones the
+  actions sit at the end of the label row, so the body keeps its full
+  width for up to three lines; from 900px they sit at the end of the body
+  row. The tray keeps one height across every state at each width.
+*/
 interface TrayView {
   label: string;
   tone?: Tone;
   body: ReactNode;
+  actions?: ReactNode;
 }
 
 function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string }) {
@@ -89,6 +98,11 @@ function focusView(ctx: TrayContext, text: (k: SiteContentKey) => string): TrayV
       body: <LinkAddress labelKey={ctx.labelKey} hrefKey={ctx.hrefKey} />,
     };
   }
+  /* A list row: its name, a hint or its link, and Remove (list-parts.tsx). */
+  if (ctx.type === 'row') {
+    return rowTrayView(ctx.table, ctx.id, ctx.field) ?? { label: COPY.firstLabel, body: COPY.first };
+  }
+  if (ctx.type === 'area') return { label: COPY.newArea, body: COPY.newAreaHint };
   const def = IMAGE_SLOTS[ctx.slot as ImageSlotKey];
   return { label: COPY.photoHead(def.section, def.label), body: COPY.photoHint(def.minWidth) };
 }
@@ -159,9 +173,9 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   if (ui.confirmDiscard) {
     view = {
       label: COPY.discard,
-      body: (
+      body: COPY.confirmDiscard(n),
+      actions: (
         <>
-          <span className="ed-grow">{COPY.confirmDiscard(n)}</span>
           <Button variant="secondary" className="ed-small" onClick={() => setUi({ confirmDiscard: false })}>
             {COPY.keepEditing}
           </Button>
@@ -210,6 +224,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         <div className={`ed-tray-body${view.tone ? ` ed-t-${view.tone}` : ''}`}>
           {typeof view.body === 'string' ? <span className="ed-grow">{view.body}</span> : view.body}
         </div>
+        {view.actions && <div className="ed-tray-actions">{view.actions}</div>}
       </div>
 
       <div className="ed-discard">
@@ -241,13 +256,11 @@ function expiredView(): TrayView {
   return {
     label: COPY.expiredLabel,
     tone: 'alert',
-    body: (
-      <>
-        <span className="ed-grow">{COPY.expired}</span>
-        <Button variant="secondary" className="ed-small" href="/admin">
-          {COPY.signIn}
-        </Button>
-      </>
+    body: COPY.expired,
+    actions: (
+      <Button variant="secondary" className="ed-small" href="/admin">
+        {COPY.signIn}
+      </Button>
     ),
   };
 }

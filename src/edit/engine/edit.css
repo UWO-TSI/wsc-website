@@ -5,9 +5,11 @@
   8px by 12px padding, the tray heights, the bar layout) and the 9 percent
   fill, which is the skeleton's mix in globals.css.
 
-  Nothing here animates. In edit mode the allowed motion is reorder, a new
-  Add tile, removal on Publish and the Publish label changing in place,
-  and none of those is styled in this file.
+  In edit mode the allowed motion is reorder, a new Add tile, removal on
+  Publish and the Publish label changing in place. Two of those are
+  styled here, in the list section at the end: the Add tile's Clip Reveal
+  (.ed-appear) and a removed row's leave (.ed-leave). Reorder runs from
+  list-parts.tsx on the same tokens. Nothing else here animates.
 */
 
 /* ── Field ── */
@@ -201,18 +203,26 @@ html.ed-on body {
   }
 }
 
+/* Two short lines at every width, so the count never wraps beside the
+   Edit and Preview control on a phone. */
 .ed-status {
   grid-area: status;
   display: flex;
-  gap: 10px;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
+.ed-status > * {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* From 900px the bar is taller than three lines, so the count may wrap. */
 @media (min-width: 900px) {
-  .ed-status {
-    flex-direction: column;
-    gap: 2px;
+  .ed-status > * {
+    white-space: normal;
   }
 }
 
@@ -247,12 +257,25 @@ html.ed-on body {
   font-weight: 600;
 }
 
+/*
+  The tray: label, body and actions. One fixed height per width, sized for
+  its tallest state. On phones the actions share the label row and the
+  body has the full width for three lines of copy (the first-sign-in and
+  sign-in-expired lines). From 900px the actions end the body row, which
+  holds two lines of copy or one row of inputs and buttons.
+*/
 .ed-tray {
   grid-area: tray;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto 1fr;
-  gap: 3px;
-  height: 84px;
+  grid-template-areas:
+    'label actions'
+    'body body';
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 6px;
+  height: 110px;
   min-width: 0;
   overflow: hidden;
   padding: 9px 12px;
@@ -262,23 +285,43 @@ html.ed-on body {
 
 @media (min-width: 900px) {
   .ed-tray {
-    height: 62px;
+    grid-template-areas:
+      'label label'
+      'body actions';
+    row-gap: 3px;
+    height: 76px;
   }
 }
 
 .ed-tray-label {
+  grid-area: label;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .ed-tray-body {
+  grid-area: body;
+  align-self: start;
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
   font-size: var(--t-body-sm);
   line-height: 1.35;
+}
+
+@media (min-width: 900px) {
+  .ed-tray-body {
+    align-self: center;
+  }
+}
+
+.ed-tray-actions {
+  grid-area: actions;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .ed-tray-body input {
@@ -314,8 +357,10 @@ html.ed-on body {
   color: var(--alert);
 }
 
-/* Buttons inside the tray: the reference's small size, so they fit its row. */
+/* Buttons inside the tray: the reference's small size, so they fit its row.
+   The label never wraps, so a button is one line tall in every state. */
 .ed-tray .ed-small {
+  white-space: nowrap;
   flex: none;
   padding: 7px 14px;
   font-size: var(--t-meta);
@@ -334,4 +379,266 @@ html.ed-on body {
    changing to Publishing and Published never moves the bar. */
 .ed-publish > * {
   min-width: 190px;
+}
+
+/* ── Lists: InlineSelect, InlineNumber, chips, Grip, AddTile ──
+   Sizes from docs/redesign/reference.html (the 36px grip, the select's
+   30px chevron room, the add tile's 28px plus). */
+
+/* InlineSelect: the value centred, the chevron at rest. */
+.ed.ed-sel {
+  display: block;
+  padding: 6px 30px 6px 12px;
+  cursor: pointer;
+}
+
+.ed-sel :is(select, input) {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+}
+
+.ed-sel input {
+  cursor: text;
+}
+
+.ed-sel :is(select, input):focus-visible {
+  outline: none;
+}
+
+.ed-chev {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  color: var(--accent-ink);
+  pointer-events: none;
+}
+
+/* On touch screens selects use 16px so iOS does not zoom (spec section 5). */
+@media (pointer: coarse) {
+  .ed-sel :is(select, input) {
+    font-size: 16px;
+  }
+}
+
+/* A date or a time: the native control in the field's font. */
+.ed-native .ed-in {
+  width: auto;
+  color-scheme: light;
+}
+
+/* Words stacked in one cell, so a chip is the width of its longest word. */
+.ed-words {
+  display: inline-grid;
+}
+
+.ed-words > * {
+  grid-area: 1 / 1;
+}
+
+.ed-off {
+  visibility: hidden;
+}
+
+/* VisibilityChip: a Chip inside a toggle button. */
+.ed-vis {
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* StateChip: always takes its slot, shown only when the row changed. */
+.ed-state {
+  display: inline-flex;
+}
+
+/* Grip: card 15's grip on a disc, so it reads over a photo. */
+.ed-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-disc);
+  background: var(--page);
+  color: var(--ink-muted);
+  box-shadow: var(--sh-1);
+  cursor: grab;
+  touch-action: none;
+  transition:
+    background-color var(--d-hover) var(--e-enter),
+    color var(--d-hover) var(--e-enter);
+}
+
+.ed-grip:hover {
+  background: var(--accent-veil);
+  color: var(--accent-ink);
+}
+
+.ed-over-tl,
+.ed-over-tr {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.ed-over-tl {
+  left: 0;
+}
+
+.ed-over-tr {
+  right: 0;
+}
+
+/* A row's photo: Replace or Add as a chip on the frame. */
+.ed-row-photo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 8%;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ed-row-photo .ed-photo-chip {
+  white-space: nowrap;
+}
+
+/* A logo tile is short, so its chip is centred in the tile. */
+.slab-logo .ed-row-photo {
+  align-items: center;
+  padding: 0;
+}
+
+/* An item while it is held, removed or hidden. */
+.ed-item.ed-held {
+  z-index: 2;
+  background: var(--page);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+}
+
+.ed-item.ed-held .ed-grip {
+  cursor: grabbing;
+}
+
+.ed-item.ed-hid .ed-in {
+  color: var(--ink-muted);
+}
+
+.ed-item.ed-removing .ed-in {
+  color: var(--ink-faint);
+}
+
+.slab-logo .ed-item :is(.ed-hid, .ed-removing) .ed-in {
+  color: inherit;
+}
+
+/* AddTile: the empty photo-slot surface with a tertiary label. */
+.ed-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--sunken);
+  color: var(--accent-ink);
+  font-family: var(--f-data);
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--e-enter);
+}
+
+.ed-add:hover {
+  background: var(--accent-veil);
+}
+
+.ed-add-plus {
+  font-family: var(--f-display);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ed-add-disc {
+  aspect-ratio: 1;
+  border-radius: var(--r-disc);
+}
+
+.ed-add-row {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--r-md);
+}
+
+.ed-add-logo {
+  height: 100%;
+  border-radius: var(--r-md);
+}
+
+.ed-add-figure {
+  padding: 24px 12px;
+  border-radius: var(--r-md);
+}
+
+/* On a sunken ledger the tile takes the page ground, so it still shows. */
+.slab-sunk .ed-add {
+  background: var(--page);
+}
+
+/* A new Add tile arrives with Clip Reveal (sequence 9). */
+.ed-appear {
+  animation: wsc-unclip-sm var(--d-arrive) var(--e-enter) both;
+}
+
+/* A removed row leaves on Publish only: --d-move on --e-exit. */
+.ed-leave {
+  animation: ed-leave var(--d-move) var(--e-exit) forwards;
+}
+
+@keyframes ed-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-grip {
+    transition: none;
+  }
+
+  .ed-appear,
+  .ed-leave {
+    animation: none;
+  }
 }

@@ -607,20 +607,50 @@
   @media (min-width: 900px) {
     .e16-bar { grid-template-columns: 150px minmax(0, 1fr) auto auto auto; grid-template-areas: 'status tray seg discard publish'; padding: 12px 14px 12px 20px; border-radius: var(--r-xl); }
   }
-  .e16-status { grid-area: status; display: flex; gap: 10px; align-items: baseline; min-width: 0; }
-  @media (min-width: 900px) { .e16-status { flex-direction: column; gap: 2px; } }
+  .e16-status { grid-area: status; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .e16-status > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  @media (min-width: 900px) { .e16-status > * { white-space: normal; } }
   .e16-status .label { color: var(--accent-ink); }
   .e16-seg { grid-area: seg; justify-self: end; display: inline-flex; padding: 4px; background: var(--sunken); border-radius: var(--r-pill); }
   .e16-seg button { padding: 8px 16px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-muted); font-family: var(--f-text); font-size: var(--t-body-sm); font-weight: 500; cursor: pointer; }
   .e16-seg button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .e16-tray { grid-area: tray; display: grid; grid-template-rows: auto 1fr; gap: 3px; height: 84px; min-width: 0; overflow: hidden; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
-  @media (min-width: 900px) { .e16-tray { height: 62px; } }
-  .e16-tray .tl { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .e16-tray .tb { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: var(--t-body-sm); line-height: 1.35; }
+  .e16-tray { grid-area: tray; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: 'label actions' 'body body'; align-items: center; column-gap: 10px; row-gap: 6px; height: 110px; min-width: 0; overflow: hidden; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
+  @media (min-width: 900px) { .e16-tray { grid-template-areas: 'label label' 'body actions'; row-gap: 3px; height: 76px; } }
+  .e16-tray .tl { grid-area: label; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .e16-tray .tb { grid-area: body; align-self: start; display: flex; align-items: center; gap: 10px; min-width: 0; font-size: var(--t-body-sm); line-height: 1.35; }
+  @media (min-width: 900px) { .e16-tray .tb { align-self: center; } }
+  .e16-tray .ta { grid-area: actions; display: flex; gap: 8px; align-items: center; }
+  .e16-tray .t-al { color: var(--alert); }
   .e16-tray .tb input { width: 100%; min-width: 0; padding: 7px 10px; border: 0; border-radius: var(--r-sm); background: var(--page); color: var(--ink); font-family: var(--f-text); font-size: var(--t-body-sm); }
   .e16-tray .grow { flex: 1; min-width: 0; }
   .e16-tray .none { flex: none; }
-  .e16-tray .small { flex: none; padding: 7px 14px; font-size: var(--t-meta); }
+  .e16-tray .small { flex: none; padding: 7px 14px; font-size: var(--t-meta); white-space: nowrap; }
+  /* Lists: InlineSelect, InlineNumber, chips, Grip, AddTile. Mirrors the list section of edit.css. */
+  .e16-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 16px; }
+  @media (min-width: 700px) { .e16-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .e16-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; min-width: 0; padding-top: 4px; }
+  .e16-item.held { z-index: 2; background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
+  .e16-item.hid .e16-f { color: var(--ink-muted); }
+  .e16-item.removing .e16-f { color: var(--ink-faint); }
+  .e16-disc { position: relative; width: 104px; aspect-ratio: 1; border-radius: var(--r-disc); background: var(--sunken); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.4rem; color: var(--ink-faint); }
+  .e16-disc .chip-s { position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); color: var(--accent-ink); white-space: nowrap; }
+  .e16-disc .chip-s .d { background: var(--ink-faint); }
+  .e16-over-tl, .e16-over-tr { position: absolute; top: 0; z-index: 1; }
+  .e16-over-tl { left: 0; } .e16-over-tr { right: 0; }
+  .e16-grip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; flex: none; padding: 0; border: 0; border-radius: var(--r-disc); background: var(--page); color: var(--ink-muted); box-shadow: var(--sh-1); cursor: grab; touch-action: none; transition: background-color var(--d-hover) var(--e-enter), color var(--d-hover) var(--e-enter); }
+  .e16-grip:hover { background: var(--accent-veil); color: var(--accent-ink); }
+  .e16-item.held .e16-grip { cursor: grabbing; }
+  .e16-vis { padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
+  .e16-words { display: inline-grid; } .e16-words > * { grid-area: 1 / 1; } .e16-off { visibility: hidden; }
+  .e16-sel { display: block; align-self: stretch; padding: 6px 30px 6px 12px; cursor: pointer; text-align: center; }
+  .e16-sel .chev { position: absolute; right: 12px; top: 50%; width: 10px; height: 10px; margin-top: -5px; color: var(--accent-ink); }
+  .e16-num { font-family: var(--f-data); font-size: clamp(2.4rem, 7vw, 56px); font-weight: 500; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .e16-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 104px; aspect-ratio: 1; border: 0; border-radius: var(--r-disc); background: var(--sunken); color: var(--accent-ink); font-family: var(--f-data); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background-color var(--d-hover) var(--e-enter); }
+  .e16-add:hover { background: var(--accent-veil); }
+  .e16-add .plus { font-family: var(--f-display); font-size: 28px; font-weight: 800; line-height: 1; }
+  .e16-add.appear { animation: e16-unclip var(--d-arrive) var(--e-enter) both; }
+  @keyframes e16-unclip { from { clip-path: inset(0 0 100% 0 round var(--r-sm)); } to { clip-path: inset(0 0 0 0 round var(--r-sm)); } }
+  @media (prefers-reduced-motion: reduce) { .e16-grip { transition: none; } .e16-add.appear { animation: none; } }
   .e16-discard { grid-area: discard; }
   .e16-publish { grid-area: publish; justify-self: end; }
   .e16-publish > * { min-width: 190px; justify-content: center; }
@@ -1343,9 +1373,77 @@ Sales Team</span></span>
       <div class="e16-bar">
         <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
-        <div class="e16-tray"><span class="label tl">Discard</span><div class="tb"><span class="grow">Discard 3 unpublished changes? This cannot be undone.</span><button class="btn b2 small" type="button">Keep editing</button><button class="btn b1 small" type="button">Discard 3</button></div></div>
+        <div class="e16-tray"><span class="label tl">Discard</span><div class="tb"><span class="grow">Discard 3 unpublished changes? This cannot be undone.</span></div><div class="ta"><button class="btn b2 small" type="button">Keep editing</button><button class="btn b1 small" type="button">Discard 3</button></div></div>
         <div class="e16-discard"><button class="btn off" type="button" disabled>Discard</button></div>
         <div class="e16-publish"><button class="btn off" type="button" disabled>Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Executive &middot; Mei Chen</span><div class="tb"><span class="grow">Shows on the site as VP, Partnerships.</span></div><div class="ta"><button class="btn b2 small" type="button">Remove from team</button></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Event &middot; Cold Call Workshop</span><div class="tb"><input type="text" value="https://example.com/register" readonly aria-label="Register link for Cold Call Workshop"></div><div class="ta"><button class="btn b2 small" type="button">Remove event</button></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">New area</span><div class="tb"><span class="grow">Type the area name and press Enter. Escape cancels.</span></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">New area</span><div class="tb"><span class="grow t-al">Marketing already exists. Pick it from the list.</span></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+    </div>
+
+    <div class="e16-bars">
+      <span class="label">Lists: roster, ledger, logo wall, counted figures</span>
+      <div class="e16-cell">
+        <div class="e16-list">
+          <div class="e16-item">
+            <div class="e16-disc">MC<span class="chip-s"><span class="d"></span>Replace photo</span></div>
+            <button class="e16-vis e16-over-tl" type="button" aria-pressed="true" aria-label="Show on team page"><span class="chip-s c-ok"><span class="d"></span><span class="e16-words"><span>Visible</span><span class="e16-off" aria-hidden="true">Hidden</span></span></span></button>
+            <button class="e16-grip e16-over-tr" type="button" aria-label="Reorder Mei Chen, position 2 of 5. Drag, or use arrow keys."><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+            <span class="e16-f block title-sm">Mei Chen</span>
+            <span class="e16-f e16-sel meta">VP<svg class="chev" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="e16-f e16-sel meta">Partnerships<svg class="chev" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="chip-s c-wn"><span class="d"></span><span class="e16-words"><span>Unpublished</span><span class="e16-off" aria-hidden="true">Will be removed</span></span></span>
+          </div>
+          <div class="e16-item held">
+            <div class="e16-disc">JK<span class="chip-s"><span class="d"></span>Add photo</span></div>
+            <button class="e16-vis e16-over-tl" type="button" aria-pressed="false" aria-label="Show on team page"><span class="chip-s"><span class="d" style="background:var(--ink-faint)"></span><span class="e16-words"><span class="e16-off" aria-hidden="true">Visible</span><span>Hidden</span></span></span></button>
+            <button class="e16-grip e16-over-tr" type="button" aria-label="Reorder Jonas Keller, position 3 of 5. Drag, or use arrow keys."><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+            <span class="e16-f block title-sm">Jonas Keller</span>
+            <span class="e16-f e16-sel meta">Add an area<svg class="chev" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="e16-f e16-sel meta on">New area</span>
+            <span class="chip-s c-wn e16-off" aria-hidden="true"><span class="d"></span>Unpublished</span>
+          </div>
+          <div class="e16-item removing">
+            <span class="e16-num"><span class="e16-f" style="display:inline-block">150</span><span class="e16-f" style="display:inline-block;color:var(--accent-ink)">+</span></span>
+            <span class="e16-f label">Members</span>
+            <span style="display:flex;gap:8px;align-items:center"><button class="e16-vis" type="button" aria-pressed="true" aria-label="Show on home page"><span class="chip-s c-ok"><span class="d"></span>Visible</span></button><button class="e16-grip" type="button" aria-label="Reorder Members, position 1 of 3. Drag, or use arrow keys."><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></span>
+            <span class="chip-s c-al"><span class="d"></span>Will be removed</span>
+          </div>
+          <div class="e16-item">
+            <button class="e16-add appear" type="button"><span class="plus" aria-hidden="true">+</span><span>Add executive</span></button>
+          </div>
+        </div>
+        <p class="body-sm">Every field of a row is inline, in the Field shell, sized to the column's limit in the database. <b>InlineSelect</b> (role and area) shows its chevron at rest; the area list ends with Add an area, which turns into a text input in place and refuses a name that matches an existing area ignoring case. <b>InlineNumber</b> is the figure's number in a Field as wide as 99999. <b>VisibilityChip</b> is a toggle button, Visible or Hidden, as wide as the longer word. <b>StateChip</b> reserves its slot and shows Unpublished or Will be removed. <b>Grip</b> is card 15's grip on a 36px disc at the item's corner: drag by mouse or touch, or move one place with the arrow keys, announced as "Moved Mei Chen to position 2 of 5". The held item lifts to <b>--sh-3</b> and neighbours move on <b>--d-move</b>, <b>--e-move</b>. <b>AddTile</b> is the last cell, the empty photo-slot surface with a tertiary label, and arrives with Clip Reveal when an add moves it along. Remove is in the tray; a removed item stays with Will be removed until Publish, then leaves on <b>--d-move</b>, <b>--e-exit</b> and its neighbours close the gap on <b>--e-move</b>. The event ledger has no grip, because events are ordered by date.</p>
       </div>
     </div>
 
@@ -1353,7 +1451,10 @@ Sales Team</span></span>
       The bar has one fixed size at each width. The <b>tray</b> is the only
       region whose content changes, and it never grows: it holds the name and
       count of the focused field, a link address, a photo's minimum width,
-      confirmations and results. There are no dialogs. The Publish button is
+      a list row with its Remove, a new area, confirmations and results.
+      There are no dialogs. It is a grid of label, body and actions: on
+      phones the actions share the label row and the body has three lines
+      (110px); from 900px the actions end the body row (76px). The Publish button is
       wide enough for <b>Publish 99 changes</b>, so its label changes to
       Publishing and Published in place without moving the bar.
     </p>
@@ -1373,7 +1474,7 @@ Sales Team</span></span>
       <div class="e16-row"><span class="chip-s c-al"><span class="d"></span>Photo refused</span><span class="body-sm">This photo is 260px wide, too small for this spot. Use one at least 560px wide.</span></div>
     </div>
 
-    <p class="meta e16-soon">Not built yet, so not drawn: InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile, Settings page.</p>
+    <p class="meta e16-soon">Not built yet, so not drawn: Settings page.</p>
   </section>
 
   <section aria-labelledby="tex-h">

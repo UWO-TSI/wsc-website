@@ -6,7 +6,7 @@ import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import Chip from '@/components/ui/chip';
 import Field from '@/components/contact/field';
-import { EditableText } from '@/edit';
+import { EditableButton, EditableText } from '@/edit';
 
 interface FormData {
   name: string;
@@ -255,9 +255,13 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
           )}
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="self-start">
-          {isSubmitting ? 'Sending' : <EditableText k="contact.form.submit_label" />}
-        </Button>
+        <EditableButton
+          labelKey="contact.form.submit_label"
+          type="submit"
+          disabled={isSubmitting}
+          label={isSubmitting ? 'Sending' : undefined}
+          className="self-start"
+        />
       </form>
     </Slab>
   );

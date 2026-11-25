@@ -230,6 +230,11 @@ export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLines
   placed over the spacer in the same grid cell, so it moves with the button
   and with nothing else. It copies the button's font and colour, and the
   spacer holds the longest allowed label, so the button never resizes.
+
+  A label-only button (no hrefKey: a row's own URL, a form submit) works
+  the same way. The face takes no href or type, so it is an inert <button>
+  that cannot submit, and the tray shows the label's count instead of a
+  link address.
 */
 export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, className }: EditableButtonProps) {
   const { text, published } = useSiteContent();
@@ -282,7 +287,9 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
             setDraftText(labelKey, oneLine(e.target.value).slice(0, m.max), pub);
           }}
           onKeyDown={refuseEnter}
-          onFocus={() => focusField({ type: 'button', labelKey, hrefKey })}
+          onFocus={() =>
+            focusField(hrefKey ? { type: 'button', labelKey, hrefKey } : { type: 'text', key: labelKey })
+          }
           onBlur={blurField}
         />
       </span>

@@ -1,7 +1,6 @@
 import { format, isBefore, parseISO, startOfDay } from 'date-fns';
-import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
-import { EditableText, useEditMode } from '@/edit';
+import { EditableButton, useEditMode } from '@/edit';
 import { externalLinkProps } from '@/lib/link-utils';
 import { useSiteContent } from '@/providers/site-content-provider';
 import type { Event } from '@/types/database';
@@ -23,8 +22,9 @@ import type { Event } from '@/types/database';
   stays inert, so the button is the one control in it and the expand is a
   pointer-only response to attention.
 
-  Row Expand is off while editing, like every self-running motion. While
-  editing, the button's label is a field and the button goes nowhere.
+  Row Expand is off while editing, like every self-running motion. The
+  button is label-only EditableButton: while editing its label is a field
+  over an inert button face, so it goes nowhere.
 */
 
 /*
@@ -74,21 +74,14 @@ export default function TimelineEvent({ event, index }: TimelineEventProps) {
         {!isPast && (
           <span className="order-3 ml-auto flex shrink-0 items-center gap-3">
             <Chip status="ok">Open</Chip>
-            {canRegister &&
-              (editing ? (
-                <Button variant="secondary">
-                  <EditableText k="events.ledger.register_label" />
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  href={registerUrl}
-                  {...registerLink}
-                  aria-label={`${text('events.ledger.register_label')}, ${event.title}`}
-                >
-                  {text('events.ledger.register_label')}
-                </Button>
-              ))}
+            {canRegister && (
+              <EditableButton
+                labelKey="events.ledger.register_label"
+                variant="secondary"
+                href={registerUrl}
+                aria-label={`${text('events.ledger.register_label')}, ${event.title}`}
+              />
+            )}
           </span>
         )}
       </div>

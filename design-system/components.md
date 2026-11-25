@@ -64,9 +64,9 @@ Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a s
 
 ## ClosingBand
 
-The last section of every public page, directly above the footer. The page restates its promise next to its one action. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead. It is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it.
+The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink. No eyebrow by default, since one over the title Join repeats it; `eyebrowKey` adds one.
 
-The default repeats the home headline (`home.hero.title_line1` to `4`) with the `home.cta` eyebrow, subtitle and Apply to join, so one edit to `home.cta.button_label` changes the nav, the hero, About and every band. A page that sells something else passes its own `titleKeys`, `eyebrowKey`, `bodyKey` and `action`: Partners ends with Become a partner, which opens the contact form.
+It is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
 
 ## Field
 

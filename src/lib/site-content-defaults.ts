@@ -98,10 +98,12 @@ export const SITE_CONTENT = {
 
   // Home / Join
   'home.cta.eyebrow': { value: 'Join', kind: 'text', page: 'Home', section: 'Join', label: 'Eyebrow', max: 24 },
-  'home.cta.title_line1': { value: 'Apply to join', kind: 'text', page: 'Home', section: 'Join', label: 'Heading', max: 24 },
-  'home.cta.subtitle': { value: 'Membership is sold through the Western USC store.', kind: 'text', page: 'Home', section: 'Join', label: 'Subtitle', max: 90 },
+  'home.cta.title_line1': { value: 'Join', kind: 'text', page: 'Home', section: 'Join', label: 'Heading', max: 24 },
+  'home.cta.subtitle': { value: 'Students join through the Western USC store. Businesses can contact us about partnering.', kind: 'text', page: 'Home', section: 'Join', label: 'Subtitle', max: 90 },
   'home.cta.button_label': { value: 'Apply to join', kind: 'text', page: 'Home', section: 'Join', label: 'Button text', max: 28 },
   'home.cta.button_href': { value: STORE_URL, kind: 'url', page: 'Home', section: 'Join', label: 'Button link', max: 200 },
+  'home.cta.business_label': { value: 'Get in touch', kind: 'text', page: 'Home', section: 'Join', label: 'Business button text', max: 28 },
+  'home.cta.business_href': { value: '/contact-us', kind: 'url', page: 'Home', section: 'Join', label: 'Business button link', max: 200 },
 
   // About / Header
   'about.header.eyebrow': { value: 'About', kind: 'text', page: 'About', section: 'Header', label: 'Eyebrow', max: 24 },

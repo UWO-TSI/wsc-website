@@ -8,16 +8,17 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
 /*
   ClosingBand: the last section of every public page.
 
-  The page ends by restating the promise next to the one action. A velvet
-  accent slab with the sweep ribbon (bottom edge to right edge), Slab Clip
-  on arrival, and a CentredHead: eyebrow, the title, one line of copy, the
-  button. On an accent slab the primary takes the page fill on its own.
+  A velvet accent slab with the sweep ribbon (bottom edge to right edge),
+  Slab Clip on arrival, and a CentredHead: the title Join, one or two
+  sentences of copy, then two buttons side by side. Apply to join is for
+  students, who buy a membership. The business button is for companies,
+  who get in touch. On an accent slab the primary takes the page fill and
+  the secondary takes the slab's own ink, both on their own.
 
-  The default is the home headline with Apply to join, read from the same
-  keys as the hero and the nav, so one edit changes every placement. A page
-  that sells something else passes its own keys and its own `action`, for
-  example the Partners page with a "Become a partner" button that opens the
-  contact form.
+  Apply to join reads home.cta.button_*, the same keys as the hero, the nav
+  and About, so one edit changes every placement. A page replaces the
+  business button through `businessAction`: the Partners page passes
+  "Become a partner", which opens the contact form.
 
   It is the page's one loud slab: nothing above it on the page may be
   inverse or accent, and the section directly above it is not accent.
@@ -25,31 +26,24 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
   design-system/components.md, ClosingBand.
 */
 
-/** The hero headline, repeated. */
-export const HOME_HEADLINE_KEYS: SiteContentKey[] = [
-  'home.hero.title_line1',
-  'home.hero.title_line2',
-  'home.hero.title_line3',
-  'home.hero.title_line4',
-];
-
 interface ClosingBandProps {
-  /** One key per visual line. Defaults to the home headline. */
+  /** One key per visual line. Defaults to the Join title. */
   titleKeys?: SiteContentKey[];
+  /** Off by default: an eyebrow over the title Join repeats it. */
   eyebrowKey?: SiteContentKey;
-  /** One line of copy under the title. Pass null for none. */
+  /** One or two sentences under the title. Pass null for none. */
   bodyKey?: SiteContentKey | null;
-  /** The band's one button. Defaults to Apply to join. */
-  action?: React.ReactNode;
+  /** The second button, after Apply to join. Defaults to Get in touch. */
+  businessAction?: React.ReactNode;
   /** The heading id the section is labelled by. Unique per page. */
   id?: string;
 }
 
 export default function ClosingBand({
-  titleKeys = HOME_HEADLINE_KEYS,
-  eyebrowKey = 'home.cta.eyebrow',
+  titleKeys = ['home.cta.title_line1'],
+  eyebrowKey,
   bodyKey = 'home.cta.subtitle',
-  action,
+  businessAction,
   id = 'closing-heading',
 }: ClosingBandProps) {
   return (
@@ -68,8 +62,13 @@ export default function ClosingBand({
         bodyKey={bodyKey ?? undefined}
         bodyRole="subtitle"
       >
-        {action ?? (
-          <EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />
+        <EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />
+        {businessAction ?? (
+          <EditableButton
+            labelKey="home.cta.business_label"
+            hrefKey="home.cta.business_href"
+            variant="secondary"
+          />
         )}
       </CentredHead>
     </Slab>

@@ -1039,16 +1039,17 @@
   <!--
     ClosingBand (src/components/layout/closing-band.tsx), the last section of
     every public page, composed from CentredHead (src/components/ui/centred-head.tsx):
-    eyebrow, Archivo title, one line of copy, one button, centred. Accent tone,
-    sweep ribbon, Slab Clip on arrival. The default repeats the home headline
-    next to Apply to join; a page can swap the title keys and the button
-    (Partners: Become a partner, opening the contact form).
+    the title Join, copy for both audiences, then two buttons side by side.
+    Apply to join for students (primary, which takes the page fill here) and
+    the business button (secondary, which takes the slab's ink here). Accent
+    tone, sweep ribbon, Slab Clip on arrival. A page swaps only the business
+    button (businessAction): Partners passes Become a partner, opening the
+    contact form.
   -->
   <section class="slab band-c textured lit-velvet billboard dots alive" data-shape="sweep" style="padding-block:88px">
-    <span class="label">Join</span>
-    <div class="title" style="margin-top:14px;max-width:24ch">Learn to sell before you graduate</div>
-    <p class="subtitle" style="margin:14px 0 0;color:inherit">Membership is sold through the Western USC store.</p>
-    <div style="margin-top:22px"><button class="btn b2" type="button">Apply to join <span class="aw">&#8594;</span></button></div>
+    <div class="title" style="max-width:24ch">Join</div>
+    <p class="subtitle" style="margin:14px 0 0;color:inherit">Students join through the Western USC store. Businesses can contact us about partnering.</p>
+    <div style="margin-top:22px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center"><button class="btn b2" type="button">Apply to join <span class="aw">&#8594;</span></button><button class="btn" type="button" style="background:transparent;color:inherit;box-shadow:none">Get in touch</button></div>
     <span class="label" style="margin-top:22px">Closing band &middot; one per page, last &middot; CentredHead on accent &middot; sweep</span>
   </section>
 

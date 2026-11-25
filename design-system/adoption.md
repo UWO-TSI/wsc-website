@@ -85,22 +85,25 @@ table in `components.md`.
 Three pieces set on the home page. Pages compose them; they do not add their own.
 
 **Closing band.** `src/components/layout/closing-band.tsx`, the last child of every public page.
+Title Join, one or two sentences for both audiences, then two buttons side by side: Apply to join
+(students, primary) and a business button (secondary, which on the accent slab takes the slab's ink).
 
 | Prop | Default | Use |
 | --- | --- | --- |
-| `titleKeys` | `HOME_HEADLINE_KEYS` (the four hero lines) | One `site_content` key per visual line. |
-| `eyebrowKey` | `home.cta.eyebrow` | |
-| `bodyKey` | `home.cta.subtitle` | One line of copy. `null` for none. |
-| `action` | `EditableButton` on `home.cta.button_label` / `home.cta.button_href`, arrow | Any button. Partners passes Become a partner with an `onClick` that opens the contact form. |
+| `titleKeys` | `['home.cta.title_line1']` (Join) | One `site_content` key per visual line. |
+| `eyebrowKey` | none | Optional. Off by default, because an eyebrow over the title Join repeats it. |
+| `bodyKey` | `home.cta.subtitle` | One or two sentences. `null` for none. |
+| `businessAction` | `EditableButton` on `home.cta.business_label` / `home.cta.business_href`, secondary (Get in touch, `/contact-us`) | Replaces the business button only. Apply to join on `home.cta.button_*` always stays. |
 | `id` | `closing-heading` | The heading id the section is labelled by. |
 
 ```tsx
 <ClosingBand />                                       // home, legal pages, events, team
 <ClosingBand
-  titleKeys={['partners.cta.title_line1']}            // example keys: add them to site-content-defaults.ts
-  eyebrowKey="partners.cta.eyebrow"
-  bodyKey={null}
-  action={<Button onClick={openContactForm}><EditableText k="partners.cta.button_label" /></Button>}
+  businessAction={
+    <Button variant="secondary" onClick={openContactForm}>
+      <EditableText k="partners.cta.business_label" />  {/* example key: add it to site-content-defaults.ts */}
+    </Button>
+  }
 />
 ```
 

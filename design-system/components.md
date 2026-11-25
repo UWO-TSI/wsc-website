@@ -14,6 +14,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Field | `contact/field.tsx` | none |
 | KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade |
 | SectionHead | `landing/about-section.tsx` | Line Mask Reveal |
+| CentredHead | `ui/centred-head.tsx` | Line Mask Reveal |
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |
 | Texture | `ui/texture.tsx` | Grain Shift (a loop) |
@@ -26,13 +27,22 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | AsyncState | `shared/async-state-wrapper.tsx` | none |
 | Skeleton | `ui/skeleton.tsx`, `ui/row-skeleton.tsx` | sweep |
 | RevealImage | `ui/reveal-image.tsx` | Clip Reveal |
-| CTABand | `landing/cta-section.tsx` | Slab Clip |
+| ClosingBand | `layout/closing-band.tsx` (was `landing/cta-section.tsx`) | Slab Clip |
+| PageHead | `layout/page-head.tsx` | Line Mask Reveal (through CentredHead) |
+| InlineText, InlineParagraph | `edit/engine/fields.tsx` (`EditText`), via `edit/editable-text.tsx` | none |
+| InlineHeading | `edit/engine/fields.tsx` (`EditLines`), via `edit/editable-lines.tsx` | none |
+| InlineLabel | `edit/engine/fields.tsx` (`EditButton`), via `edit/editable-button.tsx` | none |
+| PhotoSlot | `edit/engine/fields.tsx` (`EditImage`), via `edit/editable-image.tsx` | none |
+| EditBar, Tray | `edit/engine/edit-bar.tsx`, `edit/engine/edit.css` | Publish label changes in place |
+| InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile, Settings page | not built yet | later phases |
 
 ## Nav
 
 One component, two modes, never two menus.
 
 **Desktop, 1024 and up.** A floating pill: glyph, wordmark, links inline, and a `--r-pill` `--accent` indicator that slides between items on `layoutId`. No hamburger.
+
+**The one action.** Apply to join sits in the pill as a primary `Button` at every width, phones included, after the links on desktop and before the hamburger on mobile. It reads `home.cta.button_label` and `home.cta.button_href` through `EditableButton`, the same keys as the hero, About and the closing band. Below 640 the wordmark gives way to it and the shark alone marks the home link (the link keeps its accessible name).
 
 **Mobile.** The same pill with the hamburger on the right. It expands downward into a panel: see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, and on a click outside. There is no drawer and no scrim.
 
@@ -53,6 +63,26 @@ Label is Instrument Sans 15px weight 500, sentence case, never wrapping. Padding
 
 One primary per section. No icon-only buttons on the marketing site.
 
+## CentredHead
+
+The head of a selling section: the hero's order, for every section head and closing band. Eyebrow, the Archivo title (one `site_content` key per visual line, Line Mask Reveal), at most three lines of copy, then the buttons as children in one centred row. Every string is read through the edit components, so in edit mode the head is a filled-in form. Reading content below it (long paragraphs, the event ledger) stays left-aligned.
+
+Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a section head, `subtitle` for a closing band), `id`, `as` (`h2` by default), `children`.
+
+## ClosingBand
+
+The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink. No eyebrow by default, since one over the title Join repeats it; `eyebrowKey` adds one.
+
+Apart from the page head (inverse, waist ribbon), it is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
+
+## PageHead
+
+The first section of every public page other than home: an `inverse` slab with the `waist` ribbon holding a CentredHead as the page's `h1` (eyebrow, title, optional copy). One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `clamp(3rem,7vw,5.5rem)` bottom. Pages pass keys only, never a padding or a tone.
+
+Props: `titleKeys`, `eyebrowKey`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page).
+
+With the ClosingBand it is the only other loud slab a page may carry.
+
 ## Field
 
 The component a borderless system has to get right.
@@ -71,7 +101,7 @@ The only divider. A slab spans the full viewport width with no side gap and take
 
 Tones in order of distance from the ground: `--raised` (default), `--sunken` (recessed: footer, form bed, gallery bed), `--inverse` and `--accent` (the statement and the offer).
 
-Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page. Do not slab everything: the hero and at least one section per page are bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
+Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page except an inverse page head above the closing band. Do not slab everything: the hero and at least one section per page are bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
 
 A slab is flat. A shadow would fill the 2px join, and a slab is the page, not a thing floating above it.
 
@@ -156,3 +186,21 @@ Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover
 `src/app/admin/components/save-bar.tsx`, `admin-section.tsx` (`ReorderRow`), `src/app/admin/unsaved-changes.tsx`. Card 15 in `floor.html`.
 
 Every content manager tab is a Save bar over a list, and every change in it is staged until one Save. Save rests disabled as "Save changes", reads "Save all changes" with Discard beside it while edits are pending, and "Saved" for two seconds after writing. The list updates in place; a refetch never drops it to a loading state. Reorderable rows carry a three-line grip that alone starts a drag (Framer Motion `Reorder` with drag controls) and takes the arrow keys; the held row lifts to `--sh-3` and neighbours move on `--d-move` / `--e-move`. Executives reorder within their role, because the team page sorts by role first. Leaving an editor with edits pending asks once (Stay, or Discard and leave) and never refuses.
+
+## Edit mode
+
+Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in the edit chunk, and every line of copy is `src/edit/engine/copy.ts`. Every value in the card is a token or a size the spec gives in pixels.
+
+**Field.** The shell every editable value is drawn in: a fill of the text colour at 9 percent, `--r-sm`, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the shell. Each field is sized to its longest allowed value (`site_content.max_length`), so typing changes the text and never the size. Built in `fields.tsx` as the shell shared by the four components below.
+
+**InlineText and InlineParagraph.** A one-line field is as wide as its longest allowed value, capped at the column. A paragraph takes the column and refuses Enter.
+
+**InlineHeading.** One field for a heading of two lines. Enter starts line 2, a third line is refused, and each line saves to its own key. Lines never wrap inside the field.
+
+**InlineLabel.** A button label as a field inside an inert Button. The ring takes the label's colour. The link address is edited in the tray.
+
+**PhotoSlot.** The photo with Replace photo, or Add photo when the slot is empty, as a chip at the bottom left. Clicking opens the device's file picker, and the chosen file fills the same frame before Publish. A photo below the slot's minimum width shows a warning, and below half of it is refused.
+
+**EditBar and Tray.** Change count, Edit and Preview, Discard, Publish, and the tray. The bar has one fixed size at each width and the tray is the only region whose content changes. There are no dialogs: confirmations, errors and results appear in the tray. Preview shows the visitor layout with fills removed.
+
+**Not built yet.** InlineSelect, InlineNumber, VisibilityChip (Visible and Hidden, `aria-pressed`), StateChip (Unpublished, Will be removed), Grip for edit mode, AddTile, and the Settings page. Their sizes and behaviour are in spec section 3 and are drawn on the card when they are built.

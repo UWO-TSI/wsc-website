@@ -70,7 +70,7 @@ function titleOf(executive: Executive, groups: ExecGroup[], areas: ExecArea[]): 
   if (!executive.area_id) return executive.title;
   const group = groups.find((g) => g.slug === executive.group);
   const area = areas.find((a) => a.id === executive.area_id);
-  const role = group?.short_label ?? group?.singular_label;
+  const role = group?.short_label;
   return role && area ? `${role}, ${area.name}` : executive.title;
 }
 

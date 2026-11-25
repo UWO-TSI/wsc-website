@@ -576,6 +576,59 @@
   .grip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--ink-muted); border-radius: var(--r-sm); cursor: grab; touch-action: none; transition: background-color var(--d-hover) var(--e-enter), color var(--d-hover) var(--e-enter); }
   .grip:hover { background: var(--accent-veil); color: var(--accent-ink); }
   .edrow.held .grip { cursor: grabbing; }
+
+  /* ── Card 16: Edit mode. Mirrors src/edit/engine/edit.css, values unchanged. ── */
+  .e16-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 900px) { .e16-grid { grid-template-columns: 1fr 1fr; } }
+  .e16-cell { background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-1); padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .e16-cell > .label { color: var(--accent-ink); }
+  @media (min-width: 900px) { .e16-cell.wide { grid-column: 1 / -1; } }
+  .e16-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .e16-stack > .e16-cell { flex: 1; }
+  .e16-pair { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .e16-f { position: relative; max-width: 100%; vertical-align: top; background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-sm); padding: 8px 12px; cursor: text; }
+  .e16-f.block { display: block; align-self: stretch; }
+  .e16-f.on { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .e16-f.para { min-height: calc(1.6em * 4); }
+  .e16-f.lines { display: block; align-self: flex-start; white-space: pre; padding-block: 0.06em; padding-inline: 12px; }
+  .e16-f.lines .title { margin: 0; display: block; }
+  .e16-lbl { background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-xs); padding: 3px 8px; cursor: text; }
+  .e16-lbl.on { outline: 2px solid currentColor; outline-offset: 1px; }
+  .e16-ph { position: relative; aspect-ratio: 4 / 3; border-radius: var(--r-md); }
+  .e16-ph > .img, .e16-ph > .sk { position: absolute; inset: 0; border-radius: inherit; }
+  .e16-ph > button { position: absolute; inset: 0; z-index: 2; display: flex; align-items: flex-end; justify-content: flex-start; padding: 10px; border: 0; border-radius: inherit; background: transparent; cursor: pointer; }
+  .e16-ph .chip-s { color: var(--accent-ink); }
+  .e16-ph .chip-s .d { background: var(--ink-faint); }
+  .e16-photos { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 560px) { .e16-photos { grid-template-columns: 1fr 1fr; } }
+  .e16-ph .chip-s { white-space: nowrap; }
+  .e16-bars { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+  .e16-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'status seg' 'tray tray' 'discard publish'; align-items: center; gap: 12px; padding: 12px 14px; background: var(--page); color: var(--ink); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
+  @media (min-width: 900px) {
+    .e16-bar { grid-template-columns: 150px minmax(0, 1fr) auto auto auto; grid-template-areas: 'status tray seg discard publish'; padding: 12px 14px 12px 20px; border-radius: var(--r-xl); }
+  }
+  .e16-status { grid-area: status; display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+  @media (min-width: 900px) { .e16-status { flex-direction: column; gap: 2px; } }
+  .e16-status .label { color: var(--accent-ink); }
+  .e16-seg { grid-area: seg; justify-self: end; display: inline-flex; padding: 4px; background: var(--sunken); border-radius: var(--r-pill); }
+  .e16-seg button { padding: 8px 16px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-muted); font-family: var(--f-text); font-size: var(--t-body-sm); font-weight: 500; cursor: pointer; }
+  .e16-seg button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .e16-tray { grid-area: tray; display: grid; grid-template-rows: auto 1fr; gap: 3px; height: 84px; min-width: 0; overflow: hidden; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
+  @media (min-width: 900px) { .e16-tray { height: 62px; } }
+  .e16-tray .tl { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .e16-tray .tb { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: var(--t-body-sm); line-height: 1.35; }
+  .e16-tray .tb input { width: 100%; min-width: 0; padding: 7px 10px; border: 0; border-radius: var(--r-sm); background: var(--page); color: var(--ink); font-family: var(--f-text); font-size: var(--t-body-sm); }
+  .e16-tray .grow { flex: 1; min-width: 0; }
+  .e16-tray .none { flex: none; }
+  .e16-tray .small { flex: none; padding: 7px 14px; font-size: var(--t-meta); }
+  .e16-discard { grid-area: discard; }
+  .e16-publish { grid-area: publish; justify-self: end; }
+  .e16-publish > * { min-width: 190px; justify-content: center; }
+  .e16-rows { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; }
+  .e16-row { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: center; background: var(--sunken); border-radius: var(--r-md); padding: 12px; }
+  @media (min-width: 700px) { .e16-row { grid-template-columns: 190px minmax(0, 1fr); gap: 16px; } }
+  .e16-row .chip-s { justify-self: start; }
+  .e16-soon { margin-top: 20px; }
   @media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
   /* Empty photo slot: the loaded skeleton with no picture over it. */
   .sk-still::after { animation: none; }
@@ -902,7 +955,7 @@
     <div class="mgrid">
 
       <div class="tile wide">
-        <div class="tile-h"><span><span class="nm">Nav / desktop</span><span class="sp">floating pill &middot; links inline &middot; sliding accent indicator &middot; no burger</span></span><span class="label">1024 and up</span></div>
+        <div class="tile-h"><span><span class="nm">Nav / desktop</span><span class="sp">floating pill &middot; links inline &middot; sliding accent indicator &middot; Apply to join, primary &middot; no burger</span></span><span class="label">1024 and up</span></div>
         <div class="scrollx">
           <div class="frame" style="min-width:660px;min-height:200px">
             <div class="dnav">
@@ -915,6 +968,7 @@
                 <button type="button">Partners</button>
                 <button type="button">Contact</button>
               </span>
+              <button class="btn b1" type="button" style="margin-left:8px">Apply to join</button>
             </div>
             <div class="bed"><div class="ghost w45"></div><div class="ghost w85"></div><div class="ghost w70"></div><div class="ghost w45"></div></div>
           </div>
@@ -922,12 +976,13 @@
       </div>
 
       <div class="tile wide" style="order:-1">
-        <div class="tile-h"><span><span class="nm">Nav / mobile</span><span class="sp">hamburger right &middot; pill grows down &middot; X or click outside to collapse</span></span><span class="label">Tap the hamburger</span></div>
+        <div class="tile-h"><span><span class="nm">Nav / mobile</span><span class="sp">Apply to join at every width &middot; below 640 the shark alone marks home &middot; hamburger right &middot; pill grows down</span></span><span class="label">Tap the hamburger</span></div>
         <div class="phone">
           <div class="frame" style="min-height:420px">
             <nav class="mnav" id="mnav">
               <div class="top">
-                <span class="lock" style="display:flex;align-items:center;gap:9px"><span class="glyph">WSC</span><span class="wm">Western Sales Club</span></span>
+                <span class="lock" style="display:flex;align-items:center;gap:9px;margin-right:auto"><span class="glyph">WSC</span></span>
+                <button class="btn b1" type="button">Apply to join</button>
                 <button class="burger" id="burger" type="button" aria-expanded="false" aria-controls="mnavBody" aria-label="Open menu"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="ic-menu"><line x1="4.5" y1="7" x2="19.5" y2="7"></line><line x1="4.5" y1="12" x2="19.5" y2="12"></line><line x1="4.5" y1="17" x2="19.5" y2="17"></line></g><g class="ic-close"><line x1="6.8" y1="6.8" x2="17.2" y2="17.2"></line><line x1="17.2" y1="6.8" x2="6.8" y2="17.2"></line></g></svg></button>
               </div>
               <div class="body" id="mnavBody">
@@ -1008,6 +1063,21 @@
     </div>
   </section>
 
+  <!--
+    PageHead (src/components/layout/page-head.tsx), the first section of every
+    public page other than home, composed from CentredHead as the h1: eyebrow,
+    title, optional copy. Inverse tone, waist ribbon. One padding on every
+    page, the hero's: clamp(7.5rem,14vw,11rem) top, which clears the fixed nav
+    pill at 375 and 1280, and clamp(3rem,7vw,5.5rem) bottom. It sits one card
+    before the ClosingBand rather than touching it, because the two loud tones
+    never touch.
+  -->
+  <section class="slab band-c textured lit-black billboard dots alive" data-shape="waist" style="padding-top:clamp(7.5rem,14vw,11rem);padding-bottom:clamp(3rem,7vw,5.5rem)">
+    <span class="label">About us</span>
+    <div class="title" style="margin-top:14px;max-width:24ch">Who we are</div>
+    <span class="label" style="margin-top:22px">Page head &middot; one per page, first &middot; CentredHead as h1 on inverse &middot; waist</span>
+  </section>
+
   <section class="slab">
     <div class="sechead"><span class="label"><span class="n">11</span> &nbsp;States</span><span class="meta">Every async list needs all four. None of them is a blank screen.</span></div>
     <div class="states">
@@ -1034,10 +1104,21 @@
     </div>
   </section>
 
-  <section class="slab band-c textured lit-velvet billboard dots alive" data-shape="sweep">
-    <span class="label">CTA band &middot; one per page &middot; sweep</span>
-    <div class="title" style="margin-top:14px;max-width:24ch">The accent slab is the thing you want clicked</div>
-    <div style="margin-top:22px"><button class="btn b2" type="button">Join Western Sales Club <span class="aw">&#8594;</span></button></div>
+  <!--
+    ClosingBand (src/components/layout/closing-band.tsx), the last section of
+    every public page, composed from CentredHead (src/components/ui/centred-head.tsx):
+    the title Join, copy for both audiences, then two buttons side by side.
+    Apply to join for students (primary, which takes the page fill here) and
+    the business button (secondary, which takes the slab's ink here). Accent
+    tone, sweep ribbon, Slab Clip on arrival. A page swaps only the business
+    button (businessAction): Partners passes Become a partner, opening the
+    contact form.
+  -->
+  <section class="slab band-c textured lit-velvet billboard dots alive" data-shape="sweep" style="padding-block:88px">
+    <div class="title" style="max-width:24ch">Join</div>
+    <p class="subtitle" style="margin:14px 0 0;color:inherit">Students join through the Western USC store. Businesses can contact us about partnering.</p>
+    <div style="margin-top:22px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center"><button class="btn b2" type="button">Apply to join <span class="aw">&#8594;</span></button><button class="btn" type="button" style="background:transparent;color:inherit;box-shadow:none">Get in touch</button></div>
+    <span class="label" style="margin-top:22px">Closing band &middot; one per page, last &middot; CentredHead on accent &middot; sweep</span>
   </section>
 
   <!--
@@ -1182,6 +1263,117 @@
       Leaving an editor with edits pending asks once, Stay or Discard and
       leave, in the same dialog shape as delete. It never traps anyone.
     </p>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label"><span class="n">16</span> &nbsp;Edit mode</span><span class="meta">Every value is a field on the page. Nothing goes live until Publish.</span></div>
+
+    <div class="e16-grid">
+      <div class="e16-cell wide">
+        <span class="label">Heading, one field, two lines</span>
+        <div class="e16-pair" style="align-items:stretch">
+          <span class="e16-f lines on"><span class="title">Welcome to
+Sales Team</span></span>
+        </div>
+        <p class="body-sm">Enter starts line 2, a third line is refused, and line 1 and line 2 save to their own two keys. The tray counts each line and warns when one wraps on phones.</p>
+        <span class="meta">Tray: Line 1: 10 of 24. Line 2: 10 of 24. Enter starts line 2; leave it empty for one line.</span>
+      </div>
+
+      <div class="e16-cell">
+        <span class="label">Field, at rest and focused</span>
+        <div class="e16-pair">
+          <span class="meta">At rest</span>
+          <span class="e16-f block para body">Western Sales Club is a student-run sales organization at Western University. Members train on live calls and pitch to real partners.</span>
+        </div>
+        <div class="e16-pair">
+          <span class="meta">Focused</span>
+          <span class="e16-f block para on body">Western Sales Club is a student-run sales organization at Western University. Members train on live calls and pitch to real partners.</span>
+        </div>
+        <p class="body-sm">A fill of the text colour at 9 percent, <b>--r-sm</b>, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the field's shell. Each field is sized to its longest allowed value, so typing never resizes it.</p>
+      </div>
+
+      <div class="e16-stack">
+      <div class="e16-cell">
+        <span class="label">Button label</span>
+        <div class="mags">
+          <div class="e16-pair"><span class="meta">At rest</span><span class="btn b1"><span class="e16-lbl">Apply to join</span> <span class="aw">&#8594;</span></span></div>
+          <div class="e16-pair"><span class="meta">Focused</span><span class="btn b1"><span class="e16-lbl on">Apply to join</span> <span class="aw">&#8594;</span></span></div>
+        </div>
+        <p class="body-sm">The label is a field inside the button, sized to the longest allowed label so the button never resizes. The ring takes the label's colour, which is the colour that shows on the button's fill. The link address is in the tray.</p>
+      </div>
+
+      <div class="e16-cell">
+        <span class="label">Photo slot</span>
+        <div class="e16-photos">
+          <div class="e16-ph"><span class="img"></span><button type="button" aria-label="Replace photo, Home, hero photo"><span class="chip-s"><span class="d"></span>Replace photo</span></button></div>
+          <div class="e16-ph"><span class="sk sk-still"></span><button type="button" aria-label="Add photo, Home, hero photo"><span class="chip-s"><span class="d"></span>Add photo</span></button></div>
+        </div>
+        <p class="body-sm">Replace photo on a filled slot, Add photo on an empty one. Clicking opens the device's file picker, and the chosen file fills the same frame before Publish. A photo below the minimum width shows a warning, and below half of it is refused.</p>
+      </div>
+      </div>
+    </div>
+
+    <div class="e16-bars">
+      <span class="label">Edit bar and tray</span>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">No changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Edit mode</span><div class="tb"><span class="grow">Every text and photo on the page is a field. Change it where it is. Nothing goes live until you press Publish.</span></div></div>
+        <div class="e16-discard"><button class="btn off" type="button" disabled>Discard</button></div>
+        <div class="e16-publish"><button class="btn off" type="button" disabled>Publish</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Home &middot; Button text</span><div class="tb"><span class="meta none">13 of 28</span><input type="text" value="/apply" readonly aria-label="Link address for Home, button text"></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Preview</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="false">Edit</button><button type="button" aria-pressed="true">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Preview</span><div class="tb"><span class="grow">Preview shows the page as visitors will see it after you publish.</span></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Discard</span><div class="tb"><span class="grow">Discard 3 unpublished changes? This cannot be undone.</span><button class="btn b2 small" type="button">Keep editing</button><button class="btn b1 small" type="button">Discard 3</button></div></div>
+        <div class="e16-discard"><button class="btn off" type="button" disabled>Discard</button></div>
+        <div class="e16-publish"><button class="btn off" type="button" disabled>Publish 3 changes</button></div>
+      </div>
+    </div>
+
+    <p class="body-sm" style="margin-top:20px;max-width:62ch">
+      The bar has one fixed size at each width. The <b>tray</b> is the only
+      region whose content changes, and it never grows: it holds the name and
+      count of the focused field, a link address, a photo's minimum width,
+      confirmations and results. There are no dialogs. The Publish button is
+      wide enough for <b>Publish 99 changes</b>, so its label changes to
+      Publishing and Published in place without moving the bar.
+    </p>
+
+    <div class="e16-rows">
+      <span class="label">Tray copy by state</span>
+      <div class="e16-row"><span class="chip-s"><span class="d" style="background:var(--ink-faint)"></span>Field focused</span><span class="body-sm">About &middot; Body copy. 212 of 320 characters.</span></div>
+      <div class="e16-row"><span class="chip-s c-wn"><span class="d"></span>Line too wide</span><span class="body-sm">This line wraps on phones. Shorten it to keep the heading on one line.</span></div>
+      <div class="e16-row"><span class="chip-s"><span class="d" style="background:var(--ink-faint)"></span>Pending</span><span class="body-sm">3 unpublished changes. The button reads Publish 3 changes.</span></div>
+      <div class="e16-row"><span class="chip-s c-ok"><span class="d"></span>Published</span><span class="body-sm">Published. Visitors see the changes now. The button reads Published for two seconds.</span></div>
+      <div class="e16-row"><span class="chip-s c-al"><span class="d"></span>Partly failed</span><span class="body-sm">2 changes did not publish and are still in your draft. Try again.</span></div>
+      <div class="e16-row"><span class="chip-s c-al"><span class="d"></span>Missing name</span><span class="body-sm">Add a name for the new executive before publishing.</span></div>
+      <div class="e16-row"><span class="chip-s c-wn"><span class="d"></span>Offline</span><span class="body-sm">You are offline. Your changes are saved in this browser. Publish when you reconnect.</span></div>
+      <div class="e16-row"><span class="chip-s c-al"><span class="d"></span>Sign-in expired</span><span class="body-sm">Your sign-in expired. Your changes are saved in this browser. Sign in again to publish them.</span></div>
+      <div class="e16-row"><span class="chip-s"><span class="d" style="background:var(--ink-faint)"></span>Draft from earlier</span><span class="body-sm">You have 3 unpublished changes from Tuesday.</span></div>
+      <div class="e16-row"><span class="chip-s c-wn"><span class="d"></span>Photo too small</span><span class="body-sm">This photo is 420px wide and will look soft here. Use one at least 840px wide.</span></div>
+      <div class="e16-row"><span class="chip-s c-al"><span class="d"></span>Photo refused</span><span class="body-sm">This photo is 260px wide, too small for this spot. Use one at least 560px wide.</span></div>
+    </div>
+
+    <p class="meta e16-soon">Not built yet, so not drawn: InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile, Settings page.</p>
   </section>
 
   <section aria-labelledby="tex-h">

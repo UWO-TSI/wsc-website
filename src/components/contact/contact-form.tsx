@@ -6,7 +6,7 @@ import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import Chip from '@/components/ui/chip';
 import Field from '@/components/contact/field';
-import { useSiteContent } from '@/providers/site-content-provider';
+import { EditableButton, EditableText } from '@/edit';
 
 interface FormData {
   name: string;
@@ -35,6 +35,26 @@ const ORG_TYPE_OPTIONS = [
   { value: 'sponsor', label: 'Potential Sponsor' },
   { value: 'other', label: 'Other' },
 ];
+
+/*
+  The Organization type a link may preselect with ?type=, for example
+  Become a partner on the Partners page. Only a value already offered by
+  the select is accepted; anything else leaves the select empty.
+*/
+export function orgTypeFromParam(value: string | null | undefined): string {
+  if (!value) return '';
+  return ORG_TYPE_OPTIONS.some((opt) => opt.value && opt.value === value) ? value : '';
+}
+
+/*
+  The form section is its own full-width sunken slab, the form held to a
+  640px column inside it. Its id is the target of the closing band's
+  business button on this page.
+*/
+export const CONTACT_FORM_ID = 'contact-form';
+
+const SECTION_CLASS = 'scroll-mt-[clamp(5rem,8vw,7rem)]';
+const COLUMN_CLASS = 'mx-auto w-full max-w-[640px]';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,10 +85,17 @@ function validateAll(formData: FormData): Record<FieldName, string | undefined> 
   };
 }
 
-export default function ContactForm() {
+interface ContactFormProps {
+  /** A value from orgTypeFromParam: preselects the Organization type. */
+  initialOrgType?: string;
+}
+
+export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const { text } = useSiteContent();
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormData>({
+    ...INITIAL_FORM_DATA,
+    organization_type: initialOrgType,
+  });
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,29 +149,38 @@ export default function ContactForm() {
 
   if (sent) {
     return (
-      <Slab tone="sunken" className="flex flex-col items-center gap-4 py-16 text-center">
-        <Chip status="ok">Sent</Chip>
-        <p className="title-sm">{text('contact.form.sent_title')}</p>
-        <p className="body-sm measure">{text('contact.form.sent_body')}</p>
-        <Button
-          variant="tertiary"
-          onClick={() => {
-            setFormData(INITIAL_FORM_DATA);
-            setTouched({});
-            setSubmitted(false);
-            setSubmitFailed(false);
-            setSent(false);
-          }}
+      <Slab tone="sunken" id={CONTACT_FORM_ID} className={SECTION_CLASS}>
+        <div
+          className={`${COLUMN_CLASS} flex flex-col items-center gap-4 py-[clamp(2rem,5vw,3rem)] text-center`}
         >
-          Send another message
-        </Button>
+          <Chip status="ok">Sent</Chip>
+          <EditableText k="contact.form.sent_title" as="p" className="title-sm" />
+          <EditableText k="contact.form.sent_body" as="p" className="body-sm measure" />
+          <Button
+            variant="tertiary"
+            onClick={() => {
+              setFormData(INITIAL_FORM_DATA);
+              setTouched({});
+              setSubmitted(false);
+              setSubmitFailed(false);
+              setSent(false);
+            }}
+          >
+            Send another message
+          </Button>
+        </div>
       </Slab>
     );
   }
 
   return (
-    <Slab tone="sunken">
-      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+    <Slab tone="sunken" id={CONTACT_FORM_ID} className={SECTION_CLASS}>
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className={`${COLUMN_CLASS} flex flex-col gap-6`}
+        noValidate
+      >
         <Field
           label="Name"
           name="name"
@@ -219,9 +255,13 @@ export default function ContactForm() {
           )}
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="self-start">
-          {isSubmitting ? 'Sending' : text('contact.form.submit_label')}
-        </Button>
+        <EditableButton
+          labelKey="contact.form.submit_label"
+          type="submit"
+          disabled={isSubmitting}
+          label={isSubmitting ? 'Sending' : undefined}
+          className="self-start"
+        />
       </form>
     </Slab>
   );

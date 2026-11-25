@@ -7,17 +7,22 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
 import { EditBranch, useEditBranch } from '@/edit/edit-mode';
 
 /*
-  A button whose label and link are site_content keys.
+  A button whose label is a site_content key.
+
+  Two modes. With `hrefKey` the link is a site_content key too, and while
+  editing its address shows in the tray. Without it the button is
+  label-only: its action is not site content (a row's own URL through
+  `href`, a form submit through `type`), so only the label is edited.
 
   View mode and Preview: the Button primitive, opening external links in a
   new tab through externalLinkProps. While editing, the engine's
-  InlineLabel renders instead: the label is a field inside the button and
-  the link address shows in the tray.
+  InlineLabel renders instead in both modes: the label field sits over an
+  inert copy of the button, so the field is never inside a real <button>
+  and nothing on it can follow a link or submit a form.
 */
 
-export interface EditableButtonProps {
+interface CommonProps {
   labelKey: SiteContentKey;
-  hrefKey: SiteContentKey;
   variant?: ButtonVariant;
   arrow?: boolean;
   /** Passed through to Button until the design system retires it. */
@@ -25,22 +30,44 @@ export interface EditableButtonProps {
   className?: string;
 }
 
+interface LinkKeyProps extends CommonProps {
+  hrefKey: SiteContentKey;
+}
+
+interface LabelOnlyProps extends CommonProps {
+  hrefKey?: undefined;
+  /** A link that is not site content, such as an event's register_url. */
+  href?: string;
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+  'aria-label'?: string;
+  /** Shown instead of the stored label in view mode, for a busy state. */
+  label?: string;
+}
+
+export type EditableButtonProps = LinkKeyProps | LabelOnlyProps;
+
 export default function EditableButton(props: EditableButtonProps) {
-  const { labelKey, hrefKey, variant, arrow, onAccent, className } = props;
+  const { labelKey, variant, arrow, onAccent, className } = props;
   const { text } = useSiteContent();
   if (useEditBranch()) return <EditBranch name="Button" props={props} />;
-  const href = text(hrefKey);
+
+  const own = props.hrefKey === undefined ? props : undefined;
+  const href = own ? own.href : text(props.hrefKey!);
 
   return (
     <Button
       href={href}
       {...externalLinkProps(href)}
+      type={own?.type}
+      disabled={own?.disabled}
+      aria-label={own?.['aria-label']}
       variant={variant}
       arrow={arrow}
       onAccent={onAccent}
       className={className}
     >
-      {text(labelKey)}
+      {own?.label ?? text(labelKey)}
     </Button>
   );
 }

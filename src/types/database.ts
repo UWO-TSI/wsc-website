@@ -46,11 +46,8 @@ export interface ExecGroup {
   label: string;
   /** Admin dropdown option, e.g. 'Vice President'. */
   singular_label: string;
-  /**
-   * Role in a built title, e.g. 'VP' in "VP, Marketing". Always set in the
-   * database; absent only from the compiled-in fallbacks.
-   */
-  short_label?: string;
+  /** Role in a built title, e.g. 'VP' in "VP, Marketing". */
+  short_label: string;
   visible: boolean;
   display_order: number;
 }

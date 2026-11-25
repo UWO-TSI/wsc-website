@@ -80,6 +80,70 @@ On an inverse, accent or logo slab the focus ring and the primary button adapt o
 `Slab` and `Button` in `components.md`). A loud slab that sells takes `texture`; see the shape
 table in `components.md`.
 
+## Patterns every page copies
+
+Three pieces set on the home page. Pages compose them; they do not add their own.
+
+**Closing band.** `src/components/layout/closing-band.tsx`, the last child of every public page.
+Title Join, one or two sentences for both audiences, then two buttons side by side: Apply to join
+(students, primary) and a business button (secondary, which on the accent slab takes the slab's ink).
+
+| Prop | Default | Use |
+| --- | --- | --- |
+| `titleKeys` | `['home.cta.title_line1']` (Join) | One `site_content` key per visual line. |
+| `eyebrowKey` | none | Optional. Off by default, because an eyebrow over the title Join repeats it. |
+| `bodyKey` | `home.cta.subtitle` | One or two sentences. `null` for none. |
+| `businessAction` | `EditableButton` on `home.cta.business_label` / `home.cta.business_href`, secondary (Get in touch, `/contact-us`) | Replaces the business button only. Apply to join on `home.cta.button_*` always stays. |
+| `id` | `closing-heading` | The heading id the section is labelled by. |
+
+```tsx
+<ClosingBand />                                       // home, legal pages, events, team
+<ClosingBand
+  businessAction={
+    <EditableButton
+      labelKey="sponsors.cta.partner_label"
+      hrefKey="sponsors.cta.partner_href"
+      variant="secondary"
+    />
+  }
+/>
+```
+
+It is the page's one loud slab, except for the page head: a page other than home may open with `PageHead` (below). A page that ends with the band has no other `inverse` or `accent` slab, and the section above it is not `accent`. Server-component pages can render it directly; for a page whose root is one element, return a fragment with the band after it.
+
+**Page head.** `src/components/layout/page-head.tsx`, `PageHead`, the first child of every public
+page other than home: an `inverse` slab with the `waist` ribbon and a `CentredHead` as the `h1`. It owns
+the padding (the hero's, `clamp(7.5rem,14vw,11rem)` top and `clamp(3rem,7vw,5.5rem)` bottom), so pages
+never set one.
+
+| Prop | Default | Use |
+| --- | --- | --- |
+| `titleKeys` | required | One `site_content` key per visual line. |
+| `eyebrowKey` | none | The eyebrow over the title. |
+| `bodyKey` | none | At most three lines of copy under the title. |
+| `id` | required | The `h1` id the slab is labelled by. Unique per page. |
+
+```tsx
+<PageHead id="about-title" eyebrowKey="about.header.eyebrow" titleKeys={['about.header.title']} />
+```
+
+**Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for every section head on a selling page. `SectionHead` stays for left-aligned heads whose title is not editable copy.
+
+**The one action.** Apply to join is always `<EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />`. The nav already carries it at every width. Never give a page its own Apply to join key.
+
+**A label-only button.** When a button's label is a `site_content` key but its action is not (a
+row's own URL, a form submit), omit `hrefKey` and pass the action instead: `href`, `type`, `disabled`,
+`aria-label`, and `label` for a busy state such as Sending. While editing, the label field sits over an
+inert copy of the button, as it does for every `EditableButton`. Never put an `EditableText` inside a
+`Button`: in edit mode that nests a field in a real `<button>`.
+
+```tsx
+<EditableButton labelKey="events.ledger.register_label" variant="secondary" href={event.register_url} />
+<EditableButton labelKey="contact.form.submit_label" type="submit" disabled={busy} label={busy ? 'Sending' : undefined} />
+```
+
+**Full width.** The shell wraps `main` and the footer in one `.stack`, so the last section of a page meets the footer 2px apart. A page with several slabs wraps them in its own `.stack`.
+
 ## Running a sequence
 
 Scroll-triggered sequences are CSS keyframes gated on `[data-run]`, driven by `useReveal()`.
@@ -219,7 +283,7 @@ Complete. Every component on the public site and in `/admin` is on Floor, the pr
 1. Look at it rendered, on every tone it can be placed on.
 2. Keyboard only. Every row, chip and control reachable, focus ring never removed.
 3. No borders. Not on a section, a row, an input or an image.
-4. One primary button per section, one loud slab per page, adjacent slabs never the same tone.
+4. One primary button per section, adjacent slabs never the same tone, one loud slab per page. The one exception is the page head: an inverse page head with the waist ribbon may open a page that ends with the closing band.
 5. Reduced motion on. Nothing is invisible, nothing loops, and the grain is still.
 6. `npx tsc --noEmit` and `npm run lint` clean, `npm run build` passing.
 7. Its card exists in `floor.html`. If it is not in `floor.html`, it does not exist.

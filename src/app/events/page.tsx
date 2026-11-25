@@ -2,11 +2,12 @@
 
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
-import RevealImage from '@/components/ui/reveal-image';
-import SectionHead from '@/components/ui/section-head';
+import PageHead from '@/components/layout/page-head';
 import Slab from '@/components/ui/slab';
 import Timeline from '@/components/events/timeline';
 import RowSkeleton from '@/components/ui/row-skeleton';
+import ClosingBand from '@/components/layout/closing-band';
+import { EditableImage } from '@/edit';
 import type { Event } from '@/types/database';
 import { useSiteContent } from '@/providers/site-content-provider';
 import type { ImageSlotKey } from '@/lib/image-slots';
@@ -22,6 +23,10 @@ import type { ImageSlotKey } from '@/lib/image-slots';
 
   Newest first: the calendar is read for what is coming and what just
   happened, not from the club's first event forward.
+
+  Order: the page head (inverse, waist ribbon), the photo strip bare on the
+  page, the ledger on a sunken slab, then the closing band. The head sells,
+  so it is centred; the ledger is reading content and stays left-aligned.
 */
 const PHOTO_SLOTS: ImageSlotKey[] = [
   'events.strip.image1',
@@ -42,26 +47,25 @@ export default function EventsPage() {
       filters: [{ column: 'published', operator: 'eq', value: true }],
     }
   );
-  const { text, image } = useSiteContent();
+  const { text } = useSiteContent();
 
   return (
-    <main className="pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
-      <div className="mb-10 px-[var(--gut)]">
-        <SectionHead
-          eyebrow={text('events.header.eyebrow')}
-          title={[text('events.header.title_line1')]}
-        />
-      </div>
+    <div className="stack">
+      <PageHead
+        id="events-heading"
+        eyebrowKey="events.header.eyebrow"
+        titleKeys={['events.header.title_line1']}
+      />
 
-      <div className="mb-6 px-[var(--gut)]">
+      <section aria-label="Event photos" className="px-[var(--gut)] py-[clamp(1.5rem,4vw,2.75rem)]">
         <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 min-[850px]:grid-cols-5 sm:gap-3">
           {PHOTO_SLOTS.map((slot, i) => (
             <li
               key={slot}
               className={`m-0 min-w-0 ${i > 2 ? 'hidden min-[850px]:block' : ''}`}
             >
-              <RevealImage
-                {...image(slot)}
+              <EditableImage
+                slot={slot}
                 sizes="(max-width: 849px) 33vw, 20vw"
                 className="aspect-[4/3] w-full rounded-md"
                 index={i}
@@ -69,29 +73,27 @@ export default function EventsPage() {
             </li>
           ))}
         </ul>
-      </div>
+      </section>
 
       {/*
         The slab is outside the async wrapper on purpose. The band, its tone
         and its corner are known before the query resolves, so they paint
-        immediately and only the ledger inside fills in. With the wrapper on
-        the outside there was no slab at all while loading, and the whole
-        section appeared at once the moment the data landed.
+        immediately and only the ledger inside fills in.
       */}
-      <div className="px-[var(--gut)]">
-        <Slab tone="sunken">
-          <AsyncStateWrapper
-            loading={loading}
-            error={error}
-            data={events}
-            onRetry={refetch}
-            emptyMessage={text('events.header.empty')}
-            skeleton={<RowSkeleton count={6} />}
-          >
-            <Timeline events={events} />
-          </AsyncStateWrapper>
-        </Slab>
-      </div>
-    </main>
+      <Slab tone="sunken">
+        <AsyncStateWrapper
+          loading={loading}
+          error={error}
+          data={events}
+          onRetry={refetch}
+          emptyMessage={text('events.header.empty')}
+          skeleton={<RowSkeleton count={6} />}
+        >
+          <Timeline events={events} />
+        </AsyncStateWrapper>
+      </Slab>
+
+      <ClosingBand />
+    </div>
   );
 }

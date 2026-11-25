@@ -29,8 +29,12 @@ function Shell({ children }: { children: React.ReactNode }) {
           </a>
 
           <Nav />
-          <main id="main-content">{children}</main>
-          <Footer />
+          {/* One stack, so the last section of every page meets the footer
+              2px apart like every other join. */}
+          <div className="stack">
+            <main id="main-content">{children}</main>
+            <Footer />
+          </div>
         </LenisProvider>
       </CursorProvider>
     </SiteContentProvider>

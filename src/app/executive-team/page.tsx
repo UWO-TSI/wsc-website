@@ -4,8 +4,9 @@ import { useMemo } from 'react';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecGroup, Executive } from '@/types/database';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
-import SectionHead from '@/components/ui/section-head';
+import PageHead from '@/components/layout/page-head';
 import Slab from '@/components/ui/slab';
+import ClosingBand from '@/components/layout/closing-band';
 import ExecutiveGrid, { ExecutiveGridSkeleton } from '@/components/team/executive-grid';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
@@ -18,6 +19,11 @@ import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
   their display_order rather than a hardcoded list. A role the club adds sorts
   where they put it. Until the lookup answers, the three original tiers stand
   in, which is the order the roster had before roles were editable.
+
+  Order: the page head (inverse, waist ribbon), the roster bare on the page,
+  then the closing band. The roster is bare rather than sunken because a
+  missing headshot is an initials disc on --sunken, which would vanish on a
+  sunken ground.
 */
 
 export default function ExecutiveTeamPage() {
@@ -59,30 +65,29 @@ export default function ExecutiveTeamPage() {
   }, [executives, groupOrder]);
 
   return (
-    <main className="pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
-      <div className="mb-16 px-[var(--gut)]">
-        <SectionHead
-          eyebrow={text('team.header.eyebrow')}
-          title={[text('team.header.title_line1'), text('team.header.title_line2')].filter(Boolean)}
-        />
-      </div>
+    <div className="stack">
+      <PageHead
+        id="team-heading"
+        eyebrowKey="team.header.eyebrow"
+        titleKeys={['team.header.title_line1', 'team.header.title_line2']}
+      />
 
       {/* Slab outside the async wrapper: the bed paints immediately and only
           the roster inside fills in. */}
-      <div className="px-[var(--gut)]">
-        <Slab tone="sunken">
-          <AsyncStateWrapper
-            loading={loading}
-            error={error}
-            data={ordered}
-            onRetry={refetch}
-            emptyMessage={text('team.header.empty')}
-            skeleton={<ExecutiveGridSkeleton count={8} />}
-          >
-            <ExecutiveGrid executives={ordered} />
-          </AsyncStateWrapper>
-        </Slab>
-      </div>
-    </main>
+      <Slab tone="page">
+        <AsyncStateWrapper
+          loading={loading}
+          error={error}
+          data={ordered}
+          onRetry={refetch}
+          emptyMessage={text('team.header.empty')}
+          skeleton={<ExecutiveGridSkeleton count={8} />}
+        >
+          <ExecutiveGrid executives={ordered} />
+        </AsyncStateWrapper>
+      </Slab>
+
+      <ClosingBand />
+    </div>
   );
 }

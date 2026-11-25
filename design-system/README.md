@@ -92,7 +92,7 @@ Lit velvet is the texture on every velvet and velvet black container. There is n
 - **Ribbon.** Parallel lines offset from one curve, strongest at the centre, never crossing. Drawn once per size; the same band always draws the same way. It never moves.
 - **Five shapes.** `sweep` for a closing band, `rise` for a statement slab, `arc` for a stats band, `waist` for a page head, `pair` for a wide, short band.
 
-The numbers come from the approved render in `docs/redesign/reference.html`. Change them there first.
+The numbers come from `docs/redesign/reference.html`. Change them there first.
 
 ## Extending the system
 

@@ -4,7 +4,7 @@ Every sequence in here is running live in `floor.html`. Watch it there first; th
 
 ## The thesis
 
-Sales motion arrives and stops. Everything moves fast out of the gate and comes to a dead stop, which is what `--e-enter` describes. Nothing eases in slowly, nothing overshoots, and two things loop: the marquee on `--e-drift`, and the grain on a textured container (see Grain Shift below). `--e-snap`, the one overshoot curve, has no current use since the theme toggle was removed.
+Sales motion arrives and stops. Everything starts fast and stops without settling, which is what `--e-enter` describes. Nothing eases in slowly, nothing overshoots, and two things loop: the marquee on `--e-drift`, and the grain on a textured container (see Grain Shift below). `--e-snap`, the one overshoot curve, has no current use since the theme toggle was removed.
 
 Three laws:
 

@@ -47,7 +47,7 @@ Every button is a pill. Nothing else in the system uses `--r-pill`, which is how
 | Tertiary | No fill, `--accent-ink` label | `--accent-veil` fill |
 | Disabled | `--sunken` fill, `--ink-faint` label | none |
 
-On an `--inverse` or `--accent` slab the primary takes the page fill (the secondary variant), because an accent button on a loud ground has nowhere to go. The secondary and tertiary take the slab's own ink, with a hover fill mixed from it. Button reads the tone from the enclosing `Slab`, so a page passes no flag. The old `onAccent` prop is deprecated and has no effect.
+On an `--inverse` or `--accent` slab the primary takes the page fill (the secondary variant), because a velvet button on a velvet or velvet black ground has too little contrast to read as a button. The secondary and tertiary take the slab's own ink, with a hover fill mixed from it. Button reads the tone from the enclosing `Slab`, so a page passes no flag. The old `onAccent` prop is deprecated and has no effect.
 
 Label is Instrument Sans 15px weight 500, sentence case, never wrapping. Padding 14px block, 24px inline, which clears 44px at every size. The label names the action and the confirmation echoes it: **Apply to join**, then **Application received**. A trailing arrow means the action leaves the page.
 

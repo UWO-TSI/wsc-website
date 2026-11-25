@@ -70,8 +70,7 @@ All in `src/components/`. Compose from these; do not rebuild them.
 
 A section is a full-width container: it spans the viewport with no side gap, takes `--r-xl`, and
 puts `--gut` inside itself as inline padding. `.slab` does all three. Containers that meet are 2px
-apart: wrap them in `.stack`. Do not add `mx-[var(--gut)]` or any side margin to a slab. Some
-sections still pass it from before this change; the page redesign removes it.
+apart: wrap them in `.stack`. Do not add `mx-[var(--gut)]` or any side margin to a slab.
 
 - **Selling sections are centred:** the hero, section heads and closing bands. Eyebrow, then the
   Archivo title, then at most three lines of copy, then the buttons.
@@ -157,8 +156,8 @@ below it down.
 
 ## Motion deviations from the spec
 
-Two of the sequences ship differently from `motion.md`. Both were design calls, not
-oversights, and both are reversible.
+Two of the sequences ship differently from `motion.md`. Both differences are
+intended, and both are reversible.
 
 - **Sequence 7, Marquee Drift, has no scroll skew.** The spec gives the track a `skewX` up to 4
   degrees proportional to scroll velocity. Built and shipped, it read as a rendering glitch rather

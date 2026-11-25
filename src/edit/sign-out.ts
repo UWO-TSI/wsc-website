@@ -11,7 +11,13 @@ import { leaveEditMode } from '@/edit/edit-mode';
  */
 export async function signOutAndReload(to?: string) {
   leaveEditMode();
-  await supabase.auth.signOut().catch(() => {});
+  /*
+    signOut() returns an error, and keeps the stored session, when the
+    logout request fails (offline, 5xx). The local scope always removes the
+    stored session, so the reload never starts signed in.
+  */
+  const { error } = await supabase.auth.signOut().catch((e: unknown) => ({ error: e }));
+  if (error) await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
   if (to) window.location.assign(to);
   else window.location.reload();
 }

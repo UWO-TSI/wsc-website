@@ -68,6 +68,10 @@ export const COPY = {
   // Publish results
   publishedLabel: 'Published',
   publishedBody: 'Published. Visitors see the changes now.',
+  /* Not in the spec table: a change to an item that was removed in another
+     tab or by another admin is dropped from the draft. */
+  publishedGone: (n: number) =>
+    `Published. ${n} ${n === 1 ? 'change was' : 'changes were'} for an item already removed elsewhere, and ${n === 1 ? 'it was' : 'they were'} dropped from your draft.`,
   failedLabel: 'Not published',
   partlyFailed: (n: number) =>
     `${n} ${n === 1 ? 'change did' : 'changes did'} not publish and ${n === 1 ? 'is' : 'are'} still in your draft. Try again.`,
@@ -97,6 +101,12 @@ export const COPY = {
   moved: (who: string, i: number, n: number) => `Moved ${who} to position ${i} of ${n}`,
   gripHint: 'Drag to move, or use the arrow keys.',
   rowHead: (kind: string, name: string) => `${kind} · ${name}`,
+  /** A row field's accessible name: "Name, Mei Chen". */
+  rowField: (label: string, who: string) => `${label}, ${who}`,
+  /* The control after each row that moves focus to the row's Remove (and
+     link address) in the tray. Not in the spec table. */
+  rowOptions: 'Options',
+  rowOptionsName: (who: string) => `Options for ${who}, in the edit bar. Escape comes back here.`,
   showsAs: (shown: string) => `Shows on the site as ${shown}.`,
   roleHint: (shown: string) => `Roles are added in Settings. Shows as ${shown}.`,
   rowPhotoHint: 'Opens your files or photo library.',
@@ -118,37 +128,45 @@ export const COPY = {
       kind: 'Executive',
       fresh: 'New executive',
       add: 'Add executive',
-      show: 'Show on team page',
+      show: (who: string) => `Show ${who} on team page`,
       remove: 'Remove from team',
       keep: 'Keep on team',
       missing: 'Add a name for the new executive before publishing.',
+      cleared: 'Add a name for this executive before publishing.',
+      full: (n: number) => `The team page shows up to ${n} executives. Remove one before adding another.`,
     },
     events: {
       kind: 'Event',
       fresh: 'New event',
       add: 'Add event',
-      show: 'Show on events page',
+      show: (who: string) => `Show ${who} on events page`,
       remove: 'Remove event',
       keep: 'Keep event',
       missing: 'Add a title for the new event before publishing.',
+      cleared: 'Add a title for this event before publishing.',
+      full: (n: number) => `The events page holds up to ${n} events. Remove a past event before adding another.`,
     },
     sponsors: {
       kind: 'Partner',
       fresh: 'New partner',
       add: 'Add partner',
-      show: 'Show on partners page',
+      show: (who: string) => `Show ${who} on partners page`,
       remove: 'Remove partner',
       keep: 'Keep partner',
       missing: 'Add a name for the new partner before publishing.',
+      cleared: 'Add a name for this partner before publishing.',
+      full: (n: number) => `The partners page shows up to ${n} partners. Remove one before adding another.`,
     },
     site_stats: {
       kind: 'Figure',
       fresh: 'New figure',
       add: 'Add figure',
-      show: 'Show on home page',
+      show: (who: string) => `Show ${who} on home page`,
       remove: 'Remove figure',
       keep: 'Keep figure',
       missing: 'Add a label for the new figure before publishing.',
+      cleared: 'Add a label for this figure before publishing.',
+      full: (n: number) => `The home page shows up to ${n} figures. Remove one before adding another.`,
     },
   },
   /** Names of the row fields, for screen readers and placeholders. */
@@ -178,8 +196,11 @@ export const COPY = {
      left; the address goes back to what it was. Not in the spec table. */
   linkRefusedLabel: 'Link not changed',
   linkRefused: 'Use https:// for another site, or / for a page on this site, as in /events.',
+  /** For a list link (a register link, a partner's site): the database accepts http(s) only. */
+  linkRefusedHttps: 'Use a full web address that starts with https://, as in https://example.com.',
   /** The tray head while the editor is back on that button. */
   linkRefusedHead: 'Link not changed. Start it with https:// or /',
+  linkRefusedHeadHttps: 'Link not changed. Start it with https://',
 };
 
 /**

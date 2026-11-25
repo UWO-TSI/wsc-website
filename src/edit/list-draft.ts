@@ -17,9 +17,10 @@ import { useEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
   src/edit/engine/list-editors.tsx, and Publish writes their changes in
   src/edit/engine/publish.ts.
 
-  Publish refuses while an added executive has no name, and moves focus to
-  the field inside `[data-ed-field="executives.<id>.name"]`, so the list
-  editor puts that attribute on the name field's shell.
+  Publish refuses while any list's name field (NAME_FIELD in publish.ts)
+  is empty on an added row, or cleared on a published one, and moves focus
+  to the field inside `[data-ed-field="<table>.<id>.<name field>"]`, so the
+  list editor puts that attribute on the name field's shell.
 */
 
 export type ListTable = 'executives' | 'events' | 'sponsors' | 'site_stats';

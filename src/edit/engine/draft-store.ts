@@ -104,20 +104,39 @@ export async function loadDrafts(userId: string): Promise<void> {
   } catch {
     db = memoryDraftDb;
   }
+  readDrafts(await db.all().catch(() => []));
+}
+
+/**
+ * Reads the open draft again, for Publish: another tab of the same admin
+ * may have published or changed it. A photo or file drafted at the same
+ * moment as the one in memory keeps its object URL, so nothing on the
+ * page reloads.
+ */
+export async function reloadDrafts(): Promise<void> {
+  /* Without IndexedDB the draft lives in this tab only, and a failed read
+     keeps the draft in memory as it is. */
+  if (db === memoryDraftDb) return;
+  const records = await db.all().catch(() => null);
+  if (records) readDrafts(records);
+}
+
+function readDrafts(records: Array<{ id: string; value: unknown }>) {
+  const keep = (map: Map<string, PhotoDraft>, name: string, v: FileDraft) => {
+    const old = map.get(name);
+    return old && old.at === v.at && old.type === v.type ? old : { ...v, url: URL.createObjectURL(v.blob) };
+  };
+  const oldPhotos = new Map(photos);
+  const oldFiles = new Map(files);
+  photos.clear();
+  files.clear();
   clearMemory();
-  const records = await db.all().catch(() => []);
   for (const { id, value } of records) {
     const [kind, ...rest] = id.split(':');
     const name = rest.join(':');
     if (kind === 'text') texts.set(name, value as TextDraft);
-    if (kind === 'photo') {
-      const v = value as FileDraft;
-      photos.set(name, { ...v, url: URL.createObjectURL(v.blob) });
-    }
-    if (kind === 'file') {
-      const v = value as FileDraft;
-      files.set(name, { ...v, url: URL.createObjectURL(v.blob) });
-    }
+    if (kind === 'photo') photos.set(name, keep(oldPhotos, name, value as FileDraft));
+    if (kind === 'file') files.set(name, keep(oldFiles, name, value as FileDraft));
     if (kind === 'list') lists.set(name as ListTable, value as StoredListDraft);
     if (kind === 'areas') {
       for (const [id, a] of Object.entries(value as Record<string, { name: string; at: number }>)) {
@@ -125,6 +144,8 @@ export async function loadDrafts(userId: string): Promise<void> {
       }
     }
   }
+  const kept = new Set([...photos.values(), ...files.values()].map((d) => d.url));
+  [...oldPhotos.values(), ...oldFiles.values()].forEach((d) => kept.has(d.url) || URL.revokeObjectURL(d.url));
   emit();
 }
 
@@ -601,13 +622,14 @@ export function markOrderPublished(table: ListTable, sent: string[]) {
 
 export function markRemoved(table: ListTable, id: string) {
   departed.add(id);
+  /* Before the list check: a row deleted elsewhere may have only a file. */
+  dropFiles(table, id);
   const d = lists.get(table);
   if (!d) return;
   const next = structuredClone(d);
   next.removed = next.removed.filter((x) => x !== id);
   delete next.updates[id];
   if (next.order) next.order = next.order.filter((x) => x !== id);
-  dropFiles(table, id);
   saveList(table, next);
 }
 

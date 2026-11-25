@@ -107,7 +107,7 @@ Title Join, one or two sentences for both audiences, then two buttons side by si
 />
 ```
 
-It is the page's one loud slab. A page that ends with it has no other `inverse` or `accent` slab, and the section above it is not `accent`. Server-component pages can render it directly; for a page whose root is one element, return a fragment with the band after it.
+It is the page's one loud slab, except for the page head: a page other than home may open with a page head (`Slab` tone `inverse`, `texture="waist"`, `CentredHead` as `h1`). A page that ends with the band has no other `inverse` or `accent` slab, and the section above it is not `accent`. Server-component pages can render it directly; for a page whose root is one element, return a fragment with the band after it.
 
 **Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for every section head on a selling page. `SectionHead` stays for left-aligned heads whose title is not editable copy.
 
@@ -254,7 +254,7 @@ Complete. Every component on the public site and in `/admin` is on Floor, the pr
 1. Look at it rendered, on every tone it can be placed on.
 2. Keyboard only. Every row, chip and control reachable, focus ring never removed.
 3. No borders. Not on a section, a row, an input or an image.
-4. One primary button per section, one loud slab per page, adjacent slabs never the same tone.
+4. One primary button per section, adjacent slabs never the same tone, one loud slab per page. The one exception is the page head: an inverse page head with the waist ribbon may open a page that ends with the closing band.
 5. Reduced motion on. Nothing is invisible, nothing loops, and the grain is still.
 6. `npx tsc --noEmit` and `npm run lint` clean, `npm run build` passing.
 7. Its card exists in `floor.html`. If it is not in `floor.html`, it does not exist.

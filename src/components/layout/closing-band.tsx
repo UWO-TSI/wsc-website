@@ -20,8 +20,9 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
   business button through `businessAction`: the Partners page passes
   "Become a partner", which opens the contact form.
 
-  It is the page's one loud slab: nothing above it on the page may be
-  inverse or accent, and the section directly above it is not accent.
+  It is the page's one loud slab apart from the page head (inverse, waist
+  ribbon): nothing else above it may be inverse or accent, and the section
+  directly above it is not accent.
 
   design-system/components.md, ClosingBand.
 */

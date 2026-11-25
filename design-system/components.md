@@ -66,7 +66,7 @@ Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a s
 
 The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink. No eyebrow by default, since one over the title Join repeats it; `eyebrowKey` adds one.
 
-It is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
+Apart from the page head (inverse, waist ribbon), it is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
 
 ## Field
 
@@ -86,7 +86,7 @@ The only divider. A slab spans the full viewport width with no side gap and take
 
 Tones in order of distance from the ground: `--raised` (default), `--sunken` (recessed: footer, form bed, gallery bed), `--inverse` and `--accent` (the statement and the offer).
 
-Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page. Do not slab everything: the hero and at least one section per page are bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
+Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page except an inverse page head above the closing band. Do not slab everything: the hero and at least one section per page are bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
 
 A slab is flat. A shadow would fill the 2px join, and a slab is the page, not a thing floating above it.
 

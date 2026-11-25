@@ -11,11 +11,10 @@ import { COPY } from '@/edit/engine/copy';
 import {
   changeCount,
   discardAll,
-  missingNameIds,
   setDraftText,
   useDraftVersion,
 } from '@/edit/engine/draft-store';
-import { publishDraft, type Publisher } from '@/edit/engine/publish';
+import { missingName, publishDraft, type Publisher } from '@/edit/engine/publish';
 import { rowTrayView } from '@/edit/engine/list-parts';
 import { blurField, getUi, setUi, useUi, type Tone, type TrayContext } from '@/edit/engine/ui-store';
 import { holdIosFocusZoom } from '@/edit/engine/ios-zoom';
@@ -24,7 +23,8 @@ import { signOutAndReload } from '@/edit/sign-out';
 
 /*
   The edit bar: change count, Edit and Preview, Discard, Publish, the tray
-  between them, and Settings and Sign out under the count.
+  between them, and Settings and Sign out (under the count on phones,
+  under Edit and Preview from 900px).
 
   The bar has one fixed size at each width. The tray is the only region
   whose content changes, and it never grows: it holds whatever has focus
@@ -156,12 +156,16 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   }, []);
 
   const publish = async () => {
-    const missing = missingNameIds();
-    if (missing.length) {
+    const missing = missingName();
+    if (missing) {
       document
-        .querySelector<HTMLElement>(`[data-ed-field="executives.${missing[0]}.name"] :is(input, textarea)`)
+        .querySelector<HTMLElement>(
+          `[data-ed-field="${missing.table}.${missing.id}.${missing.field}"] :is(input, textarea)`
+        )
         ?.focus();
-      setUi({ flash: { tone: 'alert', label: COPY.blockedLabel, text: COPY.missingName, announce: true } });
+      setUi({
+        flash: { tone: 'alert', label: COPY.blockedLabel, text: COPY.list[missing.table].missing, announce: true },
+      });
       return;
     }
     setUi({ phase: 'publishing', confirmDiscard: false, flash: null });

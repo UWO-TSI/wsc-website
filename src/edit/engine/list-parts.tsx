@@ -90,9 +90,8 @@ export function RowField({ table, id, column, value, max, label, placeholder, bl
     const s = sample('', max);
     let width = el.clientWidth;
     if (!block) {
-      /* The cap is the column the shell is placed in. A shell that is a
-         flex item is blockified, so the column is found from its parent. */
-      const cap = Math.max(40, columnWidth(el.parentElement!) - SHELL_X);
+      /* The cap is the column the shell is placed in (measure.ts). */
+      const cap = Math.max(40, columnWidth(el) - SHELL_X);
       width = Math.min(textWidth(el, s) + 2, cap);
       el.style.width = `${width}px`;
     }

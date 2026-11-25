@@ -74,13 +74,49 @@ export function textHeight(el: HTMLElement, text: string, width: number): number
   return Math.max(m.scrollHeight, lineHeightOf(el));
 }
 
-/** Content width of the nearest ancestor that is not inline. */
-export function columnWidth(el: HTMLElement): number {
-  let node: HTMLElement | null = el.parentElement;
-  while (node && getComputedStyle(node).display.startsWith('inline')) node = node.parentElement;
-  if (!node) return window.innerWidth;
-  const cs = getComputedStyle(node);
-  return node.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+const px = (v: string) => parseFloat(v) || 0;
+const sidesX = (cs: CSSStyleDeclaration) =>
+  px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
+
+/**
+ * The width `field` may take. The column is the nearest block ancestor
+ * whose width stays the same when the field is collapsed to zero width;
+ * the result is its content width less the padding, borders and margins of
+ * the boxes between them (the field's own `.ed` shell excepted: callers
+ * take SHELL_X off). An ancestor sized by its content, such as a centred
+ * flex item, is as wide as the field inside it, so it cannot be the
+ * column: measured against it, the hero greeting kept its 487px desktop
+ * width after the window went to 375px and the page scrolled sideways.
+ * A skipped ancestor's max-width still caps the result.
+ */
+export function columnWidth(field: HTMLElement): number {
+  const chain: HTMLElement[] = [];
+  for (let node = field.parentElement; node && node !== document.body; node = node.parentElement) chain.push(node);
+  const before = chain.map((n) => n.getBoundingClientRect().width);
+  const width = field.style.width;
+  field.style.width = '0px';
+  const after = chain.map((n) => n.getBoundingClientRect().width);
+  field.style.width = width;
+
+  let between = 0;
+  let cap = Infinity;
+  for (let i = 0; i < chain.length; i++) {
+    const node = chain[i];
+    const cs = getComputedStyle(node);
+    if (cs.display === 'contents' || (i === 0 && node.classList.contains('ed'))) continue;
+    const inline = cs.display.startsWith('inline');
+    if (!inline && Math.abs(after[i] - before[i]) < 0.5) {
+      return Math.min(node.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight) - between, cap);
+    }
+    /* Only a length: a percentage max-width is relative to the parent,
+       which the walk reaches next anyway. */
+    if (!inline && cs.maxWidth.endsWith('px')) {
+      const inner = px(cs.maxWidth) - (cs.boxSizing === 'border-box' ? sidesX(cs) : 0);
+      cap = Math.min(cap, inner - between);
+    }
+    between += sidesX(cs) + px(cs.marginLeft) + px(cs.marginRight);
+  }
+  return Math.min(document.documentElement.clientWidth - between, cap);
 }
 
 /*

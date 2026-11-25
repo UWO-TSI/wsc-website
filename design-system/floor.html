@@ -606,13 +606,15 @@
   @media (min-width: 560px) { .e16-photos { grid-template-columns: 1fr 1fr; } }
   .e16-ph .chip-s { white-space: nowrap; }
   .e16-bars { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
-  .e16-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'status seg' 'tray tray' 'discard publish' 'acct acct'; align-items: center; gap: 12px; padding: 12px 14px; background: var(--page); color: var(--ink); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
+  /* Below 900px: the count with Settings and Sign out under it, beside Edit and Preview; the tray; Discard and Publish. The Editing label is hidden there (the pressed Edit or Preview button shows the mode). Rows are 2px apart and the tray's 10px block margins make the space between bands 12px. */
+  .e16-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'status status seg' 'acct acct seg' 'tray tray tray' 'discard publish publish'; align-items: center; gap: 2px 12px; padding: 12px; background: var(--page); color: var(--ink); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
   @media (min-width: 900px) {
-    .e16-bar { grid-template-columns: 150px minmax(0, 1fr) auto auto auto; grid-template-areas: 'status tray seg discard publish' 'status tray acct discard publish'; row-gap: 2px; padding: 12px 14px 12px 20px; border-radius: var(--r-xl); }
+    .e16-bar { grid-template-columns: 150px minmax(0, 1fr) auto auto auto; grid-template-areas: 'status tray seg discard publish' 'status tray acct discard publish'; padding: 12px 14px 12px 20px; border-radius: var(--r-xl); }
   }
   .e16-status { grid-area: status; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .e16-status > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  @media (min-width: 900px) { .e16-status > * { white-space: normal; } }
+  .e16-status .label { display: none; }
+  @media (min-width: 900px) { .e16-status > * { white-space: normal; } .e16-status .label { display: block; } }
   .e16-acct { grid-area: acct; display: flex; gap: 4px; margin-inline-start: -8px; }
   @media (min-width: 900px) { .e16-acct { justify-self: end; margin-inline: 0 -8px; } }
   .e16-acct .btn { min-height: 24px; padding: 4px 8px; font-size: var(--t-meta); }
@@ -633,11 +635,14 @@
   .e16-form .err { color: var(--alert); }
   .e16-status .label { color: var(--accent-ink); }
   .e16-seg { grid-area: seg; justify-self: end; display: inline-flex; padding: 4px; background: var(--sunken); border-radius: var(--r-pill); }
-  .e16-seg button { padding: 8px 16px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-muted); font-family: var(--f-text); font-size: var(--t-body-sm); font-weight: 500; cursor: pointer; }
+  .e16-seg button { padding: 8px 12px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-muted); font-family: var(--f-text); font-size: var(--t-body-sm); font-weight: 500; cursor: pointer; }
+  @media (min-width: 900px) { .e16-seg button { padding: 8px 16px; } }
   .e16-seg button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .e16-tray { grid-area: tray; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: 'label actions' 'body body'; align-items: center; column-gap: 10px; row-gap: 6px; height: 110px; min-width: 0; overflow: hidden; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
-  @media (min-width: 900px) { .e16-tray { grid-template-areas: 'label label' 'body actions'; row-gap: 3px; height: 76px; } }
-  .e16-tray .tl { grid-area: label; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .e16-tray { grid-area: tray; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; grid-template-areas: 'label actions' 'body body'; align-items: center; column-gap: 10px; row-gap: 6px; height: 110px; min-width: 0; overflow: hidden; margin-block: 10px; padding: 9px 12px; background: var(--raised); border-radius: var(--r-md); }
+  @media (min-width: 900px) { .e16-tray { grid-template-areas: 'label label' 'body actions'; row-gap: 3px; height: 76px; margin-block: 0; } }
+  /* Two lines below 900px (the refused-link head, a row name beside Remove), one line from 900px. */
+  .e16-tray .tl { grid-area: label; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  @media (min-width: 900px) { .e16-tray .tl { display: block; white-space: nowrap; text-overflow: ellipsis; } }
   .e16-tray .tb { grid-area: body; align-self: start; display: flex; align-items: center; gap: 10px; min-width: 0; font-size: var(--t-body-sm); line-height: 1.35; }
   @media (min-width: 900px) { .e16-tray .tb { align-self: center; } }
   .e16-tray .ta { grid-area: actions; display: flex; gap: 8px; align-items: center; }
@@ -1405,6 +1410,7 @@ Sales Team</span></span>
 
       <div class="e16-bar">
         <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Executive &middot; Mei Chen</span><div class="tb"><span class="grow">Shows on the site as VP, Partnerships.</span></div><div class="ta"><button class="btn b2 small" type="button">Remove from team</button></div></div>
         <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
@@ -1413,6 +1419,7 @@ Sales Team</span></span>
 
       <div class="e16-bar">
         <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Event &middot; Cold Call Workshop</span><div class="tb"><input type="text" value="https://example.com/register" readonly aria-label="Register link for Cold Call Workshop"></div><div class="ta"><button class="btn b2 small" type="button">Remove event</button></div></div>
         <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
@@ -1421,6 +1428,7 @@ Sales Team</span></span>
 
       <div class="e16-bar">
         <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">New area</span><div class="tb"><span class="grow">Type the area name and press Enter. Escape cancels.</span></div></div>
         <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
@@ -1429,10 +1437,20 @@ Sales Team</span></span>
 
       <div class="e16-bar">
         <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">New area</span><div class="tb"><span class="grow t-al">Marketing already exists. Pick it from the list.</span></div></div>
         <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
         <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+      </div>
+
+      <div class="e16-bar">
+        <div class="e16-status"><span class="label">Editing</span><span class="meta">1 unpublished change</span></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+        <div class="e16-tray"><span class="label tl">Cannot publish yet</span><div class="tb"><span class="grow t-al">Add a title for the new event before publishing.</span></div></div>
+        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn b1" type="button">Publish 1 change</button></div>
       </div>
     </div>
 

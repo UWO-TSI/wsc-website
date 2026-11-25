@@ -260,14 +260,6 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
   };
   useMeasure(measure, [pub, m.max, variant, arrow, onAccent]);
 
-  /* The colour is copied, so a theme change copies it again. */
-  useEffect(() => {
-    const obs = new MutationObserver(() => measure());
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => obs.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   return (
     <span className={`ed-btn ${className ?? ''}`.trim()}>
       <span className="ed-btn-face" ref={face} inert>

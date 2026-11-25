@@ -38,16 +38,21 @@ export default function EditGate() {
 
   useEffect(() => {
     let live = true;
+    /* Only the latest check may load the engine, so a leave that lands
+       while an earlier check is still waiting on the network wins. */
+    let latest = 0;
     const check = async () => {
+      const run = ++latest;
+      const current = () => live && run === latest;
       let wanted = false;
       try {
         wanted = localStorage.getItem(EDIT_FLAG_KEY) === '1';
       } catch {}
       if (!wanted) return setLoaded(null);
       const userId = await adminUserId().catch(() => null);
-      if (!userId || !live) return;
+      if (!userId || !current()) return;
       const { default: Engine } = await import('@/edit/engine/edit-engine');
-      if (live) setLoaded({ Engine, userId });
+      if (current()) setLoaded({ Engine, userId });
     };
     check();
     window.addEventListener(EDIT_REQUEST_EVENT, check);

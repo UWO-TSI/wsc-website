@@ -163,16 +163,22 @@ export function setDraftPhoto(slot: string, file: File, width: number) {
 
 /* ── After Publish ── */
 
-export function markTextPublished(key: string, value: string) {
-  publishedText.set(key, value);
+/*
+  Fields stay editable while Publish runs. A draft is cleared only when it
+  still holds what was sent, so a change made during Publish stays a draft.
+*/
+export function markTextPublished(key: string, sent: string, stored: string) {
+  publishedText.set(key, stored);
+  if (texts.get(key)?.value !== sent) return;
   texts.delete(key);
   persist(`text:${key}`, undefined);
 }
 
-export function markPhotoPublished(slot: string, src: string | null, alt: string) {
+export function markPhotoPublished(slot: string, sent: Blob, src: string | null, alt: string) {
   publishedImage.set(slot, { src, alt });
-  const old = photos.get(slot);
-  if (old) URL.revokeObjectURL(old.url);
+  const current = photos.get(slot);
+  if (!current || current.blob !== sent) return;
+  URL.revokeObjectURL(current.url);
   photos.delete(slot);
   persist(`photo:${slot}`, undefined);
 }

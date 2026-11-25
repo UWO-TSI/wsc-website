@@ -116,6 +116,13 @@ GRANT  EXECUTE ON FUNCTION public.claim_admin_invite() TO authenticated;
 DO $$
 DECLARE v_admins INT; v_invites INT;
 BEGIN
+  -- With no owner row, these deletes would leave nobody able to sign in
+  -- and invite the rest. Stop instead.
+  IF EXISTS (SELECT 1 FROM public.admins)
+     AND NOT EXISTS (SELECT 1 FROM public.admins WHERE is_owner) THEN
+    RAISE EXCEPTION 'No owner row in public.admins. Set is_owner on one admin before applying this migration.';
+  END IF;
+
   DELETE FROM public.admins
   WHERE is_owner = false;
   GET DIAGNOSTICS v_admins = ROW_COUNT;

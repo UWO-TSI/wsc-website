@@ -67,12 +67,12 @@ export async function publishDraft(
   };
 
   // 1. Uploads
-  const uploads: Array<{ slot: string; name: string; old: { object_name: string; alt: string } | null }> = [];
+  const uploads: Array<{ slot: string; blob: Blob; name: string; old: { object_name: string; alt: string } | null }> = [];
   for (const [slot, d] of pendingPhotos()) {
     try {
       const old = await p.currentImage(slot);
       const name = await p.upload(new File([d.blob], slot, { type: d.type }));
-      uploads.push({ slot, name, old });
+      uploads.push({ slot, blob: d.blob, name, old });
     } catch (err) {
       fail(err);
     }
@@ -80,7 +80,7 @@ export async function publishDraft(
 
   // 2. Rows
   const texts = await Promise.allSettled(
-    pendingTexts().map(async ([key, value]) => markTextPublished(key, await p.updateText(key, value)))
+    pendingTexts().map(async ([key, value]) => markTextPublished(key, value, await p.updateText(key, value)))
   );
   texts.forEach((r) => r.status === 'rejected' && fail(r.reason));
 
@@ -89,7 +89,7 @@ export async function publishDraft(
     const alt = u.old?.alt || altFor(u.slot);
     try {
       await p.pointImage(u.slot, u.name, alt);
-      markPhotoPublished(u.slot, p.publicUrl(u.name), alt);
+      markPhotoPublished(u.slot, u.blob, p.publicUrl(u.name), alt);
       if (u.old && u.old.object_name !== u.name) unused.push(u.old.object_name);
     } catch (err) {
       fail(err);

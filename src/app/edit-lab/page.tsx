@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { notFound } from 'next/navigation';
-import EditLab from '@/edit/lab/edit-lab';
+
+/* The import sits behind the build-time NODE_ENV check, so a production
+   build drops it and the 404 page ships no edit code. */
+const EditLab =
+  process.env.NODE_ENV === 'production' ? null : dynamic(() => import('@/edit/lab/edit-lab'));
 
 /*
   Development-only check page for edit mode: every edit-mode component in
@@ -14,6 +19,6 @@ export const metadata: Metadata = {
 };
 
 export default function EditLabPage() {
-  if (process.env.NODE_ENV === 'production') notFound();
+  if (!EditLab) notFound();
   return <EditLab />;
 }

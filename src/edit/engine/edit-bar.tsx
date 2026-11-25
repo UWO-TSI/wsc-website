@@ -1,0 +1,253 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import Button from '@/components/ui/button';
+import { useSiteContent } from '@/providers/site-content-provider';
+import { SITE_CONTENT, type SiteContentKey } from '@/lib/site-content-defaults';
+import { IMAGE_SLOTS, type ImageSlotKey } from '@/lib/image-slots';
+import { setEditPreview, useEditSnapshot } from '@/edit/edit-mode';
+import { COPY } from '@/edit/engine/copy';
+import {
+  changeCount,
+  discardAll,
+  missingNameIds,
+  setDraftText,
+  useDraftVersion,
+} from '@/edit/engine/draft-store';
+import { publishDraft, type Publisher } from '@/edit/engine/publish';
+import { blurField, getUi, setUi, useUi, type Tone, type TrayContext } from '@/edit/engine/ui-store';
+
+/*
+  The edit bar: change count, Edit and Preview, Discard, Publish, and the
+  tray between them.
+
+  The bar has one fixed size at each width. The tray is the only region
+  whose content changes, and it never grows: it holds whatever has focus
+  (the field's name and count, a link address, a photo's minimum width),
+  confirmations, and results. There are no dialogs.
+
+  The tray is not a live region, because it changes on every focus move.
+  Errors and publish results are read out by the two hidden regions below
+  it, and nothing else is.
+*/
+
+const PUBLISHED_FOR_MS = 2000;
+
+const meta = (k: string) => SITE_CONTENT[k as SiteContentKey];
+const baseLabel = (label: string) => label.replace(/,\s*line \d+$/i, '');
+
+interface TrayView {
+  label: string;
+  tone?: Tone;
+  body: ReactNode;
+}
+
+function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string }) {
+  const { text, published } = useSiteContent();
+  const label = meta(labelKey);
+  const href = meta(hrefKey);
+  return (
+    <>
+      <span className="meta ed-flex-none">
+        {COPY.labelCount(text(labelKey as SiteContentKey).length, label.max)}
+      </span>
+      <input
+        aria-label={COPY.linkAddress(`${label.section}, ${label.label.toLowerCase()}`)}
+        value={text(hrefKey as SiteContentKey)}
+        maxLength={href.max}
+        inputMode="url"
+        spellCheck={false}
+        onBlur={blurField}
+        onChange={(e) => setDraftText(hrefKey, e.target.value.trim(), published.text(hrefKey as SiteContentKey))}
+      />
+    </>
+  );
+}
+
+function focusView(ctx: TrayContext, text: (k: SiteContentKey) => string): TrayView {
+  if (ctx.type === 'text') {
+    const m = meta(ctx.key);
+    return {
+      label: COPY.fieldHead(m.section, m.label),
+      body: COPY.fieldCount(text(ctx.key as SiteContentKey).length, m.max),
+    };
+  }
+  if (ctx.type === 'lines') {
+    const m = meta(ctx.keys[0]);
+    const label = COPY.fieldHead(m.section, baseLabel(m.label));
+    if (ctx.tooWide) return { label, tone: 'warn', body: COPY.lineTooWide };
+    const counts = COPY.headingCount(
+      ctx.keys.map((k) => ({ n: text(k as SiteContentKey).length, max: meta(k).max }))
+    );
+    return { label, body: `${counts} ${ctx.keys.length === 2 ? COPY.headingHint : COPY.headingHintMany}` };
+  }
+  if (ctx.type === 'button') {
+    const m = meta(ctx.labelKey);
+    return {
+      label: COPY.fieldHead(m.section, m.label),
+      body: <LinkAddress labelKey={ctx.labelKey} hrefKey={ctx.hrefKey} />,
+    };
+  }
+  const def = IMAGE_SLOTS[ctx.slot as ImageSlotKey];
+  return { label: COPY.photoHead(def.section, def.label), body: COPY.photoHint(def.minWidth) };
+}
+
+export default function EditBar({ publisher }: { publisher: Publisher }) {
+  useDraftVersion();
+  const ui = useUi();
+  const { status } = useEditSnapshot();
+  const { text, published } = useSiteContent();
+  const bar = useRef<HTMLDivElement>(null);
+  const n = changeCount();
+  const preview = status === 'preview';
+  const busy = ui.phase !== 'idle';
+
+  /* Pages get bottom padding equal to the bar, so the footer stays
+     reachable above it. */
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() =>
+      document.documentElement.style.setProperty('--ed-bar-h', `${el.offsetHeight}px`)
+    );
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty('--ed-bar-h');
+    };
+  }, []);
+
+  const publish = async () => {
+    const missing = missingNameIds();
+    if (missing.length) {
+      document
+        .querySelector<HTMLElement>(`[data-ed-field="executives.${missing[0]}.name"] :is(input, textarea)`)
+        ?.focus();
+      setUi({ flash: { tone: 'alert', label: COPY.blockedLabel, text: COPY.missingName, announce: true } });
+      return;
+    }
+    setUi({ phase: 'publishing', confirmDiscard: false, flash: null });
+    const r = await publishDraft(publisher, (slot) => published.image(slot as ImageSlotKey).alt);
+    if (r.expired) {
+      setUi({
+        phase: 'idle',
+        expired: true,
+        flash: { tone: 'alert', label: COPY.expiredLabel, text: COPY.expired, announce: true },
+      });
+    } else if (r.failed) {
+      setUi({
+        phase: 'idle',
+        flash: { tone: 'alert', label: COPY.failedLabel, text: COPY.partlyFailed(r.failed), announce: true },
+      });
+    } else {
+      setUi({
+        phase: 'published',
+        flash: { tone: 'ok', label: COPY.publishedLabel, text: COPY.publishedBody, announce: true },
+      });
+      setTimeout(() => getUi().phase === 'published' && setUi({ phase: 'idle' }), PUBLISHED_FOR_MS);
+    }
+  };
+
+  const discard = async () => {
+    setUi({ confirmDiscard: false, flash: null, focus: null });
+    await discardAll();
+  };
+
+  /* What the tray shows, most urgent first. */
+  let view: TrayView;
+  if (ui.confirmDiscard) {
+    view = {
+      label: COPY.discard,
+      body: (
+        <>
+          <span className="ed-grow">{COPY.confirmDiscard(n)}</span>
+          <Button variant="secondary" className="ed-small" onClick={() => setUi({ confirmDiscard: false })}>
+            {COPY.keepEditing}
+          </Button>
+          <Button className="ed-small" onClick={discard}>
+            {COPY.discardN(n)}
+          </Button>
+        </>
+      ),
+    };
+  } else if (ui.flash) {
+    view = ui.flash.text === COPY.expired ? expiredView() : { ...ui.flash, body: ui.flash.text };
+  } else if (ui.focus && !preview) {
+    view = focusView(ui.focus, text);
+  } else if (ui.expired) {
+    view = expiredView();
+  } else if (!ui.online) {
+    view = { label: COPY.offlineLabel, tone: 'warn', body: COPY.offline };
+  } else if (preview) {
+    view = { label: COPY.previewing, body: COPY.previewIdle };
+  } else {
+    view = { label: COPY.firstLabel, body: COPY.first };
+  }
+
+  const publishLabel =
+    ui.phase === 'publishing' ? COPY.publishing : ui.phase === 'published' ? COPY.published : COPY.publish(n);
+  const announced = ui.flash?.announce ? ui.flash : null;
+
+  return (
+    <div ref={bar} className="ed-bar" role="region" aria-label={COPY.firstLabel}>
+      <div className="ed-status">
+        <span className="label">{preview ? COPY.previewing : COPY.editing}</span>
+        <span className="meta">{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
+      </div>
+
+      <div className="ed-seg" role="group" aria-label={COPY.modeGroup}>
+        <button type="button" aria-pressed={!preview} onClick={() => setEditPreview(false)}>
+          {COPY.edit}
+        </button>
+        <button type="button" aria-pressed={preview} onClick={() => setEditPreview(true)}>
+          {COPY.previewing}
+        </button>
+      </div>
+
+      <div className="ed-tray" data-ed-tray="">
+        <span className="label ed-tray-label">{view.label}</span>
+        <div className={`ed-tray-body${view.tone ? ` ed-t-${view.tone}` : ''}`}>
+          {typeof view.body === 'string' ? <span className="ed-grow">{view.body}</span> : view.body}
+        </div>
+      </div>
+
+      <div className="ed-discard">
+        <Button
+          variant="secondary"
+          disabled={!n || busy}
+          onClick={() => setUi({ confirmDiscard: true, flash: null })}
+        >
+          {COPY.discard}
+        </Button>
+      </div>
+      <div className="ed-publish">
+        <Button disabled={!n || busy || !ui.online || ui.expired} onClick={publish}>
+          {publishLabel}
+        </Button>
+      </div>
+
+      <p className="sr-only" role="status">
+        {announced && announced.tone !== 'alert' ? announced.text : ''}
+      </p>
+      <p className="sr-only" role="alert">
+        {announced && announced.tone === 'alert' ? announced.text : ''}
+      </p>
+    </div>
+  );
+}
+
+function expiredView(): TrayView {
+  return {
+    label: COPY.expiredLabel,
+    tone: 'alert',
+    body: (
+      <>
+        <span className="ed-grow">{COPY.expired}</span>
+        <Button variant="secondary" className="ed-small" href="/admin">
+          {COPY.signIn}
+        </Button>
+      </>
+    ),
+  };
+}

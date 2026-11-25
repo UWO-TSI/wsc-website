@@ -1063,6 +1063,21 @@
     </div>
   </section>
 
+  <!--
+    PageHead (src/components/layout/page-head.tsx), the first section of every
+    public page other than home, composed from CentredHead as the h1: eyebrow,
+    title, optional copy. Inverse tone, waist ribbon. One padding on every
+    page, the hero's: clamp(7.5rem,14vw,11rem) top, which clears the fixed nav
+    pill at 375 and 1280, and clamp(3rem,7vw,5.5rem) bottom. It sits one card
+    before the ClosingBand rather than touching it, because the two loud tones
+    never touch.
+  -->
+  <section class="slab band-c textured lit-black billboard dots alive" data-shape="waist" style="padding-top:clamp(7.5rem,14vw,11rem);padding-bottom:clamp(3rem,7vw,5.5rem)">
+    <span class="label">About us</span>
+    <div class="title" style="margin-top:14px;max-width:24ch">Who we are</div>
+    <span class="label" style="margin-top:22px">Page head &middot; one per page, first &middot; CentredHead as h1 on inverse &middot; waist</span>
+  </section>
+
   <section class="slab">
     <div class="sechead"><span class="label"><span class="n">11</span> &nbsp;States</span><span class="meta">Every async list needs all four. None of them is a blank screen.</span></div>
     <div class="states">

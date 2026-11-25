@@ -28,6 +28,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Skeleton | `ui/skeleton.tsx`, `ui/row-skeleton.tsx` | sweep |
 | RevealImage | `ui/reveal-image.tsx` | Clip Reveal |
 | ClosingBand | `layout/closing-band.tsx` (was `landing/cta-section.tsx`) | Slab Clip |
+| PageHead | `layout/page-head.tsx` | Line Mask Reveal (through CentredHead) |
 | InlineText, InlineParagraph | `edit/engine/fields.tsx` (`EditText`), via `edit/editable-text.tsx` | none |
 | InlineHeading | `edit/engine/fields.tsx` (`EditLines`), via `edit/editable-lines.tsx` | none |
 | InlineLabel | `edit/engine/fields.tsx` (`EditButton`), via `edit/editable-button.tsx` | none |
@@ -73,6 +74,14 @@ Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a s
 The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink. No eyebrow by default, since one over the title Join repeats it; `eyebrowKey` adds one.
 
 Apart from the page head (inverse, waist ribbon), it is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
+
+## PageHead
+
+The first section of every public page other than home: an `inverse` slab with the `waist` ribbon holding a CentredHead as the page's `h1` (eyebrow, title, optional copy). One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `clamp(3rem,7vw,5.5rem)` bottom. Pages pass keys only, never a padding or a tone.
+
+Props: `titleKeys`, `eyebrowKey`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page).
+
+With the ClosingBand it is the only other loud slab a page may carry.
 
 ## Field
 

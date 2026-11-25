@@ -2,7 +2,7 @@
 
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
-import CentredHead from '@/components/ui/centred-head';
+import PageHead from '@/components/layout/page-head';
 import Slab from '@/components/ui/slab';
 import Timeline from '@/components/events/timeline';
 import RowSkeleton from '@/components/ui/row-skeleton';
@@ -51,20 +51,11 @@ export default function EventsPage() {
 
   return (
     <div className="stack">
-      <Slab
-        tone="inverse"
-        texture="waist"
-        overflowHidden
-        aria-labelledby="events-heading"
-        className="pt-[clamp(7.5rem,14vw,11rem)]! pb-[clamp(3rem,7vw,5.5rem)]!"
-      >
-        <CentredHead
-          as="h1"
-          id="events-heading"
-          eyebrowKey="events.header.eyebrow"
-          titleKeys={['events.header.title_line1']}
-        />
-      </Slab>
+      <PageHead
+        id="events-heading"
+        eyebrowKey="events.header.eyebrow"
+        titleKeys={['events.header.title_line1']}
+      />
 
       <section aria-label="Event photos" className="px-[var(--gut)] py-[clamp(1.5rem,4vw,2.75rem)]">
         <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 min-[850px]:grid-cols-5 sm:gap-3">

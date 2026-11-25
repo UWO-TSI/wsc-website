@@ -2,8 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Slab from '@/components/ui/slab';
-import CentredHead from '@/components/ui/centred-head';
+import PageHead from '@/components/layout/page-head';
 import ContactForm, { orgTypeFromParam } from '@/components/contact/contact-form';
 import ClosingBand from '@/components/layout/closing-band';
 import { EditableButton } from '@/edit';
@@ -27,21 +26,12 @@ function ContactFormFromQuery() {
 export default function ContactPage() {
   return (
     <div className="stack">
-      <Slab
-        tone="inverse"
-        texture="waist"
-        overflowHidden
-        aria-labelledby="contact-title"
-        className="pt-[clamp(7.5rem,12vw,10rem)]! pb-[clamp(3.5rem,7vw,5.5rem)]!"
-      >
-        <CentredHead
-          as="h1"
-          id="contact-title"
-          eyebrowKey="contact.header.eyebrow"
-          titleKeys={['contact.header.title']}
-          bodyKey="contact.header.body"
-        />
-      </Slab>
+      <PageHead
+        id="contact-title"
+        eyebrowKey="contact.header.eyebrow"
+        titleKeys={['contact.header.title']}
+        bodyKey="contact.header.body"
+      />
 
       <Suspense fallback={<ContactForm />}>
         <ContactFormFromQuery />

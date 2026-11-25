@@ -2,8 +2,7 @@
 
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { Sponsor } from '@/types/database';
-import Slab from '@/components/ui/slab';
-import CentredHead from '@/components/ui/centred-head';
+import PageHead from '@/components/layout/page-head';
 import LogoWall from '@/components/sponsors/logo-wall';
 import ClosingBand from '@/components/layout/closing-band';
 import { EditableButton } from '@/edit';
@@ -23,20 +22,11 @@ export default function SponsorsPage() {
 
   return (
     <div className="stack">
-      <Slab
-        tone="inverse"
-        texture="waist"
-        overflowHidden
-        aria-labelledby="partners-title"
-        className="pt-[clamp(7.5rem,12vw,10rem)]! pb-[clamp(3.5rem,7vw,5.5rem)]!"
-      >
-        <CentredHead
-          as="h1"
-          id="partners-title"
-          eyebrowKey="partners.header.eyebrow"
-          titleKeys={['partners.header.title']}
-        />
-      </Slab>
+      <PageHead
+        id="partners-title"
+        eyebrowKey="partners.header.eyebrow"
+        titleKeys={['partners.header.title']}
+      />
 
       <LogoWall sponsors={sponsors} loading={loading} error={error} onRetry={refetch} />
 

@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecGroup, Executive } from '@/types/database';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
-import CentredHead from '@/components/ui/centred-head';
+import PageHead from '@/components/layout/page-head';
 import Slab from '@/components/ui/slab';
 import ClosingBand from '@/components/layout/closing-band';
 import ExecutiveGrid, { ExecutiveGridSkeleton } from '@/components/team/executive-grid';
@@ -66,20 +66,11 @@ export default function ExecutiveTeamPage() {
 
   return (
     <div className="stack">
-      <Slab
-        tone="inverse"
-        texture="waist"
-        overflowHidden
-        aria-labelledby="team-heading"
-        className="pt-[clamp(7.5rem,14vw,11rem)]! pb-[clamp(3rem,7vw,5.5rem)]!"
-      >
-        <CentredHead
-          as="h1"
-          id="team-heading"
-          eyebrowKey="team.header.eyebrow"
-          titleKeys={['team.header.title_line1', 'team.header.title_line2']}
-        />
-      </Slab>
+      <PageHead
+        id="team-heading"
+        eyebrowKey="team.header.eyebrow"
+        titleKeys={['team.header.title_line1', 'team.header.title_line2']}
+      />
 
       {/* Slab outside the async wrapper: the bed paints immediately and only
           the roster inside fills in. */}

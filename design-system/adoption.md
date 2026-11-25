@@ -100,18 +100,47 @@ Title Join, one or two sentences for both audiences, then two buttons side by si
 <ClosingBand />                                       // home, legal pages, events, team
 <ClosingBand
   businessAction={
-    <Button variant="secondary" onClick={openContactForm}>
-      <EditableText k="partners.cta.business_label" />  {/* example key: add it to site-content-defaults.ts */}
-    </Button>
+    <EditableButton
+      labelKey="sponsors.cta.partner_label"
+      hrefKey="sponsors.cta.partner_href"
+      variant="secondary"
+    />
   }
 />
 ```
 
-It is the page's one loud slab, except for the page head: a page other than home may open with a page head (`Slab` tone `inverse`, `texture="waist"`, `CentredHead` as `h1`). A page that ends with the band has no other `inverse` or `accent` slab, and the section above it is not `accent`. Server-component pages can render it directly; for a page whose root is one element, return a fragment with the band after it.
+It is the page's one loud slab, except for the page head: a page other than home may open with `PageHead` (below). A page that ends with the band has no other `inverse` or `accent` slab, and the section above it is not `accent`. Server-component pages can render it directly; for a page whose root is one element, return a fragment with the band after it.
+
+**Page head.** `src/components/layout/page-head.tsx`, `PageHead`, the first child of every public
+page other than home: an `inverse` slab with the `waist` ribbon and a `CentredHead` as the `h1`. It owns
+the padding (the hero's, `clamp(7.5rem,14vw,11rem)` top and `clamp(3rem,7vw,5.5rem)` bottom), so pages
+never set one.
+
+| Prop | Default | Use |
+| --- | --- | --- |
+| `titleKeys` | required | One `site_content` key per visual line. |
+| `eyebrowKey` | none | The eyebrow over the title. |
+| `bodyKey` | none | At most three lines of copy under the title. |
+| `id` | required | The `h1` id the slab is labelled by. Unique per page. |
+
+```tsx
+<PageHead id="about-title" eyebrowKey="about.header.eyebrow" titleKeys={['about.header.title']} />
+```
 
 **Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for every section head on a selling page. `SectionHead` stays for left-aligned heads whose title is not editable copy.
 
 **The one action.** Apply to join is always `<EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />`. The nav already carries it at every width. Never give a page its own Apply to join key.
+
+**A label-only button.** When a button's label is a `site_content` key but its action is not (a
+row's own URL, a form submit), omit `hrefKey` and pass the action instead: `href`, `type`, `disabled`,
+`aria-label`, and `label` for a busy state such as Sending. While editing, the label field sits over an
+inert copy of the button, as it does for every `EditableButton`. Never put an `EditableText` inside a
+`Button`: in edit mode that nests a field in a real `<button>`.
+
+```tsx
+<EditableButton labelKey="events.ledger.register_label" variant="secondary" href={event.register_url} />
+<EditableButton labelKey="contact.form.submit_label" type="submit" disabled={busy} label={busy ? 'Sending' : undefined} />
+```
 
 **Full width.** The shell wraps `main` and the footer in one `.stack`, so the last section of a page meets the footer 2px apart. A page with several slabs wraps them in its own `.stack`.
 

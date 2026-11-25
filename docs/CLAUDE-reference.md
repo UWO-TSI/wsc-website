@@ -6,10 +6,9 @@ These sections were moved verbatim from `CLAUDE.md` to keep it under 5 KB. CLAUD
 
 WSC Floor. The full rules are in `design-system/README.md`; this is the enforceable summary.
 
-- **Two themes, shipped together.** Showroom is white with a deep velvet accent, Afterhours is
-  near-black with gold. The accent flips with the theme, so components reference `--accent`,
-  `--accent-ink` and `--on-accent`, never a literal purple or gold. `--velvet` and `--gold` are
-  the two fixed marks: the Western affiliation lockup and sponsor tiers.
+- **One theme.** Showroom only: white with a deep velvet accent. The accent is velvet, and
+  components reference `--accent`, `--accent-ink` and `--on-accent`, never a literal purple.
+  `--gold` is a fixed mark for sponsor tiers, and `--logo-ground` stays near-black.
 - **There are no borders.** Things are divided by a change in surface tone, by the gap between
   them, and by shadow. The focus ring is the only outline and is never removed.
 - **Four type roles, nothing between them.** Title, subtitle, body, label. Every title is

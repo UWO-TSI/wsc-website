@@ -28,6 +28,12 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Skeleton | `ui/skeleton.tsx`, `ui/row-skeleton.tsx` | sweep |
 | RevealImage | `ui/reveal-image.tsx` | Clip Reveal |
 | ClosingBand | `layout/closing-band.tsx` (was `landing/cta-section.tsx`) | Slab Clip |
+| InlineText, InlineParagraph | `edit/engine/fields.tsx` (`EditText`), via `edit/editable-text.tsx` | none |
+| InlineHeading | `edit/engine/fields.tsx` (`EditLines`), via `edit/editable-lines.tsx` | none |
+| InlineLabel | `edit/engine/fields.tsx` (`EditButton`), via `edit/editable-button.tsx` | none |
+| PhotoSlot | `edit/engine/fields.tsx` (`EditImage`), via `edit/editable-image.tsx` | none |
+| EditBar, Tray | `edit/engine/edit-bar.tsx`, `edit/engine/edit.css` | Publish label changes in place |
+| InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile, Settings page | not built yet | later phases |
 
 ## Nav
 
@@ -171,3 +177,21 @@ Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover
 `src/app/admin/components/save-bar.tsx`, `admin-section.tsx` (`ReorderRow`), `src/app/admin/unsaved-changes.tsx`. Card 15 in `floor.html`.
 
 Every content manager tab is a Save bar over a list, and every change in it is staged until one Save. Save rests disabled as "Save changes", reads "Save all changes" with Discard beside it while edits are pending, and "Saved" for two seconds after writing. The list updates in place; a refetch never drops it to a loading state. Reorderable rows carry a three-line grip that alone starts a drag (Framer Motion `Reorder` with drag controls) and takes the arrow keys; the held row lifts to `--sh-3` and neighbours move on `--d-move` / `--e-move`. Executives reorder within their role, because the team page sorts by role first. Leaving an editor with edits pending asks once (Stay, or Discard and leave) and never refuses.
+
+## Edit mode
+
+Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in the edit chunk, and every line of copy is `src/edit/engine/copy.ts`. Every value in the card is a token or a size the spec gives in pixels.
+
+**Field.** The shell every editable value is drawn in: a fill of the text colour at 9 percent, `--r-sm`, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the shell. Each field is sized to its longest allowed value (`site_content.max_length`), so typing changes the text and never the size. Built in `fields.tsx` as the shell shared by the four components below.
+
+**InlineText and InlineParagraph.** A one-line field is as wide as its longest allowed value, capped at the column. A paragraph takes the column and refuses Enter.
+
+**InlineHeading.** One field for a heading of two lines. Enter starts line 2, a third line is refused, and each line saves to its own key. Lines never wrap inside the field.
+
+**InlineLabel.** A button label as a field inside an inert Button. The ring takes the label's colour. The link address is edited in the tray.
+
+**PhotoSlot.** The photo with Replace photo, or Add photo when the slot is empty, as a chip at the bottom left. Clicking opens the device's file picker, and the chosen file fills the same frame before Publish. A photo below the slot's minimum width shows a warning, and below half of it is refused.
+
+**EditBar and Tray.** Change count, Edit and Preview, Discard, Publish, and the tray. The bar has one fixed size at each width and the tray is the only region whose content changes. There are no dialogs: confirmations, errors and results appear in the tray. Preview shows the visitor layout with fills removed.
+
+**Not built yet.** InlineSelect, InlineNumber, VisibilityChip (Visible and Hidden, `aria-pressed`), StateChip (Unpublished, Will be removed), Grip for edit mode, AddTile, and the Settings page. Their sizes and behaviour are in spec section 3 and are drawn on the card when they are built.

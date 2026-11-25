@@ -1,4 +1,4 @@
-# CLAUDE.md reference — detail moved from CLAUDE.md on 2026-10-14
+# CLAUDE.md reference: detail moved from CLAUDE.md on 2026-10-14
 
 These sections were moved verbatim from `CLAUDE.md` to keep it under 5 KB. CLAUDE.md points here; rules below still apply.
 

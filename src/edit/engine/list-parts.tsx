@@ -4,7 +4,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
 import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
-import { useSlabTone } from '@/components/ui/slab';
 import { LIMITS } from '@/lib/admin-config';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import { COPY } from '@/edit/engine/copy';
@@ -402,14 +401,11 @@ export function AddTile({
   full?: string;
   onAdd: () => void;
 }) {
-  /* The resting fill is the tile's own (--sunken, or --page on a sunken
-     slab), so hover keeps it. */
-  const sunk = useSlabTone() === 'sunken';
-  const off = full ? ` text-ink-faint! cursor-not-allowed ${sunk ? 'hover:bg-page!' : 'hover:bg-sunken!'}` : '';
+  /* The disabled look is .ed-add[aria-disabled='true'] in edit.css. */
   return (
     <button
       type="button"
-      className={`ed-add ed-add-${shape}${appear ? ' ed-appear' : ''}${off}`}
+      className={`ed-add ed-add-${shape}${appear ? ' ed-appear' : ''}`}
       aria-disabled={full ? true : undefined}
       onClick={() => {
         if (!full) return onAdd();

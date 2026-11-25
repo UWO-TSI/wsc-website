@@ -26,7 +26,7 @@ import {
   textWidth,
   wrapsOnPhones,
 } from '@/edit/engine/measure';
-import { blurField, edited, focusField, setUi } from '@/edit/engine/ui-store';
+import { blurField, edited, enterTray, focusField, setUi, type TrayContext } from '@/edit/engine/ui-store';
 
 /*
   The edit branches of the four components in src/edit/. Same props as the
@@ -274,6 +274,12 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
   the same way. The face takes no href or type, so it is an inert <button>
   that cannot submit, and the tray shows the label's count instead of a
   link address.
+
+  With a hrefKey the pill itself is the keyboard route to the link address
+  (.ed-btn-link): a transparent button after the label field in tab order,
+  under the field on screen. Pressing it moves focus to the tray's link
+  address, as a list row's Options does; Escape or Enter there returns to
+  the label field.
 */
 export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, className }: EditableButtonProps) {
   const { text, published } = useSiteContent();
@@ -284,6 +290,7 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
   const spacer = useRef<HTMLSpanElement>(null);
   const shell = useRef<HTMLSpanElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  const ctx: TrayContext = hrefKey ? { type: 'button', labelKey, hrefKey } : { type: 'text', key: labelKey };
 
   const measure = () => {
     const button = face.current?.firstElementChild as HTMLElement | null;
@@ -334,12 +341,20 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
             setDraftText(labelKey, oneLine(e.target.value).slice(0, m.max), pub);
           }}
           onKeyDown={refuseEnter}
-          onFocus={() =>
-            focusField(hrefKey ? { type: 'button', labelKey, hrefKey } : { type: 'text', key: labelKey })
-          }
+          onFocus={() => focusField(ctx)}
           onBlur={blurField}
         />
       </span>
+      {hrefKey && (
+        <button
+          type="button"
+          className="ed-btn-link"
+          aria-label={COPY.linkAddress(fieldName(m.section, m.label))}
+          onFocus={() => focusField(ctx)}
+          onBlur={blurField}
+          onClick={() => input.current && enterTray(ctx, input.current)}
+        />
+      )}
     </span>
   );
 }

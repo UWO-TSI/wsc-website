@@ -67,6 +67,9 @@ const LIMIT = {
   statLabel: 24,
 };
 
+/** The characters a figure's number row reserves: the number's digits and its suffix. */
+const FIGURE_CHARS = String(LIMIT.statValue).length + LIMIT.statSuffix;
+
 const ADD_AREA = '__add';
 
 function useList<R extends { id: string }>(table: ListTable): ListDraftApi<R> {
@@ -712,8 +715,11 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
   return (
     <>
       {/* Wider than the visitor row: each field reserves the largest
-          number (99999) and a two-character suffix in the figure's font. */}
-      <div ref={listRef} className="mx-auto grid max-w-[960px] grid-cols-1 gap-x-4 gap-y-8 min-[1000px]:grid-cols-3">
+          number (99999) and a two-character suffix in the figure's font.
+          One centred row that wraps, with the Add tile as its last cell:
+          three figures and the tile fit one row at 1280, and on phones
+          each takes its own centred row. */}
+      <div ref={listRef} className="flex flex-wrap justify-center gap-x-4 gap-y-8">
         {items.map(({ row: s, leaving }, index) => {
           const state = api.state(s.id);
           const who = nameOf(s);
@@ -771,7 +777,16 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
             </div>
           );
         })}
-        <div key={`add-${adds}`} className="flex">
+        {/* As wide as a figure's number row, in the figure's font: seven
+            characters (five digits and the suffix) at -0.02em tracking,
+            plus two fields' 26px (24px shell padding and the 2px measure
+            allowance) and the 4px gap between them. The tile sets its own
+            type, so only the width uses this font. */}
+        <div
+          key={`add-${adds}`}
+          className="flex max-w-full font-data text-[clamp(2.4rem,7vw,56px)]"
+          style={{ width: `calc(${FIGURE_CHARS}ch - ${FIGURE_CHARS * 0.02}em + 56px)` }}
+        >
           <AddTile
             label={copy.add}
             shape="figure"

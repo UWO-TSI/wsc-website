@@ -50,6 +50,16 @@
   outline-color: var(--on-logo-ground);
 }
 
+/* On an inverse slab the muted roles write in --on-inverse at 70 percent,
+   which --inverse-veil holds at AA over a white photo with nothing between.
+   The field's fill lightens that ground (4.1:1 for the hero subtitle), so
+   while editing their text takes the full --on-inverse: 6.1:1 over a white
+   photo under the veil and its fill. */
+.slab-inv :is(.label, .subtitle, .meta, .body-sm) .ed,
+.slab-inv .ed:is(.label, .subtitle, .meta, .body-sm) {
+  color: var(--on-inverse);
+}
+
 .ed-in {
   display: block;
   width: 100%;
@@ -104,6 +114,7 @@
   position: relative;
   display: inline-grid;
   vertical-align: middle;
+  isolation: isolate;
 }
 
 .ed-btn > * {
@@ -119,7 +130,24 @@
   height: 1em;
 }
 
+/* The keyboard route to the link address: the pill itself, a transparent
+   button after the label field in tab order and under it on screen. It
+   moves focus to the tray's link address, and Escape or Enter there
+   returns to the label field (ui-store.ts). The global ring draws round
+   the pill. It changes nothing on hover but the cursor. */
+.ed-btn-link {
+  align-self: stretch;
+  justify-self: stretch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
 .ed.ed-inbtn {
+  z-index: 1;
   align-self: center;
   justify-self: start;
   padding: 3px 8px;
@@ -327,6 +355,15 @@ html.ed-on body {
   body has the full width for three lines of copy (the first-sign-in and
   sign-in-expired lines). From 900px the actions end the body row, which
   holds two lines of copy or one row of inputs and buttons.
+
+  The height is the fixed part (the 9px block padding and the row gap) in
+  px plus the text part in em of the tray's --t-body (16px), so text-only zoom
+  (Safari and Firefox) grows the tray with its text instead of clipping
+  it: 18px + 6px + 5.375em is 110px at 100 percent, and 18px + 3px +
+  3.4375em is 76px. The bar has no height of its own and follows. At a
+  large text size on a phone the copy wraps to more lines than the
+  height grows by (three lines of the first-sign-in copy at 200 percent
+  need about 8px more), so the tray scrolls the rest instead of hiding it.
 */
 .ed-tray {
   grid-area: tray;
@@ -339,9 +376,11 @@ html.ed-on body {
   align-items: center;
   column-gap: 10px;
   row-gap: 6px;
-  height: 110px;
+  font-size: var(--t-body);
+  height: calc(18px + 6px + 5.375em);
   min-width: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   margin-block: 10px;
   padding: 9px 12px;
   background: var(--raised);
@@ -354,7 +393,7 @@ html.ed-on body {
       'label label'
       'body actions';
     row-gap: 3px;
-    height: 76px;
+    height: calc(18px + 3px + 3.4375em);
     margin-block: 0;
   }
 }
@@ -662,6 +701,17 @@ html.ed-on body {
   background: var(--accent-veil);
 }
 
+/* At the list's cap: the disabled button's ink, no pointer, and hover
+   keeps the resting fill (--sunken, or --page on a sunken slab). */
+.ed-add[aria-disabled='true'] {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.ed-add[aria-disabled='true']:hover {
+  background: var(--sunken);
+}
+
 .ed-add-plus {
   font-family: var(--f-display);
   font-size: 28px;
@@ -693,7 +743,8 @@ html.ed-on body {
 }
 
 /* On a sunken ledger the tile takes the page ground, so it still shows. */
-.slab-sunk .ed-add {
+.slab-sunk .ed-add,
+.slab-sunk .ed-add[aria-disabled='true']:hover {
   background: var(--page);
 }
 

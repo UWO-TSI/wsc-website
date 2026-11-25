@@ -17,10 +17,13 @@ import {
 } from '@/edit/engine/draft-store';
 import { publishDraft, type Publisher } from '@/edit/engine/publish';
 import { blurField, getUi, setUi, useUi, type Tone, type TrayContext } from '@/edit/engine/ui-store';
+import { holdIosFocusZoom } from '@/edit/engine/ios-zoom';
+import { normalizeUrl, validateField } from '@/lib/normalize';
+import { signOutAndReload } from '@/edit/sign-out';
 
 /*
-  The edit bar: change count, Edit and Preview, Discard, Publish, and the
-  tray between them.
+  The edit bar: change count, Edit and Preview, Discard, Publish, the tray
+  between them, and Settings and Sign out under the count.
 
   The bar has one fixed size at each width. The tray is the only region
   whose content changes, and it never grows: it holds whatever has focus
@@ -43,10 +46,16 @@ interface TrayView {
   body: ReactNode;
 }
 
+/* The address the database will refuse (its CHECK allows https://, http://,
+   /, # and mailto: only) is refused here instead, when the field is left:
+   the draft goes back to the address it had on focus and the tray says why.
+   A bare domain gets https:// in front, as everywhere else on the site. */
 function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string }) {
   const { text, published } = useSiteContent();
   const label = meta(labelKey);
   const href = meta(hrefKey);
+  const before = useRef('');
+  const save = (v: string) => setDraftText(hrefKey, v, published.text(hrefKey as SiteContentKey));
   return (
     <>
       <span className="meta ed-flex-none">
@@ -58,8 +67,20 @@ function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string 
         maxLength={href.max}
         inputMode="url"
         spellCheck={false}
-        onBlur={blurField}
-        onChange={(e) => setDraftText(hrefKey, e.target.value.trim(), published.text(hrefKey as SiteContentKey))}
+        onFocus={() => {
+          before.current = text(hrefKey as SiteContentKey);
+        }}
+        onBlur={(e) => {
+          const v = normalizeUrl(e.target.value);
+          if (validateField({ label: label.label, format: 'url' }, v)) {
+            save(before.current);
+            setUi({ flash: { tone: 'alert', label: COPY.linkRefusedLabel, text: COPY.linkRefused, announce: true } });
+          } else if (v !== e.target.value) {
+            save(v);
+          }
+          blurField();
+        }}
+        onChange={(e) => save(e.target.value.trim())}
       />
     </>
   );
@@ -102,6 +123,8 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   const n = changeCount();
   const preview = status === 'preview';
   const busy = ui.phase !== 'idle';
+
+  useEffect(() => holdIosFocusZoom(), []);
 
   /* Pages get bottom padding equal to the bar, so the footer stays
      reachable above it. */
@@ -154,6 +177,10 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
     await discardAll();
   };
 
+  /* A refused link address keeps its message while the editor is back on
+     that button, so the address can be fixed in place. */
+  const linkRefused = ui.flash?.label === COPY.linkRefusedLabel && ui.focus?.type === 'button';
+
   /* What the tray shows, most urgent first. */
   let view: TrayView;
   if (ui.confirmDiscard) {
@@ -171,10 +198,11 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         </>
       ),
     };
-  } else if (ui.flash) {
+  } else if (ui.flash && !linkRefused) {
     view = ui.flash.text === COPY.expired ? expiredView() : { ...ui.flash, body: ui.flash.text };
   } else if (ui.focus && !preview) {
     view = focusView(ui.focus, text);
+    if (linkRefused) view = { ...view, label: COPY.linkRefusedHead, tone: 'alert' };
   } else if (ui.expired) {
     view = expiredView();
   } else if (!ui.online) {
@@ -194,6 +222,15 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
       <div className="ed-status">
         <span className="label">{preview ? COPY.previewing : COPY.editing}</span>
         <span className="meta">{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
+      </div>
+
+      <div className="ed-acct" role="group" aria-label={COPY.accountGroup}>
+        <Button variant="tertiary" className="ed-link" href="/admin/settings">
+          {COPY.settings}
+        </Button>
+        <Button variant="tertiary" className="ed-link" disabled={ui.phase === 'publishing'} onClick={() => signOutAndReload()}>
+          {COPY.signOut}
+        </Button>
       </div>
 
       <div className="ed-seg" role="group" aria-label={COPY.modeGroup}>

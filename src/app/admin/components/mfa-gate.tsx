@@ -14,7 +14,7 @@ interface MfaGateProps {
 }
 
 /**
- * Second-factor gate for the admin dashboard.
+ * Second-factor gate for admin sign-in.
  *
  * TOTP (RFC 6238): Supabase generates a random secret and hands back a
  * QR code encoding an `otpauth://` URI. The authenticator app stores

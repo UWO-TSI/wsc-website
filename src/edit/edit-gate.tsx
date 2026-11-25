@@ -23,7 +23,10 @@ import { EDIT_FLAG_KEY, EDIT_REQUEST_EVENT } from '@/edit/edit-mode';
 
 type Engine = ComponentType<{ userId: string }>;
 
-async function adminUserId(): Promise<string | null> {
+/** The user id when the session is at aal2 and is_admin() is true, else null.
+    Shared by EditGate and the Settings page, so both load their code behind
+    the same check. */
+export async function adminAtAal2(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   const user = data.session?.user;
   if (!user) return null;
@@ -49,7 +52,7 @@ export default function EditGate() {
         wanted = localStorage.getItem(EDIT_FLAG_KEY) === '1';
       } catch {}
       if (!wanted) return setLoaded(null);
-      const userId = await adminUserId().catch(() => null);
+      const userId = await adminAtAal2().catch(() => null);
       if (!userId || !current()) return;
       const { default: Engine } = await import('@/edit/engine/edit-engine');
       if (current()) setLoaded({ Engine, userId });

@@ -24,7 +24,7 @@ import '@/edit/engine/edit.css';
 
 /*
   The edit engine. Loaded only by EditGate, through a dynamic import, after
-  is_admin() passes at aal2 (or by the dev-only edit lab), so none of this
+  is_admin() passes at aal2, so none of this
   is in a visitor's bundle. Mounting it turns the page into edit mode;
   unmounting it returns the page to the visitor version. Drafts stay in
   IndexedDB either way.
@@ -62,7 +62,7 @@ const API: EditEngineApi = {
 
 export interface EditEngineProps {
   userId: string;
-  /** The lab passes a stand-in so it never writes to a database. */
+  /** A stand-in for tests, so nothing writes to a database. */
   publisher?: Publisher;
 }
 

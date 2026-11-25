@@ -12,7 +12,7 @@ Open `floor.html` in a browser first. Nothing in here substitutes for that.
 | Tokens | `src/app/globals.css` | Every runtime var, the `@theme inline` map, the four type roles, `.slab`, `.stack`, the reveal keyframes, the texture styles. |
 | Fonts | `src/app/layout.tsx` | `next/font` → `--font-archivo`, `--font-instrument`, `--font-geist-mono`, consumed by `--f-display` / `--f-text` / `--f-data`. |
 | One theme | `src/app/globals.css` | Showroom only. `color-scheme: light` on `:root`. There is no theme stamp, provider or toggle. |
-| Texture | `src/components/ui/texture.tsx` | Lit velvet, drawn by `Slab` when `texture` is set. Check it at `/texture-lab` in development. |
+| Texture | `src/components/ui/texture.tsx` | Lit velvet, drawn by `Slab` when `texture` is set. Check it on card 17 in `floor.html`. |
 | Reveals | `src/lib/reveal.tsx` | `useReveal()`: one shared IntersectionObserver per threshold. |
 | Framer variants | `src/lib/motion.ts` | `E`, `D`, `STAGGER`, and the variants CSS cannot express. |
 

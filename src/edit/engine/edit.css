@@ -182,7 +182,8 @@ html.ed-on body {
   grid-template-areas:
     'status seg'
     'tray tray'
-    'discard publish';
+    'discard publish'
+    'acct acct';
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
@@ -195,7 +196,13 @@ html.ed-on body {
 @media (min-width: 900px) {
   .ed-bar {
     grid-template-columns: 150px minmax(0, 1fr) auto auto auto;
-    grid-template-areas: 'status tray seg discard publish';
+    /* Settings and Sign out sit under Edit and Preview. Every other cell
+       spans both rows, so the bar's height is set by that one column and
+       does not change when the count wraps to two lines. */
+    grid-template-areas:
+      'status tray seg discard publish'
+      'status tray acct discard publish';
+    row-gap: 2px;
     padding: 12px 14px 12px 20px;
     border-radius: var(--r-xl);
   }
@@ -218,6 +225,31 @@ html.ed-on body {
 
 .ed-status .label {
   color: var(--accent-ink);
+}
+
+/* ── Settings and Sign out ──
+   Tertiary buttons at the meta size, 24px tall (WCAG 2.5.8). On phones
+   they are the bar's last row, at the left edge under Discard; from 900px
+   they sit under Edit and Preview. */
+
+.ed-acct {
+  grid-area: acct;
+  display: flex;
+  gap: 4px;
+  margin-inline-start: -8px;
+}
+
+@media (min-width: 900px) {
+  .ed-acct {
+    justify-self: end;
+    margin-inline: 0 -8px;
+  }
+}
+
+.ed-acct .ed-link {
+  min-height: 24px;
+  padding: 4px 8px;
+  font-size: var(--t-meta);
 }
 
 .ed-seg {

@@ -6,6 +6,8 @@ import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { SITE_CONTENT_DEFAULTS, type SiteContentKey } from '@/lib/site-content-defaults';
 import { IMAGE_SLOTS, SITE_IMAGES_BUCKET, type ImageSlotKey } from '@/lib/image-slots';
+import { useEditSnapshot } from '@/edit/edit-mode';
+import EditGate from '@/edit/edit-gate';
 import type { SiteImage } from '@/types/database';
 
 interface SiteContentRow {
@@ -42,6 +44,11 @@ interface SiteContentValue {
   image: (slot: ImageSlotKey) => SlotImage;
   /** False while the first fetch is in flight. */
   ready: boolean;
+  /**
+   * The published values, without drafts. Equal to `text` and `image`
+   * outside edit mode. The edit engine compares drafts against these.
+   */
+  published: Pick<SiteContentValue, 'text' | 'image'>;
 }
 
 const SiteContentContext = createContext<SiteContentValue | null>(null);
@@ -53,6 +60,9 @@ const emptySlot = (slot: ImageSlotKey): SlotImage => ({ src: null, alt: IMAGE_SL
  *
  * One query each at the layout level rather than one per component: both
  * tables are a few dozen tiny rows, and every page needs some of them.
+ *
+ * Also mounts EditGate, which loads the edit engine for a signed-in admin
+ * who asked for edit mode, and renders nothing for anyone else.
  */
 export function SiteContentProvider({ children }: { children: ReactNode }) {
   const { data: rows, loading: textLoading } = useSupabaseQuery<SiteContentRow>('site_content', {
@@ -64,7 +74,7 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
     orderBy: 'slot',
   });
 
-  const value = useMemo<SiteContentValue>(() => {
+  const published = useMemo<SiteContentValue['published']>(() => {
     const text = new Map<string, string>();
     for (const row of rows) {
       if (row?.key != null) text.set(row.key, row.value ?? '');
@@ -86,11 +96,30 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
           alt: row.alt || IMAGE_SLOTS[slot].alt,
         };
       },
-      ready: !textLoading && !imagesLoading,
     };
-  }, [rows, images, textLoading, imagesLoading]);
+  }, [rows, images, imagesLoading]);
 
-  return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>;
+  /* In edit mode the engine lays drafts over the published values, so a
+     drafted string or photo shows wherever the published one would. `rev`
+     changes on every draft edit. */
+  const { engine, rev } = useEditSnapshot();
+  const value = useMemo<SiteContentValue>(
+    () => ({
+      text: engine ? (key) => engine.text(key, published.text(key)) : published.text,
+      image: engine ? (slot) => engine.image(slot, published.image(slot)) : published.image,
+      ready: !textLoading && !imagesLoading,
+      published,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [published, engine, rev, textLoading, imagesLoading]
+  );
+
+  return (
+    <SiteContentContext.Provider value={value}>
+      {children}
+      <EditGate />
+    </SiteContentContext.Provider>
+  );
 }
 
 /**
@@ -103,9 +132,6 @@ export function useSiteContent(): SiteContentValue {
   const ctx = useContext(SiteContentContext);
   if (ctx) return ctx;
 
-  return {
-    text: (key) => SITE_CONTENT_DEFAULTS[key],
-    image: emptySlot,
-    ready: false,
-  };
+  const text = (key: SiteContentKey) => SITE_CONTENT_DEFAULTS[key];
+  return { text, image: emptySlot, ready: false, published: { text, image: emptySlot } };
 }

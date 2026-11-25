@@ -7,12 +7,27 @@
   rows. A page that reads a list another way would show published rows
   while the editor works on a draft.
 
-  The files here are the view-mode versions and render what the site
-  renders for a visitor. The edit engine replaces them with versions that
-  keep the same props.
+  Each component renders the visitor version until the edit engine is
+  loaded, then its edit branch with the same props. The engine
+  (src/edit/engine/) loads only for an admin at aal2, through EditGate in
+  the site content provider, so a visitor downloads none of it.
+
+  Edit mode is entered with enterEditMode() (after sign-in) and left with
+  leaveEditMode(); setEditPreview() switches Preview. List editors reach
+  the list draft through useEditSnapshot().engine?.list(table).
 */
 
-export { useEditMode, type EditModeValue } from '@/edit/edit-mode';
+export {
+  useEditMode,
+  useEditSnapshot,
+  enterEditMode,
+  leaveEditMode,
+  setEditPreview,
+  type EditModeValue,
+  type EditStatus,
+  type EditEngineApi,
+} from '@/edit/edit-mode';
+export type { ListTable, ListDraftApi, ListRowState } from '@/edit/list-draft';
 export { default as EditableText, type EditableTextProps, type TextTag } from '@/edit/editable-text';
 export { default as EditableLines, type EditableLinesProps } from '@/edit/editable-lines';
 export { default as EditableButton, type EditableButtonProps } from '@/edit/editable-button';

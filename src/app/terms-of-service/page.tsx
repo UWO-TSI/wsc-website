@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
     <div className="stack">
     <PageHead id="terms-title" titleLines={["Terms of Service"]} />
     <div className="px-[var(--gut)] py-[clamp(5rem,10vw,9rem)]">
-      <div className="mx-auto flex max-w-[720px] flex-col gap-10">
+      <div className="flex max-w-[720px] flex-col gap-10">
 
         <div className="flex flex-col gap-10">
           <Section index="01" title="Acceptance of Terms">

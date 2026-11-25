@@ -47,14 +47,17 @@ export function orgTypeFromParam(value: string | null | undefined): string {
 }
 
 /*
-  The form section is its own full-width sunken slab, the form held to a
-  640px column inside it. Its id is the target of the closing band's
-  business button on this page.
+  The form section is its own full-width sunken slab, the one content
+  section on an inner page that keeps a ground: the fields are a group, and
+  each --page well needs the sunken bed to read as a field. The form is a
+  640px column on the gutter's left edge, labels and confirmation included,
+  because it is filled in, not sold. Its id is the target of the closing
+  band's business button on this page.
 */
 export const CONTACT_FORM_ID = 'contact-form';
 
 const SECTION_CLASS = 'scroll-mt-[clamp(5rem,8vw,7rem)]';
-const COLUMN_CLASS = 'mx-auto w-full max-w-[640px]';
+const COLUMN_CLASS = 'w-full max-w-[640px]';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -151,7 +154,7 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
     return (
       <Slab tone="sunken" id={CONTACT_FORM_ID} className={SECTION_CLASS}>
         <div
-          className={`${COLUMN_CLASS} flex flex-col items-center gap-4 py-[clamp(2rem,5vw,3rem)] text-center`}
+          className={`${COLUMN_CLASS} flex flex-col items-start gap-4 py-[clamp(2rem,5vw,3rem)]`}
         >
           <Chip status="ok">Sent</Chip>
           <EditableText k="contact.form.sent_title" as="p" className="title-sm" />

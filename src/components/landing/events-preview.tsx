@@ -4,7 +4,7 @@ import { format, parseISO, startOfDay } from 'date-fns';
 
 import type { Event, QueryError } from '@/types/database';
 import Chip from '@/components/ui/chip';
-import CentredHead from '@/components/ui/centred-head';
+import SectionHead from '@/components/ui/section-head';
 import { EditableButton, EditableImage, useEditMode } from '@/edit';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import RowSkeleton from '@/components/ui/row-skeleton';
@@ -24,6 +24,9 @@ import { useSiteContent } from '@/providers/site-content-provider';
   already queries in (date DESC, created_at DESC). This used to re-sort
   ascending before slicing, which showed the four OLDEST events ever
   published once the calendar had more than four.
+
+  The section is scanned, not sold, so it is left-aligned, head included:
+  the eyebrow, the title, the ledger and the link start from one edge.
 */
 const PREVIEW_COUNT = 4;
 
@@ -48,7 +51,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
   return (
     <section className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
       <div className="mx-auto flex max-w-[1100px] flex-col gap-12">
-        <CentredHead
+        <SectionHead
           id="events-heading"
           eyebrowKey="home.events.eyebrow"
           titleKeys={['home.events.title_line1', 'home.events.title_line2']}
@@ -57,8 +60,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
         {/*
           Asymmetric on purpose: the ledger carries the information and takes
           the wider column, the photo is support and takes the narrower one.
-          The ledger is reading content, so it stays left-aligned under the
-          centred head. Below lg the photo drops under the list.
+          Below lg the photo drops under the list.
         */}
         <div
           ref={ref}
@@ -86,7 +88,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
           />
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex">
           <EditableButton
             labelKey="home.events.link_label"
             hrefKey="home.events.link_href"

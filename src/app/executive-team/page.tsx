@@ -5,7 +5,6 @@ import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecGroup, Executive } from '@/types/database';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import PageHead from '@/components/layout/page-head';
-import Slab from '@/components/ui/slab';
 import ClosingBand from '@/components/layout/closing-band';
 import ExecutiveGrid, { ExecutiveGridSkeleton } from '@/components/team/executive-grid';
 import { useSiteContent } from '@/providers/site-content-provider';
@@ -76,9 +75,10 @@ export default function ExecutiveTeamPage() {
         titleKeys={['team.header.title_line1', 'team.header.title_line2']}
       />
 
-      {/* Slab outside the async wrapper: the bed paints immediately and only
-          the roster inside fills in. */}
-      <Slab tone="page">
+      {/* Bare on the page ground between the page head and the closing band,
+          with --pad-section of room. Outside the async wrapper, so it holds
+          its place and only the roster inside fills in. */}
+      <section aria-label="Executive team" className="px-[var(--gut)] py-[var(--pad-section)]">
         <AsyncStateWrapper
           loading={loading}
           error={error}
@@ -90,7 +90,7 @@ export default function ExecutiveTeamPage() {
         >
           <ExecutiveGrid executives={ordered} />
         </AsyncStateWrapper>
-      </Slab>
+      </section>
 
       <ClosingBand />
     </div>

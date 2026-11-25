@@ -9,6 +9,8 @@ import type { SiteStat } from '@/types/database';
 /*
   The three counted figures, directly under the hero: a number right after
   the promise. Bare on --page, centred, Counter Roll on each (StatFigure).
+  The hero above is a photo container, so the row takes --pad-section on
+  both sides rather than continuing the hero's ground.
 
   The figures are the club's own claims in site_stats. Three in a row at
   most, so only the first three visible rows render. The fallback trio
@@ -31,7 +33,7 @@ export default function StatsRow() {
   if (stats.length === 0 && !editing) return null;
 
   return (
-    <section aria-label="The club in numbers" className="px-[var(--gut)] pb-[clamp(3rem,7vw,5.5rem)]">
+    <section aria-label="The club in numbers" className="px-[var(--gut)] py-[var(--pad-section)]">
       {editing && !loading && !error ? (
         <ListEditBranch name="stats" props={{ stats: data }} />
       ) : (

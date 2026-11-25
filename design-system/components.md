@@ -13,7 +13,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Eyebrow | `ui/eyebrow.tsx` | travels with its title |
 | Field | `contact/field.tsx` | none |
 | KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade |
-| SectionHead | `landing/about-section.tsx` | Line Mask Reveal |
+| SectionHead | `ui/section-head.tsx` | Line Mask Reveal |
 | CentredHead | `ui/centred-head.tsx` | Line Mask Reveal |
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |
@@ -66,9 +66,21 @@ One primary per section. No icon-only buttons on the marketing site.
 
 ## CentredHead
 
-The head of a selling section: the hero's order, for every section head and closing band. Eyebrow, the Archivo title (one `site_content` key per visual line, Line Mask Reveal), at most three lines of copy, then the buttons as children in one centred row. Every string is read through the edit components, so in edit mode the head is a filled-in form. Reading content below it (long paragraphs, the event ledger) stays left-aligned.
+The head of a selling moment, centred: the page head, the closing band, and a home section that is one message and a link (About, Partners). Eyebrow, the Archivo title (one `site_content` key per visual line, Line Mask Reveal), at most three lines of copy, then the buttons as children in one centred row. Every string is read through the edit components, so in edit mode the head is a filled-in form. A section whose job is reading or scanning content takes SectionHead instead.
 
 Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a section head, `subtitle` for a closing band), `id`, `as` (`h2` by default), `children`.
+
+## SectionHead
+
+The head of a section whose job is reading or scanning content, left-aligned: the About story, the event ledger on the home page. Eyebrow (with the section numeral), the Archivo title with Line Mask Reveal, optional meta or copy, then any buttons, all on the left edge the content below starts from. The content keeps that edge: the head and the paragraphs, ledger or photo under it share one left edge, the gutter on an inner page.
+
+Props: `titleKeys` (editable, one key per visual line) or `title` (fixed lines), `eyebrowKey` or `eyebrow`, `index`, `meta`, `bodyKey`, `id`, `as`, `children`.
+
+## Hero
+
+The home page's first section, `landing/hero.tsx`. An `inverse` slab with the `waist` ribbon, full width, with the photo slot `home.hero.image1` as its background: a RevealImage at `absolute inset-0` with `veil`, so `--inverse-veil` sits between the photo and the head. The head is centred and keeps KineticHeadline's motion (Line Mask Reveal, Word Cascade, held on the Curtain). The photo is a sibling of the head and runs its own Clip Reveal, held on the Curtain the same way. Empty, it shows the placeholder over the ribbon. In edit mode the photo is a PhotoSlot with Add photo or Replace photo at its bottom left.
+
+Padding is the page head's: `clamp(7.5rem,14vw,11rem)` top and `--pad-section` bottom. The stats row under it takes `--pad-section` on both sides.
 
 ## ClosingBand
 
@@ -78,7 +90,7 @@ Apart from the page head (inverse, waist ribbon), it is the page's one loud slab
 
 ## PageHead
 
-The first section of every public page other than home: an `inverse` slab with the `waist` ribbon holding a CentredHead as the page's `h1` (eyebrow, title, optional copy). One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `clamp(3rem,7vw,5.5rem)` bottom. Pages pass keys only, never a padding or a tone.
+The first section of every public page other than home: an `inverse` slab with the `waist` ribbon holding a CentredHead as the page's `h1` (eyebrow, title, optional copy). One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `--pad-section` bottom. Pages pass keys only, never a padding or a tone.
 
 Props: `titleKeys`, `eyebrowKey`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page). The legal pages, whose copy is not in `site_content`, pass `titleLines` (fixed strings, same Line Mask Reveal, not fields in edit mode) instead of `titleKeys`; CentredHead takes the same prop.
 
@@ -102,7 +114,7 @@ The only divider. A slab spans the full viewport width with no side gap and take
 
 Tones in order of distance from the ground: `--raised` (default), `--sunken` (recessed: footer, form bed, gallery bed), `--inverse` and `--accent` (the statement and the offer).
 
-Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page except an inverse page head above the closing band. Do not slab everything: the hero and at least one section per page are bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
+Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page except an inverse page head above the closing band. Do not slab everything. On an inner page only the page head and the closing band are slabs; the content sections between them are bare on `--page` with `--pad-section` above and below, except the contact form (`sunken`) and the Partners logo wall (`logo`). A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
 
 A slab is flat. A shadow would fill the 2px join, and a slab is the page, not a thing floating above it.
 
@@ -130,7 +142,7 @@ The roster is one grid read left to right, not a stack of titled tiers.
 
 It used to be three labelled bands, Presidents then Vice Presidents then Assistant Vice Presidents, each a group of ledger rows. Splitting people into named ranks made the page about status rather than about the team, which is not what a club roster is for. **Organization is conveyed by layout.** The order still carries the structure, presidents first and so on down, and each person's title sits under their name for anyone who wants it, but nothing announces a boundary and no group gets a bigger cell.
 
-Four columns from 1024 up, three from 640, two below. Every cell is identical: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
+Bare on `--page`, starting from the gutter. Four columns from 1024 up, three from 640, two below. Every cell is identical: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred in the cell. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
 
 Headshots are always visible here, unlike on the event ledger. A profile picture is the content, not a flourish. `Avatar` layers the photo over its initials disc rather than swapping, so a missing or slow headshot shows the designed fallback instead of a hole. Object names only in the DB; call `getPublicUrl(bucket, objectName)` at runtime.
 
@@ -170,7 +182,11 @@ Three states, all at the frame's own size:
 
 - **Loading** (`src` undefined, or bytes in flight): the skeleton with its sweep.
 - **Loaded**: the photo, after Clip Reveal. The skeleton is still behind it and its sweep has stopped.
-- **Empty slot** (`src` null): the skeleton surface with the sweep stopped, and nothing drawn over it. No new token: it is exactly the loaded skeleton with no picture. The frame reports ready at once, so a held group is never stuck on it. Used for every admin photo slot that has not been filled.
+- **Empty slot** (`src` null): the placeholder. The skeleton surface with the sweep stopped takes the photo's place inside the clip cell and runs the same Clip Reveal a photo runs, at the frame's size and aspect ratio, with no label. There is no skeleton behind it, since a surface revealed over the same surface shows no motion. No new token. The frame reports ready at once, so a held group is never stuck on it. Visitors, Preview and edit mode all see it, for every slot in `src/lib/image-slots.ts` that has not been filled.
+
+`veil` lays `--inverse-veil` over a photo for text set on it (the hero). An empty slot takes no veil: the placeholder is a 9 percent wash of the ground's own ink, which the text already clears.
+
+`.skeleton` is in the components layer, so the caller's utilities (`absolute inset-0`, `rounded-full`) win over its defaults.
 
 Every photo on the public site is a slot named `page.section.imageN`; see `src/lib/image-slots.ts`. Brand marks are not slots.
 

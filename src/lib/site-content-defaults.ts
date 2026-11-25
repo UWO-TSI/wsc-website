@@ -141,7 +141,7 @@ export const SITE_CONTENT = {
   'events.header.eyebrow': { value: 'Events', kind: 'text', page: 'Events', section: 'Header', label: 'Eyebrow', max: 24 },
   'events.header.title_line1': { value: 'What we run', kind: 'text', page: 'Events', section: 'Header', label: 'Heading', max: 24 },
   'events.header.empty': { value: 'No events are on the calendar yet.', kind: 'text', page: 'Events', section: 'Header', label: 'Empty message', max: 60 },
-  'events.register_label': { value: 'Register', kind: 'text', page: 'Events', section: 'Ledger', label: 'Register button', max: 20, help: 'Shown on upcoming events that have a registration link.' },
+  'events.ledger.register_label': { value: 'Register', kind: 'text', page: 'Events', section: 'Ledger', label: 'Register button', max: 20, help: 'Shown on upcoming events that have a registration link.' },
 
   // Partners
   'partners.header.eyebrow': { value: 'Partners', kind: 'text', page: 'Partners', section: 'Header', label: 'Eyebrow', max: 24 },

@@ -77,16 +77,16 @@ export default function TimelineEvent({ event, index }: TimelineEventProps) {
             {canRegister &&
               (editing ? (
                 <Button variant="secondary">
-                  <EditableText k="events.register_label" />
+                  <EditableText k="events.ledger.register_label" />
                 </Button>
               ) : (
                 <Button
                   variant="secondary"
                   href={registerUrl}
                   {...registerLink}
-                  aria-label={`${text('events.register_label')}, ${event.title}`}
+                  aria-label={`${text('events.ledger.register_label')}, ${event.title}`}
                 >
-                  {text('events.register_label')}
+                  {text('events.ledger.register_label')}
                 </Button>
               ))}
           </span>

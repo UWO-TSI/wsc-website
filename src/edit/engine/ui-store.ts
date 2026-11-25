@@ -58,15 +58,13 @@ export function getUi(): UiState {
   return state;
 }
 
+export function subscribeUi(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function useUi(): UiState {
-  return useSyncExternalStore(
-    (fn) => {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-    () => state,
-    () => state
-  );
+  return useSyncExternalStore(subscribeUi, () => state, () => state);
 }
 
 /* Focus leaving a field for the tray (the link address, a tray button)
@@ -94,11 +92,28 @@ const target = (ctx: TrayContext) => {
 /** The last field that had focus, kept across a blur. */
 let lastTarget = '';
 
+/*
+  Keyboard reach into the tray. The tray is rendered in the bar, at the end
+  of <body>, so Tab from a field never reaches it while it still shows that
+  field. focusField keeps the element that had focus; enterTray moves focus
+  to the tray's first control, and leaveTray returns it to that element
+  (Escape, Enter in a link address, or Tab past either end of the tray).
+*/
+let returnTo: HTMLElement | null = null;
+let entered = false;
+
+const TRAY_CONTROLS = '[data-ed-tray] :is(input, select, textarea, button, a[href]):not([disabled])';
+
 /* A message (a refused photo, a publish result) stays while focus returns
    to the same field, as it does after the file picker closes, and clears
    when the editor moves to another field or types. */
 export function focusField(ctx: TrayContext) {
   clearTimeout(blurTimer);
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && !active.closest('[data-ed-tray]')) {
+    returnTo = active;
+    entered = false;
+  }
   const same = target(ctx) === lastTarget;
   lastTarget = target(ctx);
   if (same) setUi({ focus: ctx });
@@ -117,7 +132,41 @@ export function blurField() {
   }, 0);
 }
 
+/** The tray's controls, in tab order. */
+export function trayControls(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>(TRAY_CONTROLS));
+}
+
+/** Shows `ctx` in the tray and moves focus to its first control, once it is drawn. */
+export function enterTray(ctx: TrayContext, from: HTMLElement) {
+  from.focus();
+  focusField(ctx);
+  returnTo = from;
+  requestAnimationFrame(() => {
+    const first = trayControls()[0];
+    if (!first) return;
+    entered = true;
+    first.focus();
+  });
+}
+
+/** True while focus is in the tray after enterTray, so Tab past its ends goes back. */
+export function enteredTray(): boolean {
+  return entered && !!document.activeElement?.closest('[data-ed-tray]');
+}
+
+/** Returns focus from the tray to the field or control it came from. */
+export function leaveTray(): boolean {
+  const el = returnTo;
+  if (!el?.isConnected) return false;
+  entered = false;
+  el.focus();
+  return true;
+}
+
 export function resetUi() {
   lastTarget = '';
+  returnTo = null;
+  entered = false;
   state = { focus: null, flash: null, confirmDiscard: false, phase: 'idle', online: true, expired: false };
 }

@@ -1,15 +1,16 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
 import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
+import { useSlabTone } from '@/components/ui/slab';
 import { LIMITS } from '@/lib/admin-config';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import { COPY } from '@/edit/engine/copy';
 import { currentRow } from '@/edit/engine/draft-store';
 import { columnWidth, onRemeasure, sample, textHeight, textWidth } from '@/edit/engine/measure';
-import { blurField, edited, focusField, getUi, setUi, type Tone } from '@/edit/engine/ui-store';
+import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, type Tone } from '@/edit/engine/ui-store';
 
 /*
   The parts every list editor is built from (card 16): a row field,
@@ -35,6 +36,10 @@ import { blurField, edited, focusField, getUi, setUi, type Tone } from '@/edit/e
 const SHELL_X = 24;
 
 const fieldId = (table: ListTable, id: string, column: string) => `${table}.${id}.${column}`;
+
+/* A row field's accessible name carries the row's name ("Name, Mei Chen"),
+   so a screen reader tabbing a list can tell the rows apart. */
+const nameFor = (label: string, who?: string) => (who ? COPY.rowField(label, who) : label);
 
 export function reducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -70,6 +75,8 @@ export interface RowFieldProps {
   value: string;
   max: number;
   label: string;
+  /** The row's name, added to the accessible name. */
+  who?: string;
   placeholder?: string;
   /** Takes the column; otherwise as wide as the longest allowed value. */
   block?: boolean;
@@ -78,7 +85,7 @@ export interface RowFieldProps {
   onChange: (value: string) => void;
 }
 
-export function RowField({ table, id, column, value, max, label, placeholder, block, className, onChange }: RowFieldProps) {
+export function RowField({ table, id, column, value, max, label, who, placeholder, block, className, onChange }: RowFieldProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   /* Every row's field is measured from the same sample text, never from
@@ -110,7 +117,7 @@ export function RowField({ table, id, column, value, max, label, placeholder, bl
         value={value}
         maxLength={max}
         placeholder={placeholder ?? label}
-        aria-label={label}
+        aria-label={nameFor(label, who)}
         onChange={(e) => {
           edited();
           onChange(oneLine(e.target.value).slice(0, max));
@@ -132,6 +139,7 @@ export function RowInput({
   type,
   value,
   label,
+  who,
   className,
   onChange,
 }: {
@@ -141,6 +149,7 @@ export function RowInput({
   type: 'date' | 'time';
   value: string;
   label: string;
+  who?: string;
   className?: string;
   onChange: (value: string) => void;
 }) {
@@ -150,7 +159,7 @@ export function RowInput({
         className="ed-in"
         type={type}
         value={value}
-        aria-label={label}
+        aria-label={nameFor(label, who)}
         onChange={(e) => {
           edited();
           onChange(e.target.value);
@@ -176,6 +185,7 @@ export function InlineNumber({
   value,
   max,
   label,
+  who,
   className,
   onChange,
 }: {
@@ -185,6 +195,7 @@ export function InlineNumber({
   value: number;
   max: number;
   label: string;
+  who?: string;
   className?: string;
   onChange: (value: number) => void;
 }) {
@@ -206,7 +217,7 @@ export function InlineNumber({
         pattern="[0-9]*"
         maxLength={digits}
         value={typed ?? String(value)}
-        aria-label={label}
+        aria-label={nameFor(label, who)}
         onChange={(e) => {
           const raw = e.target.value.replace(/\D/g, '').slice(0, digits);
           edited();
@@ -243,6 +254,7 @@ export function InlineSelect({
   value,
   options,
   label,
+  who,
   onChange,
   selectRef,
 }: {
@@ -252,6 +264,7 @@ export function InlineSelect({
   value: string;
   options: SelectOption[];
   label: string;
+  who?: string;
   onChange: (value: string) => void;
   selectRef?: RefObject<HTMLSelectElement | null>;
 }) {
@@ -260,7 +273,7 @@ export function InlineSelect({
       <select
         ref={selectRef}
         value={value}
-        aria-label={label}
+        aria-label={nameFor(label, who)}
         onChange={(e) => {
           edited();
           onChange(e.target.value);
@@ -307,12 +320,15 @@ function Words({ words, shown }: { words: string[]; shown: string }) {
 export function VisibilityChip({
   table,
   id,
+  who,
   visible,
   onToggle,
   className,
 }: {
   table: ListTable;
   id: string;
+  /** The row's name: "Show Mei Chen on team page". */
+  who: string;
   visible: boolean;
   onToggle: () => void;
   className?: string;
@@ -322,7 +338,7 @@ export function VisibilityChip({
       type="button"
       className={`ed-vis ${className ?? ''}`.trim()}
       aria-pressed={visible}
-      aria-label={COPY.list[table].show}
+      aria-label={COPY.list[table].show(who)}
       onClick={() => {
         edited();
         onToggle();
@@ -366,26 +382,132 @@ export function GripIcon() {
  * The last cell of every list: the empty photo-slot surface with a
  * tertiary label, the size of an item. When an add moves it along it
  * arrives with Clip Reveal.
+ *
+ * At the list's cap (LIMITS in admin-config.ts) the tile stays in its
+ * place, disabled, in the disabled button's colours (--ink-faint, no
+ * hover fill). It stays focusable (aria-disabled), and pressing it says
+ * why in the tray.
  */
 export function AddTile({
   label,
   shape,
   appear,
+  full,
   onAdd,
 }: {
   label: string;
   shape: 'disc' | 'row' | 'logo' | 'figure';
   appear: boolean;
+  /** Why the list takes no more items, or undefined while it does. */
+  full?: string;
   onAdd: () => void;
 }) {
+  /* The resting fill is the tile's own (--sunken, or --page on a sunken
+     slab), so hover keeps it. */
+  const sunk = useSlabTone() === 'sunken';
+  const off = full ? ` text-ink-faint! cursor-not-allowed ${sunk ? 'hover:bg-page!' : 'hover:bg-sunken!'}` : '';
   return (
-    <button type="button" className={`ed-add ed-add-${shape}${appear ? ' ed-appear' : ''}`} onClick={onAdd}>
+    <button
+      type="button"
+      className={`ed-add ed-add-${shape}${appear ? ' ed-appear' : ''}${off}`}
+      aria-disabled={full ? true : undefined}
+      onClick={() => {
+        if (!full) return onAdd();
+        setUi({ flash: { tone: 'warn', label, text: full, announce: true } });
+      }}
+    >
       <span className="ed-add-plus" aria-hidden="true">
         +
       </span>
       <span>{label}</span>
     </button>
   );
+}
+
+/* ── Row options: keyboard reach to the tray ── */
+
+/**
+ * The last control of every row. It shows the row in the tray and moves
+ * focus to the tray's first control (the link address, or Remove), which
+ * Tab from the row's fields never reaches. Escape, Enter in the link
+ * address, or Tab past either end of the tray comes back here
+ * (ui-store.ts). A tertiary Button, as Settings and Sign out are.
+ */
+export function RowOptions({ table, id, who }: { table: ListTable; id: string; who: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const ctx = { type: 'row', table, id, field: 'options' } as const;
+  return (
+    <span ref={ref} className="inline-flex" onFocus={() => focusField(ctx)} onBlur={blurField}>
+      <Button
+        variant="tertiary"
+        aria-label={COPY.rowOptionsName(who)}
+        onClick={() => {
+          const el = ref.current?.querySelector('button');
+          if (el) enterTray(ctx, el);
+        }}
+      >
+        {COPY.rowOptions}
+      </Button>
+    </span>
+  );
+}
+
+/* ── Held order: a row does not move while it is being edited ── */
+
+/**
+ * The rows in the order they had when one of their fields took focus,
+ * while focus stays in the list (or its tray), so a row whose date or role
+ * changes does not move under the cursor. When focus leaves, the rows take
+ * their sorted order once, on the move row (`release` captures the old
+ * places first). The Grip is not held: its moves are the point. A row
+ * added while the order is held takes its sorted place among the held
+ * rows.
+ */
+export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted: R[]) {
+  const [held, setHeld] = useState<string[] | null>(null);
+  const holding = useRef<string[] | null>(null);
+  const shown = useRef<R[]>(sorted);
+  const release = useRef<() => void>(() => {});
+
+  useEffect(
+    () =>
+      subscribeUi(() => {
+        const f = getUi().focus;
+        const editing = f?.type === 'row' && f.table === table && f.field !== 'grip';
+        if (editing && !holding.current) {
+          holding.current = shown.current.map((r) => r.id);
+          setHeld(holding.current);
+        } else if (!editing && holding.current) {
+          release.current();
+          holding.current = null;
+          setHeld(null);
+        }
+      }),
+    [table]
+  );
+
+  let rows = sorted;
+  if (held) {
+    const byId = new Map(sorted.map((r) => [r.id, r]));
+    const kept = new Set(held);
+    rows = held.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+    sorted.forEach((r, i) => {
+      if (kept.has(r.id)) return;
+      const after = sorted.slice(i + 1).find((x) => kept.has(x.id));
+      const at = after ? rows.indexOf(after) : -1;
+      rows.splice(at === -1 ? rows.length : at, 0, r);
+    });
+  }
+
+  useLayoutEffect(() => {
+    shown.current = rows;
+  });
+
+  /** Sets what runs just before the rows re-sort: the reorder's capture. */
+  const onRelease = (fn: () => void) => {
+    release.current = fn;
+  };
+  return { rows, onRelease };
 }
 
 /* ── A row's photo: headshot or logo ── */
@@ -684,19 +806,20 @@ export function useReorder<R extends { id: string }>({
 export function useLeaving<R extends { id: string }>(
   rows: R[],
   api: ListDraftApi,
-  capture: () => void
+  capture: () => void,
+  listRef: RefObject<HTMLElement | null>
 ): { items: Array<{ row: R; leaving: boolean }>; done: (id: string) => void } {
   const prev = useRef<{ rows: R[]; removing: Set<string> }>({ rows: [], removing: new Set() });
   const [ghosts, setGhosts] = useState<Array<{ row: R; index: number }>>([]);
 
   useLayoutEffect(() => {
     const ids = new Set(rows.map((r) => r.id));
-    const gone = prev.current.rows
-      .map((row, index) => ({ row, index }))
-      .filter(({ row }) => !ids.has(row.id) && prev.current.removing.has(row.id));
+    const dropped = prev.current.rows.map((row, index) => ({ row, index })).filter(({ row }) => !ids.has(row.id));
+    const gone = dropped.filter(({ row }) => prev.current.removing.has(row.id));
     prev.current = { rows, removing: new Set(rows.filter((r) => api.state(r.id) === 'removing').map((r) => r.id)) };
+    focusNeighbour(listRef.current, dropped);
     if (gone.length && !reducedMotion()) setGhosts((g) => [...g, ...gone]);
-  }, [rows, api]);
+  }, [rows, api, listRef]);
 
   const out = rows.map((row) => ({ row, leaving: false }));
   for (const g of ghosts) {
@@ -710,6 +833,29 @@ export function useLeaving<R extends { id: string }>(
   };
 
   return { items: out, done };
+}
+
+/*
+  A row left the list (an added row's Remove, or a removed row deleted by
+  Publish, which then leaves inert): if focus was in it, or in the tray
+  showing it, it would drop to <body>. It goes to the row that took its
+  place instead, or to the Add tile when it was the last row, and the tray
+  then shows that row.
+*/
+const FOCUSABLE = ':is(textarea, input, select, button):not([disabled])';
+
+function focusNeighbour(list: HTMLElement | null, dropped: Array<{ row: { id: string }; index: number }>) {
+  const f = getUi().focus;
+  if (!list || f?.type !== 'row') return;
+  const hit = dropped.find(({ row }) => row.id === f.id);
+  if (!hit) return;
+  const active = document.activeElement;
+  if (active && active !== document.body && !active.closest('[data-ed-tray]')) return;
+  const rest = Array.from(items(list)).filter((el) => el.dataset.leaving === undefined);
+  const cell = rest[hit.index] ?? list.lastElementChild;
+  const target = cell?.querySelector<HTMLElement>(FOCUSABLE);
+  if (target) target.focus();
+  else setUi({ focus: null });
 }
 
 /* ── The tray's view of a row ── */
@@ -742,8 +888,9 @@ export function rowTrayView(table: ListTable, id: string, field: string): RowTra
 
 /**
  * Remove, or Keep for a row already marked Will be removed. It is in the
- * tray, so focus moving to it keeps the row's context. An added row is
- * dropped at once and the tray goes back to its resting copy.
+ * tray, so focus moving to it keeps the row's context, and stays on it
+ * after Remove so Keep is one press away. An added row is dropped at once,
+ * and useLeaving moves focus to the row that takes its place.
  */
 export function RemoveButton({ api, table, id }: { api: ListDraftApi; table: ListTable; id: string }) {
   const state = api.state(id);
@@ -755,7 +902,6 @@ export function RemoveButton({ api, table, id }: { api: ListDraftApi; table: Lis
       onClick={() => {
         if (state === 'removing') return api.keep(id);
         api.remove(id);
-        if (state === 'added' && getUi().focus) setUi({ focus: null });
       }}
     >
       {state === 'removing' ? copy.keep : copy.remove}

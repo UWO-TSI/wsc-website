@@ -3,6 +3,7 @@
 import RevealImage from '@/components/ui/reveal-image';
 import type { Sponsor } from '@/types/database';
 import { getPublicUrl } from '@/lib/supabase/storage';
+import { externalLinkProps } from '@/lib/link-utils';
 
 interface LogoCardProps {
   sponsor: Sponsor;
@@ -60,7 +61,15 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     The mark eases up on --d-move and --e-move, the same pair a row uses when
     it shifts, and only far enough to notice.
   */
-  const markClass = sponsor.link
+  /*
+    The tile is a link only for an http(s) address: rows from before the
+    database check and draft values in Preview are never checked otherwise.
+  */
+  const link = sponsor.link?.trim() ?? '';
+  const linkProps = externalLinkProps(link);
+  const isLink = 'target' in linkProps;
+
+  const markClass = isLink
     ? 'flex h-full w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
     : 'flex h-full w-full items-center justify-center';
 
@@ -83,12 +92,11 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     </span>
   );
 
-  if (sponsor.link) {
+  if (isLink) {
     return (
       <a
-        href={sponsor.link}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={link}
+        {...linkProps}
         className={tileClass}
         aria-label={`${sponsor.name}, opens in a new tab`}
         data-cursor="view"

@@ -10,6 +10,7 @@ import { byDateDesc } from '@/components/events/timeline';
 import { TILE_SIZE, scaleFor } from '@/components/sponsors/logo-card';
 import { EditableButton, useEditSnapshot } from '@/edit';
 import { externalLinkProps } from '@/lib/link-utils';
+import { LIMITS } from '@/lib/admin-config';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSiteContent } from '@/providers/site-content-provider';
@@ -26,14 +27,17 @@ import {
   RemoveButton,
   RowField,
   RowInput,
+  RowOptions,
   RowPhoto,
   StateChip,
   VisibilityChip,
+  useHeldOrder,
   useLeaving,
   useReorder,
   useRowTray,
   type RowTrayView,
 } from '@/edit/engine/list-parts';
+import { LinkField } from '@/edit/engine/link-field';
 import { blurField, edited, focusField, setUi } from '@/edit/engine/ui-store';
 
 /*
@@ -99,7 +103,11 @@ function itemClass(state: ListRowState, hidden: boolean, held: boolean, leaving:
     .join(' ');
 }
 
-/** A row's link address in the tray: an event's register link, a partner's site. */
+/*
+  A row's link address in the tray: an event's register link, a partner's
+  site. Both columns accept http(s) only (events_register_url_scheme,
+  sponsors_link_scheme), so LinkField refuses anything else on blur.
+*/
 function TrayLink({
   label,
   value,
@@ -110,17 +118,20 @@ function TrayLink({
   onChange: (value: string | null) => void;
 }) {
   return (
-    <input
-      aria-label={label}
+    <LinkField
+      label={label}
       value={value}
+      format="https"
       maxLength={LIMIT.url}
-      inputMode="url"
-      spellCheck={false}
       placeholder={COPY.linkPlaceholder}
-      onBlur={blurField}
-      onChange={(e) => onChange(e.target.value.trim() || null)}
+      onSave={(v) => onChange(v || null)}
     />
   );
+}
+
+/** The cap's tray line while a list is full, or undefined. Removed rows do not count. */
+function fullAt(api: ListDraftApi, rows: Array<{ id: string }>, max: number, line: (n: number) => string) {
+  return rows.filter((r) => api.state(r.id) !== 'removing').length >= max ? line(max) : undefined;
 }
 
 /* ── Executives ── */
@@ -147,8 +158,12 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
     return (area ? `${role}, ${area}` : role).slice(0, LIMIT.areaName);
   };
 
-  const reorder = useReorder({ api, table, rows: executives, listRef, nameOf, canSwap: (a, b) => a.group === b.group });
-  const { items, done } = useLeaving(executives, api, reorder.capture);
+  /* A role change re-groups the roster; the row stays put until focus leaves the list. */
+  const held = useHeldOrder(table, executives);
+  const rows = held.rows;
+  const reorder = useReorder({ api, table, rows, listRef, nameOf, canSwap: (a, b) => a.group === b.group });
+  held.onRelease(reorder.capture);
+  const { items, done } = useLeaving(rows, api, reorder.capture, listRef);
 
   useRowTray(table, (id, field, row): RowTrayView => {
     const e = row as unknown as Executive;
@@ -167,7 +182,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
 
   const add = () => {
     reorder.capture();
-    const group = executives[executives.length - 1]?.group ?? groups[0]?.slug ?? '';
+    const group = rows[rows.length - 1]?.group ?? groups[0]?.slug ?? '';
     const id = api.add({ name: '', group, area_id: null, title: built(group, null), visible: true } as Partial<Executive>);
     setAdds((n) => n + 1);
     focusNew(`[data-ed-field="executives.${id}.name"] textarea`);
@@ -179,7 +194,8 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
         {items.map(({ row: e, leaving }, index) => {
           const state = api.state(e.id);
           const src = api.fileUrl(e.id, 'headshot_path') ?? getPublicUrl('headshots', e.headshot_path);
-          const head = COPY.rowHead(copy.kind, nameOf(e));
+          const who = nameOf(e);
+          const head = COPY.rowHead(copy.kind, who);
           return (
             <li
               key={e.id}
@@ -205,6 +221,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
               <VisibilityChip
                 table={table}
                 id={e.id}
+                who={who}
                 visible={e.visible}
                 onToggle={() => api.hide(e.id, e.visible)}
                 className="ed-over-tl"
@@ -221,6 +238,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
                   value={e.name}
                   max={LIMIT.executiveName}
                   label={COPY.field.name}
+                  who={who}
                   placeholder={COPY.field.fullName}
                   block
                   className="title-sm"
@@ -233,6 +251,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
                     column="group"
                     value={e.group}
                     label={COPY.field.role}
+                    who={who}
                     options={groups.map((g) => ({ value: g.slug, label: g.short_label, title: g.singular_label }))}
                     onChange={(group) =>
                       api.update(e.id, { group, title: built(group, e.area_id ?? null) } as Partial<Executive>)
@@ -258,6 +277,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
                       column="area_id"
                       value={e.area_id ?? ''}
                       label={COPY.field.area}
+                      who={who}
                       options={[
                         { value: '', label: COPY.noArea },
                         ...areas.map((a) => ({ value: a.id, label: a.name })),
@@ -272,13 +292,20 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
                   )}
                 </span>
               </div>
+              <RowOptions table={table} id={e.id} who={who} />
               <StateChip state={state} />
             </li>
           );
         })}
         <li key={`add-${adds}`} className="flex flex-col items-center">
           <span className={AVATAR_WIDTH}>
-            <AddTile label={copy.add} shape="disc" appear={adds > 0} onAdd={add} />
+            <AddTile
+              label={copy.add}
+              shape="disc"
+              appear={adds > 0}
+              full={fullAt(api, rows, LIMITS.MAX_EXECUTIVES, copy.full)}
+              onAdd={add}
+            />
           </span>
         </li>
       </ul>
@@ -364,13 +391,17 @@ export function EventsEditor({ events }: { events: Event[] }) {
   const listRef = useRef<HTMLUListElement>(null);
   const focusNew = useFocusNew();
   const [adds, setAdds] = useState(0);
-  const rows = [...events].sort(byDateDesc);
+  const nameOf = (e: Event) => e.title.trim() || copy.fresh;
 
   /* Events are read newest first, so the ledger has no Grip: its order is
-     the date, and display_order is not shown anywhere. The move row is
-     still used to close the gap after a removal. */
-  const reorder = useReorder({ api, table, rows, listRef, nameOf: (e) => e.title || copy.fresh });
-  const { items, done } = useLeaving(rows, api, reorder.capture);
+     the date, and display_order is not shown anywhere. A row whose date
+     changes keeps its place until focus leaves the list, then moves once
+     on the move row, which also closes the gap after a removal. */
+  const held = useHeldOrder(table, [...events].sort(byDateDesc));
+  const rows = held.rows;
+  const reorder = useReorder({ api, table, rows, listRef, nameOf });
+  held.onRelease(reorder.capture);
+  const { items, done } = useLeaving(rows, api, reorder.capture, listRef);
 
   useRowTray(table, (id, _field, row): RowTrayView => {
     const e = row as unknown as Event;
@@ -410,6 +441,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
         const isPast = isBefore(startOfDay(parseISO(e.date)), startOfDay(new Date()));
         const registerUrl = e.register_url?.trim() ?? '';
         const canRegister = !isPast && 'target' in externalLinkProps(registerUrl);
+        const who = nameOf(e);
         return (
           <li
             key={e.id}
@@ -428,6 +460,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
                 value={e.title}
                 max={LIMIT.eventTitle}
                 label={COPY.field.title}
+                who={who}
                 block
                 className="title-sm text-ink min-w-0 flex-1 basis-60"
                 onChange={(title) => api.update(e.id, { title })}
@@ -440,6 +473,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
                   type="date"
                   value={e.date}
                   label={COPY.field.date}
+                  who={who}
                   onChange={(date) => date && api.update(e.id, { date })}
                 />
                 <RowInput
@@ -449,6 +483,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
                   type="time"
                   value={e.time ?? ''}
                   label={COPY.field.time}
+                  who={who}
                   onChange={(time) => api.update(e.id, { time: time || null } as Partial<Event>)}
                 />
               </span>
@@ -456,15 +491,31 @@ export function EventsEditor({ events }: { events: Event[] }) {
                   against a real column rather than a shrink-wrapped one. */}
               <span className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
                 {!isPast && <Chip status="ok">Open</Chip>}
-                {canRegister && (
-                  <EditableButton
-                    labelKey="events.ledger.register_label"
-                    variant="secondary"
-                    href={registerUrl}
-                    aria-label={`${text('events.ledger.register_label')}, ${e.title}`}
-                  />
+                {/* An upcoming event keeps the Register button's slot while
+                    its link is empty or invalid, so typing the link never
+                    changes the width of the title field beside it. */}
+                {!isPast && (
+                  <span
+                    className={`inline-flex${canRegister ? '' : ' ed-off'}`}
+                    aria-hidden={!canRegister}
+                    inert={!canRegister}
+                  >
+                    <EditableButton
+                      labelKey="events.ledger.register_label"
+                      variant="secondary"
+                      href={registerUrl}
+                      aria-label={`${text('events.ledger.register_label')}, ${e.title}`}
+                    />
+                  </span>
                 )}
-                <VisibilityChip table={table} id={e.id} visible={e.published} onToggle={() => api.hide(e.id, e.published)} />
+                <VisibilityChip
+                  table={table}
+                  id={e.id}
+                  who={who}
+                  visible={e.published}
+                  onToggle={() => api.hide(e.id, e.published)}
+                />
+                <RowOptions table={table} id={e.id} who={who} />
                 <StateChip state={state} />
               </span>
             </div>
@@ -476,6 +527,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
                 value={e.location ?? ''}
                 max={LIMIT.eventLocation}
                 label={COPY.field.location}
+                who={who}
                 className="meta text-ink"
                 onChange={(location) => api.update(e.id, { location: location || null } as Partial<Event>)}
               />
@@ -486,6 +538,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
                 value={e.description ?? ''}
                 max={LIMIT.eventDescription}
                 label={COPY.field.description}
+                who={who}
                 block
                 className="body text-ink measure"
                 onChange={(description) => api.update(e.id, { description: description || null } as Partial<Event>)}
@@ -495,7 +548,13 @@ export function EventsEditor({ events }: { events: Event[] }) {
         );
       })}
       <li key={`add-${adds}`} className="flex">
-        <AddTile label={copy.add} shape="row" appear={adds > 0} onAdd={add} />
+        <AddTile
+          label={copy.add}
+          shape="row"
+          appear={adds > 0}
+          full={fullAt(api, rows, LIMITS.MAX_EVENTS, copy.full)}
+          onAdd={add}
+        />
       </li>
     </ul>
   );
@@ -513,7 +572,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
   const nameOf = (s: Sponsor) => s.name.trim() || copy.fresh;
 
   const reorder = useReorder({ api, table, rows: sponsors, listRef, nameOf });
-  const { items, done } = useLeaving(sponsors, api, reorder.capture);
+  const { items, done } = useLeaving(sponsors, api, reorder.capture, listRef);
 
   useRowTray(table, (id, field, row): RowTrayView => {
     const s = row as unknown as Sponsor;
@@ -551,6 +610,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
           const state = api.state(s.id);
           const src = api.fileUrl(s.id, 'logo_path') ?? getPublicUrl('sponsor-logos', s.logo_path ?? null);
           const scale = scaleFor(index, items.length);
+          const who = nameOf(s);
           return (
             <div
               key={s.id}
@@ -589,18 +649,26 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
                 value={s.name}
                 max={LIMIT.sponsorName}
                 label={COPY.field.name}
+                who={who}
                 className="meta text-on-logo-ground text-center"
                 onChange={(name) => api.update(s.id, { name })}
               />
               <span className="flex flex-wrap items-center justify-center gap-2">
-                <VisibilityChip table={table} id={s.id} visible={s.active} onToggle={() => api.hide(s.id, s.active)} />
+                <VisibilityChip table={table} id={s.id} who={who} visible={s.active} onToggle={() => api.hide(s.id, s.active)} />
+                <RowOptions table={table} id={s.id} who={who} />
                 <StateChip state={state} />
               </span>
             </div>
           );
         })}
         <div key={`add-${adds}`} className={`flex-none ${TILE_SIZE.std}`}>
-          <AddTile label={copy.add} shape="logo" appear={adds > 0} onAdd={add} />
+          <AddTile
+            label={copy.add}
+            shape="logo"
+            appear={adds > 0}
+            full={fullAt(api, sponsors, LIMITS.MAX_SPONSORS, copy.full)}
+            onAdd={add}
+          />
         </div>
       </div>
       <p className="sr-only" role="status">
@@ -622,7 +690,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
   const nameOf = (s: SiteStat) => s.label.trim() || copy.fresh;
 
   const reorder = useReorder({ api, table, rows: stats, listRef, nameOf });
-  const { items, done } = useLeaving(stats, api, reorder.capture);
+  const { items, done } = useLeaving(stats, api, reorder.capture, listRef);
 
   useRowTray(table, (id, field, row): RowTrayView => {
     const s = row as unknown as SiteStat;
@@ -648,6 +716,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
       <div ref={listRef} className="mx-auto grid max-w-[960px] grid-cols-1 gap-x-4 gap-y-8 min-[1000px]:grid-cols-3">
         {items.map(({ row: s, leaving }, index) => {
           const state = api.state(s.id);
+          const who = nameOf(s);
           return (
             <div
               key={s.id}
@@ -665,6 +734,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
                   value={s.value}
                   max={LIMIT.statValue}
                   label={COPY.field.value}
+                  who={who}
                   onChange={(value) => api.update(s.id, { value })}
                 />
                 <RowField
@@ -674,6 +744,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
                   value={s.suffix ?? ''}
                   max={LIMIT.statSuffix}
                   label={COPY.field.suffix}
+                  who={who}
                   className="accent-mark"
                   onChange={(suffix) => api.update(s.id, { suffix: suffix || null } as Partial<SiteStat>)}
                 />
@@ -685,21 +756,29 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
                 value={s.label}
                 max={LIMIT.statLabel}
                 label={COPY.field.label}
+                who={who}
                 className="label"
                 onChange={(label) => api.update(s.id, { label })}
               />
               <span className="flex items-center gap-2">
-                <VisibilityChip table={table} id={s.id} visible={s.visible} onToggle={() => api.hide(s.id, s.visible)} />
+                <VisibilityChip table={table} id={s.id} who={who} visible={s.visible} onToggle={() => api.hide(s.id, s.visible)} />
                 <button {...reorder.gripProps(s, index)}>
                   <GripIcon />
                 </button>
+                <RowOptions table={table} id={s.id} who={who} />
               </span>
               <StateChip state={state} />
             </div>
           );
         })}
         <div key={`add-${adds}`} className="flex">
-          <AddTile label={copy.add} shape="figure" appear={adds > 0} onAdd={add} />
+          <AddTile
+            label={copy.add}
+            shape="figure"
+            appear={adds > 0}
+            full={fullAt(api, stats, LIMITS.MAX_SITE_STATS, copy.full)}
+            onAdd={add}
+          />
         </div>
       </div>
       <p className="sr-only" role="status">

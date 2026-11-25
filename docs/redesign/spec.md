@@ -148,7 +148,13 @@ the only region whose content changes), Settings page. Sizes and behaviour are i
   hide with the chip, remove from the tray. A removed item stays in place with Will be removed until
   Publish. Events are not dragged: their date sets the order.
 - A new item without its name (an executive's name, an event's title, a partner's name, a
-  figure's label) blocks Publish with the matching Missing name line.
+  figure's label), or a published item whose name was cleared, blocks Publish with the matching
+  Missing name line.
+- Each list keeps the old dashboard's cap: 30 executives, 50 events, 20 partners, 6 figures
+  (items marked Will be removed do not count). At the cap the Add tile stays in place, disabled,
+  and pressing it says why in the tray.
+- Every row ends with Options, which moves focus to the row's Remove and link address in the
+  tray; Escape returns to the row.
 - Executive title is built: role short label, comma, area ("VP, Marketing"); no area shows the role
   alone. Role and area are two selects. Area ends with "Add an area", which turns into a text input
   in place; a name that matches an existing area ignoring case is refused.

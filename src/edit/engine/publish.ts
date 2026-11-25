@@ -21,6 +21,7 @@ import {
   pendingRowFiles,
   pendingTexts,
   publishDone,
+  reloadDrafts,
 } from '@/edit/engine/draft-store';
 
 /*
@@ -44,7 +45,13 @@ import {
   The database stores object names only; the public URL is built with
   getPublicUrl when it is shown. A change that fails stays in the draft
   with its count, and the rest go live. A row whose insert or update fails
-  keeps its draft, and the file uploaded for it is removed again.
+  keeps its draft, and the file uploaded for it is removed again. A change
+  to a row that was already deleted (in another tab, or by another admin)
+  is dropped from the draft and counted apart from the failures.
+
+  Two tabs of one admin share one draft in IndexedDB, so Publish holds the
+  'wsc-publish' lock and reads the draft again inside it: the second tab
+  then sees what the first one published and does not insert it twice.
 */
 
 export interface Publisher {
@@ -57,8 +64,7 @@ export interface Publisher {
   pointImage: (slot: string, objectName: string, alt: string) => Promise<void>;
   removeObject: (objectName: string) => Promise<void>;
   publicUrl: (objectName: string) => string | null;
-  /** List writes. Without it (the edit lab) list changes stay in the draft. */
-  lists?: ListPublisher;
+  lists: ListPublisher;
 }
 
 export interface ListPublisher {
@@ -66,7 +72,8 @@ export interface ListPublisher {
   insertArea: (name: string) => Promise<string>;
   /** Returns the new row's id. */
   insert: (table: ListTable, fields: Record<string, unknown>) => Promise<string>;
-  update: (table: ListTable, id: string, patch: Record<string, unknown>) => Promise<void>;
+  /** 'gone' when the row no longer exists. */
+  update: (table: ListTable, id: string, patch: Record<string, unknown>) => Promise<'ok' | 'gone'>;
   /** The object name in a row's file column, or null. */
   fileOf: (table: ListTable, id: string, column: string) => Promise<string | null>;
   /** The row's file, then the row: deleteContentItem. */
@@ -83,9 +90,10 @@ export const LIST_FILES: Partial<Record<ListTable, { bucket: string; column: str
 
 /*
   The field that names a row in each list: an executive's name, an event's
-  title, a partner's name, a figure's label. A new row without it blocks
-  Publish (spec section 3, Lists), so the bar checks missingName() before
-  it calls publishDraft.
+  title, a partner's name, a figure's label. A new row without it, or a
+  published row whose name was cleared, blocks Publish (spec section 3,
+  Lists; the column is NOT NULL), so the bar checks missingName() before it
+  calls publishDraft.
 */
 export const NAME_FIELD: Record<ListTable, string> = {
   executives: 'name',
@@ -94,18 +102,26 @@ export const NAME_FIELD: Record<ListTable, string> = {
   site_stats: 'label',
 };
 
-/** The first new row whose name field is empty, or null when every new row has one. */
-export function missingName(): { table: ListTable; id: string; field: string } | null {
+/** The first row whose name field is empty, or null when every row has one. */
+export function missingName(): { table: ListTable; id: string; field: string; added: boolean } | null {
+  const empty = (v: unknown) => !String(v ?? '').trim();
   for (const [table, d] of pendingLists()) {
     const field = NAME_FIELD[table];
-    const id = Object.keys(d.added).find((rowId) => !String(d.added[rowId][field] ?? '').trim());
-    if (id) return { table, id, field };
+    const added = Object.keys(d.added).find((rowId) => empty(d.added[rowId][field]));
+    if (added) return { table, id: added, field, added: true };
+    const cleared = Object.keys(d.updates).find(
+      (rowId) => !d.removed.includes(rowId) && field in d.updates[rowId] && empty(d.updates[rowId][field])
+    );
+    if (cleared) return { table, id: cleared, field, added: false };
   }
   return null;
 }
 
 export interface PublishResult {
+  /** Changes that were sent and did not publish. */
   failed: number;
+  /** Changes dropped because their row was already deleted elsewhere. */
+  gone: number;
   expired: boolean;
 }
 
@@ -114,18 +130,31 @@ const isExpired = (err: unknown) => {
   return e?.status === 401 || e?.code === 'PGRST301' || /jwt/i.test(e?.message ?? '');
 };
 
-export async function publishDraft(
-  p: Publisher,
-  altFor: (slot: string) => string
-): Promise<PublishResult> {
+/** Publishes under the 'wsc-publish' lock where the browser has one. */
+export async function publishDraft(p: Publisher, altFor: (slot: string) => string): Promise<PublishResult> {
+  const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+  if (!locks) return publishUnlocked(p, altFor);
+  return locks.request('wsc-publish', async () => {
+    await reloadDrafts();
+    return publishUnlocked(p, altFor);
+  });
+}
+
+async function publishUnlocked(p: Publisher, altFor: (slot: string) => string): Promise<PublishResult> {
   if ((await p.session().catch(() => 'expired')) === 'expired') {
-    return { failed: changeCount(), expired: true };
+    return { failed: changeCount(), gone: 0, expired: true };
   }
 
   let expired = false;
-  const fail = (err: unknown) => {
+  /* Each call is one change that stays in the draft; `n` is 0 when the
+     change is counted elsewhere. Changes typed while Publish runs were
+     never sent, so they are not counted. */
+  let failed = 0;
+  const fail = (err: unknown, n = 1) => {
+    failed += n;
     if (isExpired(err)) expired = true;
   };
+  const gone = { n: 0 };
 
   // 1. Uploads
   const uploads: Array<{ slot: string; blob: Blob; name: string; old: { object_name: string; alt: string } | null }> = [];
@@ -138,8 +167,8 @@ export async function publishDraft(
       fail(err);
     }
   }
-  const lists = p.lists ? listDrafts() : [];
-  const rowUploads = p.lists ? await uploadRowFiles(p.lists, lists, fail) : new Map<string, RowUpload[]>();
+  const lists = listDrafts();
+  const rowUploads = await uploadRowFiles(p.lists, lists, fail);
 
   // 2. Rows
   const texts = await Promise.allSettled(
@@ -160,33 +189,30 @@ export async function publishDraft(
     }
   }
 
-  const unusedFiles = p.lists ? await writeLists(p.lists, lists, rowUploads, fail) : [];
+  const unusedFiles = await writeLists(p.lists, lists, rowUploads, fail, gone);
 
   // 3. Deletes
   for (const name of unused) {
     await p.removeObject(name).catch((err: Error) => console.warn('Unused photo not removed:', err.message));
   }
-  if (p.lists) {
-    for (const [table, d] of lists) {
-      for (const id of d.removed) {
-        try {
-          await p.lists.remove(table, id);
-          markRemoved(table, id);
-        } catch (err) {
-          fail(err);
-        }
+  for (const [table, d] of lists) {
+    for (const id of d.removed) {
+      try {
+        await p.lists.remove(table, id);
+        markRemoved(table, id);
+      } catch (err) {
+        fail(err);
       }
     }
-    for (const { bucket, name } of unusedFiles) {
-      await p.lists.removeObject(bucket, name).catch((err: Error) =>
-        console.warn('Unused file not removed:', err.message)
-      );
-    }
+  }
+  for (const { bucket, name } of unusedFiles) {
+    await p.lists.removeObject(bucket, name).catch((err: Error) =>
+      console.warn('Unused file not removed:', err.message)
+    );
   }
 
   publishDone();
-  /* Whatever is still in the draft did not publish. */
-  return { failed: changeCount(), expired };
+  return { failed, gone: gone.n, expired };
 }
 
 /* ── Lists ── */
@@ -243,7 +269,8 @@ async function writeLists(
   lp: ListPublisher,
   lists: ListDrafts,
   rowUploads: Map<string, RowUpload[]>,
-  fail: (err: unknown) => void
+  fail: (err: unknown, n?: number) => void,
+  gone: { n: number }
 ): Promise<Array<{ bucket: string; name: string }>> {
   const unused: Array<{ bucket: string; name: string }> = [];
 
@@ -292,26 +319,41 @@ async function writeLists(
         markInserted(table, draftId, fields, id);
         filesFor(draftId).forEach((f) => markFilePublished(table, draftId, f.column, f.blob, id));
       } catch (err) {
-        fail(err);
+        /* The row and each of its drafted files stay in the draft. */
+        fail(err, 1 + filesFor(draftId).length);
         dropUploads(draftId);
       }
     }
 
     /* Updates, including rows whose only change is a new file. */
     const updateIds = new Set([...Object.keys(d.updates), ...fileOnlyRows(table)]);
+    const goneIds = new Set<string>();
+    /* A row deleted elsewhere: its patch and files leave the draft, and the
+       files just uploaded for it are removed again. */
+    const dropGone = (id: string, changes: number) => {
+      goneIds.add(id);
+      gone.n += changes;
+      markRemoved(table, id);
+      dropUploads(id);
+    };
     for (const id of updateIds) {
       if (d.removed.includes(id)) continue;
       const files = filesFor(id);
+      /* The patch and each drafted file are one change each. */
+      const changes = (d.updates[id] ? 1 : 0) + files.length;
       try {
         const patch = resolveArea(d.updates[id] ?? {});
         const sent = withFiles(id, patch);
         const old = spec && files.length ? await lp.fileOf(table, id, spec.column) : null;
-        if (Object.keys(sent).length) await lp.update(table, id, sent);
+        if (Object.keys(sent).length && (await lp.update(table, id, sent)) === 'gone') {
+          dropGone(id, changes);
+          continue;
+        }
         markUpdated(table, id, patch);
         files.forEach((f) => markFilePublished(table, id, f.column, f.blob));
         if (spec && old && !files.some((f) => f.name === old)) unused.push({ bucket: spec.bucket, name: old });
       } catch (err) {
-        fail(err);
+        fail(err, changes);
         dropUploads(id);
       }
     }
@@ -319,19 +361,23 @@ async function writeLists(
     /* Order, once every insert has its real id. An insert that failed
        keeps its draft id, so the order stays in the draft for next time. */
     if (d.order) {
-      const order = d.order.map((id) => realIds.get(id) ?? id);
+      let order = d.order.map((id) => realIds.get(id) ?? id);
       const inserted = new Set(realIds.values());
       let ok = !order.some(isDraft);
       for (const [id, n] of orderTargets(table, { ...d, order }, (x) => x)) {
-        if (isDraft(id) || inserted.has(id)) continue;
+        if (isDraft(id) || inserted.has(id) || goneIds.has(id)) continue;
         try {
-          await lp.update(table, id, { display_order: n });
+          if ((await lp.update(table, id, { display_order: n })) === 'gone') dropGone(id, 0);
         } catch (err) {
           ok = false;
-          fail(err);
+          /* The order is one change, counted once below. */
+          fail(err, 0);
         }
       }
+      /* markRemoved took the deleted rows out of the draft's order. */
+      order = order.filter((id) => !goneIds.has(id));
       if (ok) markOrderPublished(table, order);
+      else fail(null);
     }
   }
   return unused;
@@ -388,8 +434,14 @@ export const supabasePublisher: Publisher = {
     update: async (table, id, patch) => {
       const { data, error } = await supabase.from(table).update(patch).eq('id', id).select('id');
       if (error) throw error;
-      /* RLS answers a refused UPDATE with zero rows, not an error. */
-      if (!data?.length) throw new Error(`${table}.${id} was not updated`);
+      if (data?.length) return 'ok';
+      /* RLS answers a refused UPDATE with zero rows, not an error, and so
+         does a row that is gone. An admin at aal2 can read every row, so a
+         row that cannot be read was deleted. */
+      const { data: row, error: readError } = await supabase.from(table).select('id').eq('id', id).maybeSingle();
+      if (readError) throw readError;
+      if (!row) return 'gone';
+      throw new Error(`${table}.${id} was not updated`);
     },
     fileOf: async (table, id, column) => {
       const { data, error } = await supabase.from(table).select(column).eq('id', id).maybeSingle();
@@ -399,14 +451,17 @@ export const supabasePublisher: Publisher = {
     },
     remove: async (table, id) => {
       const spec = LIST_FILES[table];
+      const { data, error } = await supabase
+        .from(table)
+        .select(spec ? `id,${spec.column}` : 'id')
+        .eq('id', id)
+        .maybeSingle();
+      if (error) throw error;
+      /* Already gone, from another tab: nothing to delete. deleteContentItem
+         treats a delete of zero rows as refused, so this check comes first. */
+      if (!data) return;
       const row: Record<string, unknown> = { id };
-      if (spec) {
-        const { data, error } = await supabase.from(table).select(spec.column).eq('id', id).maybeSingle();
-        if (error) throw error;
-        /* Already gone, from another tab: nothing to delete. */
-        if (!data) return;
-        row[spec.column] = (data as unknown as Record<string, unknown>)[spec.column];
-      }
+      if (spec) row[spec.column] = (data as unknown as Record<string, unknown>)[spec.column];
       await deleteContentItem(table, row, spec?.bucket ?? '', spec?.column ?? '');
     },
     upload: async (bucket, file) => (await uploadFile(bucket, file)).objectName,

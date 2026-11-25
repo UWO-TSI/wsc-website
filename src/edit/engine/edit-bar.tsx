@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import Button from '@/components/ui/button';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { SITE_CONTENT, type SiteContentKey } from '@/lib/site-content-defaults';
@@ -16,9 +16,18 @@ import {
 } from '@/edit/engine/draft-store';
 import { missingName, publishDraft, type Publisher } from '@/edit/engine/publish';
 import { rowTrayView } from '@/edit/engine/list-parts';
-import { blurField, getUi, setUi, useUi, type Tone, type TrayContext } from '@/edit/engine/ui-store';
+import {
+  enteredTray,
+  getUi,
+  leaveTray,
+  setUi,
+  trayControls,
+  useUi,
+  type Tone,
+  type TrayContext,
+} from '@/edit/engine/ui-store';
 import { holdIosFocusZoom } from '@/edit/engine/ios-zoom';
-import { normalizeUrl, validateField } from '@/lib/normalize';
+import { LinkField } from '@/edit/engine/link-field';
 import { signOutAndReload } from '@/edit/sign-out';
 
 /*
@@ -55,44 +64,43 @@ interface TrayView {
   actions?: ReactNode;
 }
 
-/* The address the database will refuse (its CHECK allows https://, http://,
-   /, # and mailto: only) is refused here instead, when the field is left:
-   the draft goes back to the address it had on focus and the tray says why.
-   A bare domain gets https:// in front, as everywhere else on the site. */
+/* A button's label count and its link address (link-field.tsx refuses an
+   address the database would refuse). */
 function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string }) {
   const { text, published } = useSiteContent();
   const label = meta(labelKey);
   const href = meta(hrefKey);
-  const before = useRef('');
-  const save = (v: string) => setDraftText(hrefKey, v, published.text(hrefKey as SiteContentKey));
   return (
     <>
       <span className="meta ed-flex-none">
         {COPY.labelCount(text(labelKey as SiteContentKey).length, label.max)}
       </span>
-      <input
-        aria-label={COPY.linkAddress(`${label.section}, ${label.label.toLowerCase()}`)}
+      <LinkField
+        label={COPY.linkAddress(`${label.section}, ${label.label.toLowerCase()}`)}
         value={text(hrefKey as SiteContentKey)}
+        format="url"
         maxLength={href.max}
-        inputMode="url"
-        spellCheck={false}
-        onFocus={() => {
-          before.current = text(hrefKey as SiteContentKey);
-        }}
-        onBlur={(e) => {
-          const v = normalizeUrl(e.target.value);
-          if (validateField({ label: label.label, format: 'url' }, v)) {
-            save(before.current);
-            setUi({ flash: { tone: 'alert', label: COPY.linkRefusedLabel, text: COPY.linkRefused, announce: true } });
-          } else if (v !== e.target.value) {
-            save(v);
-          }
-          blurField();
-        }}
-        onChange={(e) => save(e.target.value.trim())}
+        onSave={(v) => setDraftText(hrefKey, v, published.text(hrefKey as SiteContentKey))}
       />
     </>
   );
+}
+
+/*
+  Keys inside the tray. Escape returns focus to the field or row control
+  the tray belongs to. After a row's Options moved focus here, Tab past the
+  last control or Shift+Tab before the first goes back to that control
+  too, so the tray sits in the tab order right after it.
+*/
+function trayKeys(e: KeyboardEvent<HTMLDivElement>) {
+  if (e.key === 'Escape') {
+    if (leaveTray()) e.preventDefault();
+    return;
+  }
+  if (e.key !== 'Tab' || !enteredTray()) return;
+  const controls = trayControls();
+  const edge = e.shiftKey ? controls[0] : controls[controls.length - 1];
+  if (document.activeElement === edge && leaveTray()) e.preventDefault();
 }
 
 function focusView(ctx: TrayContext, text: (k: SiteContentKey) => string): TrayView {
@@ -163,8 +171,9 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
           `[data-ed-field="${missing.table}.${missing.id}.${missing.field}"] :is(input, textarea)`
         )
         ?.focus();
+      const copy = COPY.list[missing.table];
       setUi({
-        flash: { tone: 'alert', label: COPY.blockedLabel, text: COPY.list[missing.table].missing, announce: true },
+        flash: { tone: 'alert', label: COPY.blockedLabel, text: missing.added ? copy.missing : copy.cleared, announce: true },
       });
       return;
     }
@@ -182,9 +191,10 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         flash: { tone: 'alert', label: COPY.failedLabel, text: COPY.partlyFailed(r.failed), announce: true },
       });
     } else {
+      const body = r.gone ? COPY.publishedGone(r.gone) : COPY.publishedBody;
       setUi({
         phase: 'published',
-        flash: { tone: 'ok', label: COPY.publishedLabel, text: COPY.publishedBody, announce: true },
+        flash: { tone: r.gone ? 'warn' : 'ok', label: COPY.publishedLabel, text: body, announce: true },
       });
       setTimeout(() => getUi().phase === 'published' && setUi({ phase: 'idle' }), PUBLISHED_FOR_MS);
     }
@@ -196,8 +206,10 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   };
 
   /* A refused link address keeps its message while the editor is back on
-     that button, so the address can be fixed in place. */
-  const linkRefused = ui.flash?.label === COPY.linkRefusedLabel && ui.focus?.type === 'button';
+     that button or row, so the address can be fixed in place, and the
+     tray's other controls (a row's Remove) stay where they are. */
+  const linkRefused =
+    ui.flash?.label === COPY.linkRefusedLabel && (ui.focus?.type === 'button' || ui.focus?.type === 'row');
 
   /* What the tray shows, most urgent first. */
   let view: TrayView;
@@ -220,7 +232,10 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
     view = ui.flash.text === COPY.expired ? expiredView() : { ...ui.flash, body: ui.flash.text };
   } else if (ui.focus && !preview) {
     view = focusView(ui.focus, text);
-    if (linkRefused) view = { ...view, label: COPY.linkRefusedHead, tone: 'alert' };
+    if (linkRefused) {
+      const head = ui.focus.type === 'row' ? COPY.linkRefusedHeadHttps : COPY.linkRefusedHead;
+      view = { ...view, label: head, tone: 'alert' };
+    }
   } else if (ui.expired) {
     view = expiredView();
   } else if (!ui.online) {
@@ -260,7 +275,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         </button>
       </div>
 
-      <div className="ed-tray" data-ed-tray="">
+      <div className="ed-tray" data-ed-tray="" onKeyDown={trayKeys}>
         <span className="label ed-tray-label">{view.label}</span>
         <div className={`ed-tray-body${view.tone ? ` ed-t-${view.tone}` : ''}`}>
           {typeof view.body === 'string' ? <span className="ed-grow">{view.body}</span> : view.body}

@@ -95,9 +95,20 @@ export default function EditEngine({ userId, publisher = supabasePublisher }: Ed
     window.addEventListener('offline', offline);
 
     /* Signed out elsewhere, or the refresh token failed: keep the draft and
-       say so. Signing in again in another tab clears it. */
-    const { data: auth } = supabase.auth.onAuthStateChange((event) => {
+       say so. Signing in again in another tab clears it. A sign-in as a
+       different admin drops this admin's draft from memory and reloads the
+       page, so it can never be published with the other admin's session;
+       the draft stays in this admin's own IndexedDB. */
+    const { data: auth } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') setUi({ expired: true });
+      if (event === 'SIGNED_IN' && session && session.user.id !== userId) {
+        live = false;
+        unloadDrafts();
+        lists.clear();
+        setEditSnapshot({ status: 'off', engine: null });
+        window.location.reload();
+        return;
+      }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         publisher.session().then((s) => setUi({ expired: s === 'expired' }));
       }

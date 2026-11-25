@@ -260,15 +260,6 @@ export function pendingPhotos(): Array<[string, PhotoDraft]> {
   return [...photos];
 }
 
-/** Added executives with no name, which Publish refuses. */
-export function missingNameIds(): string[] {
-  const d = lists.get('executives');
-  if (!d) return [];
-  return Object.entries(d.added)
-    .filter(([, row]) => !String(row.name ?? '').trim())
-    .map(([id]) => id);
-}
-
 export async function discardAll() {
   clearMemory();
   await db.clear().catch(() => {});

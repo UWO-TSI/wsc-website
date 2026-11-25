@@ -902,7 +902,7 @@
     <div class="mgrid">
 
       <div class="tile wide">
-        <div class="tile-h"><span><span class="nm">Nav / desktop</span><span class="sp">floating pill &middot; links inline &middot; sliding accent indicator &middot; no burger</span></span><span class="label">1024 and up</span></div>
+        <div class="tile-h"><span><span class="nm">Nav / desktop</span><span class="sp">floating pill &middot; links inline &middot; sliding accent indicator &middot; Apply to join, primary &middot; no burger</span></span><span class="label">1024 and up</span></div>
         <div class="scrollx">
           <div class="frame" style="min-width:660px;min-height:200px">
             <div class="dnav">
@@ -915,6 +915,7 @@
                 <button type="button">Partners</button>
                 <button type="button">Contact</button>
               </span>
+              <button class="btn b1" type="button" style="margin-left:8px">Apply to join</button>
             </div>
             <div class="bed"><div class="ghost w45"></div><div class="ghost w85"></div><div class="ghost w70"></div><div class="ghost w45"></div></div>
           </div>
@@ -922,12 +923,13 @@
       </div>
 
       <div class="tile wide" style="order:-1">
-        <div class="tile-h"><span><span class="nm">Nav / mobile</span><span class="sp">hamburger right &middot; pill grows down &middot; X or click outside to collapse</span></span><span class="label">Tap the hamburger</span></div>
+        <div class="tile-h"><span><span class="nm">Nav / mobile</span><span class="sp">Apply to join at every width &middot; below 640 the shark alone marks home &middot; hamburger right &middot; pill grows down</span></span><span class="label">Tap the hamburger</span></div>
         <div class="phone">
           <div class="frame" style="min-height:420px">
             <nav class="mnav" id="mnav">
               <div class="top">
-                <span class="lock" style="display:flex;align-items:center;gap:9px"><span class="glyph">WSC</span><span class="wm">Western Sales Club</span></span>
+                <span class="lock" style="display:flex;align-items:center;gap:9px;margin-right:auto"><span class="glyph">WSC</span></span>
+                <button class="btn b1" type="button">Apply to join</button>
                 <button class="burger" id="burger" type="button" aria-expanded="false" aria-controls="mnavBody" aria-label="Open menu"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g class="ic-menu"><line x1="4.5" y1="7" x2="19.5" y2="7"></line><line x1="4.5" y1="12" x2="19.5" y2="12"></line><line x1="4.5" y1="17" x2="19.5" y2="17"></line></g><g class="ic-close"><line x1="6.8" y1="6.8" x2="17.2" y2="17.2"></line><line x1="17.2" y1="6.8" x2="6.8" y2="17.2"></line></g></svg></button>
               </div>
               <div class="body" id="mnavBody">
@@ -1034,10 +1036,20 @@
     </div>
   </section>
 
-  <section class="slab band-c textured lit-velvet billboard dots alive" data-shape="sweep">
-    <span class="label">CTA band &middot; one per page &middot; sweep</span>
-    <div class="title" style="margin-top:14px;max-width:24ch">The accent slab is the thing you want clicked</div>
-    <div style="margin-top:22px"><button class="btn b2" type="button">Join Western Sales Club <span class="aw">&#8594;</span></button></div>
+  <!--
+    ClosingBand (src/components/layout/closing-band.tsx), the last section of
+    every public page, composed from CentredHead (src/components/ui/centred-head.tsx):
+    eyebrow, Archivo title, one line of copy, one button, centred. Accent tone,
+    sweep ribbon, Slab Clip on arrival. The default repeats the home headline
+    next to Apply to join; a page can swap the title keys and the button
+    (Partners: Become a partner, opening the contact form).
+  -->
+  <section class="slab band-c textured lit-velvet billboard dots alive" data-shape="sweep" style="padding-block:88px">
+    <span class="label">Join</span>
+    <div class="title" style="margin-top:14px;max-width:24ch">Learn to sell before you graduate</div>
+    <p class="subtitle" style="margin:14px 0 0;color:inherit">Membership is sold through the Western USC store.</p>
+    <div style="margin-top:22px"><button class="btn b2" type="button">Apply to join <span class="aw">&#8594;</span></button></div>
+    <span class="label" style="margin-top:22px">Closing band &middot; one per page, last &middot; CentredHead on accent &middot; sweep</span>
   </section>
 
   <!--

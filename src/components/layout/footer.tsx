@@ -4,9 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import Slab from "@/components/ui/slab";
 import { useSiteContent } from "@/providers/site-content-provider";
+import { EditableText, useEditMode } from "@/edit";
 
 /*
-  Footer: a --sunken slab, flat elevation, no shadow. Three columns on a
+  Footer: a --sunken slab, flat elevation, no shadow, full width and 2px
+  under the page's closing band. Three columns on a
   shared rhythm: wordmark and socials on the left, the nav stacked in the
   center, and the Tethos mark right-aligned above "Website by Tethos".
   Social links are --r-disc buttons that go --accent on hover.
@@ -37,6 +39,7 @@ const SOCIAL_LINKS = [
 export default function Footer() {
   const year = new Date().getFullYear();
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
   const email = text("footer.contact.email");
   const socials = SOCIAL_LINKS.map((social) => ({ ...social, href: text(social.key) })).filter(
     (social) => social.href
@@ -46,7 +49,7 @@ export default function Footer() {
     <Slab
       as="footer"
       tone="sunken"
-      className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-4 pb-5! md:pb-6!"
+      className="flex flex-col gap-4 pb-5! md:pb-6!"
     >
       <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-x-10">
         <div className="flex flex-col items-start gap-4">
@@ -63,13 +66,16 @@ export default function Footer() {
               Western Sales Club
             </span>
           </Link>
-          {email && (
+          {/* While editing the address is a field, not a mailto link. */}
+          {editing ? (
+            <EditableText k="footer.contact.email" className="meta" />
+          ) : email && (
             <a
               href={`mailto:${email}`}
               data-cursor="hover"
               className="meta w-fit no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
             >
-              {email}
+              <EditableText k="footer.contact.email" />
             </a>
           )}
           <div className="flex items-center gap-3">

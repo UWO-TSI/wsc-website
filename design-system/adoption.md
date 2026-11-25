@@ -80,6 +80,38 @@ On an inverse, accent or logo slab the focus ring and the primary button adapt o
 `Slab` and `Button` in `components.md`). A loud slab that sells takes `texture`; see the shape
 table in `components.md`.
 
+## Patterns every page copies
+
+Three pieces set on the home page. Pages compose them; they do not add their own.
+
+**Closing band.** `src/components/layout/closing-band.tsx`, the last child of every public page.
+
+| Prop | Default | Use |
+| --- | --- | --- |
+| `titleKeys` | `HOME_HEADLINE_KEYS` (the four hero lines) | One `site_content` key per visual line. |
+| `eyebrowKey` | `home.cta.eyebrow` | |
+| `bodyKey` | `home.cta.subtitle` | One line of copy. `null` for none. |
+| `action` | `EditableButton` on `home.cta.button_label` / `home.cta.button_href`, arrow | Any button. Partners passes Become a partner with an `onClick` that opens the contact form. |
+| `id` | `closing-heading` | The heading id the section is labelled by. |
+
+```tsx
+<ClosingBand />                                       // home, legal pages, events, team
+<ClosingBand
+  titleKeys={['partners.cta.title_line1']}            // example keys: add them to site-content-defaults.ts
+  eyebrowKey="partners.cta.eyebrow"
+  bodyKey={null}
+  action={<Button onClick={openContactForm}><EditableText k="partners.cta.button_label" /></Button>}
+/>
+```
+
+It is the page's one loud slab. A page that ends with it has no other `inverse` or `accent` slab, and the section above it is not `accent`. Server-component pages can render it directly; for a page whose root is one element, return a fragment with the band after it.
+
+**Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for every section head on a selling page. `SectionHead` stays for left-aligned heads whose title is not editable copy.
+
+**The one action.** Apply to join is always `<EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />`. The nav already carries it at every width. Never give a page its own Apply to join key.
+
+**Full width.** The shell wraps `main` and the footer in one `.stack`, so the last section of a page meets the footer 2px apart. A page with several slabs wraps them in its own `.stack`.
+
 ## Running a sequence
 
 Scroll-triggered sequences are CSS keyframes gated on `[data-run]`, driven by `useReveal()`.

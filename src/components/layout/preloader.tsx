@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { curtain } from "@/lib/motion";
 
@@ -12,8 +12,13 @@ import { curtain } from "@/lib/motion";
   The ground is --logo-ground, the constant near-black used behind every
   supplied mark.
 
-  Under reduced motion it does not render at all: onLoadComplete fires
-  immediately and the panel never paints.
+  Under reduced motion it never paints: onLoadComplete fires on mount and
+  the panel is display:none from the first byte (motion-reduce:hidden).
+  The media query is read in CSS for the paint and in the effect for the
+  handoff, never during render: the server cannot know the preference, so
+  the server and the first client render emit the same markup and there is
+  no hydration mismatch. Reading it in a useState initializer used to make
+  the client return null while the server HTML kept the curtain up.
 
   design-system/motion.md → Curtain.
 */
@@ -25,26 +30,18 @@ interface PreloaderProps {
 }
 
 export default function Preloader({ onLoadComplete }: PreloaderProps) {
-  const [reduced] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-
   useEffect(() => {
-    if (reduced) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       onLoadComplete();
       return;
     }
     const timer = setTimeout(onLoadComplete, RAIL_FILL_MS);
     return () => clearTimeout(timer);
-  }, [reduced, onLoadComplete]);
-
-  if (reduced) return null;
+  }, [onLoadComplete]);
 
   return (
     <motion.div
-      className="fixed inset-0 z-[var(--layer-curtain)] grid place-items-center bg-logo-ground text-on-logo-ground"
+      className="fixed inset-0 z-[var(--layer-curtain)] grid place-items-center bg-logo-ground text-on-logo-ground motion-reduce:hidden"
       variants={curtain}
       initial="show"
       animate="show"

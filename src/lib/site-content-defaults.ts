@@ -64,6 +64,9 @@ export const SITE_CONTENT = {
   'home.hero.subtitle': { value: 'A student-run sales organization at Western University.', kind: 'text', page: 'Home', section: 'Hero', label: 'Subtitle', max: 90 },
   'home.hero.button_label': { value: 'Apply to join', kind: 'text', page: 'Home', section: 'Hero', label: 'Button text', max: 28 },
   'home.hero.button_href': { value: STORE_URL, kind: 'url', page: 'Home', section: 'Hero', label: 'Button link', max: 200 },
+  'home.hero.eyebrow': { value: 'Western Sales Club', kind: 'text', page: 'Home', section: 'Hero', label: 'Eyebrow', max: 24, help: 'The small line above the headline.' },
+  'home.hero.events_label': { value: 'See events', kind: 'text', page: 'Home', section: 'Hero', label: 'Second button text', max: 28 },
+  'home.hero.events_href': { value: '/events', kind: 'url', page: 'Home', section: 'Hero', label: 'Second button link', max: 200 },
 
   // Home / About
   'home.about.eyebrow': { value: 'About', kind: 'text', page: 'Home', section: 'About', label: 'Eyebrow', max: 24 },
@@ -71,6 +74,7 @@ export const SITE_CONTENT = {
   'home.about.title_line2': { value: 'run by students', kind: 'text', page: 'Home', section: 'About', label: 'Heading, line 2', max: 24, help: 'Leave empty for a one-line heading.' },
   'home.about.body': { value: 'Western Sales Club is a student-run organization at Western University. We run workshops and events through the year, and connect members with people who sell for a living.', kind: 'longtext', page: 'Home', section: 'About', label: 'Body copy', max: 320 },
   'home.about.link_label': { value: 'Learn about the club', kind: 'text', page: 'Home', section: 'About', label: 'Link text', max: 28, help: 'The arrow is added automatically.' },
+  'home.about.link_href': { value: '/about', kind: 'url', page: 'Home', section: 'About', label: 'Link address', max: 200 },
 
   // Home / Events
   'home.events.eyebrow': { value: 'Events', kind: 'text', page: 'Home', section: 'Events', label: 'Eyebrow', max: 24 },
@@ -78,11 +82,13 @@ export const SITE_CONTENT = {
   'home.events.title_line2': { value: 'calendar', kind: 'text', page: 'Home', section: 'Events', label: 'Heading, line 2', max: 24, help: 'Leave empty for a one-line heading.' },
   'home.events.empty': { value: 'No events on the calendar yet.', kind: 'text', page: 'Home', section: 'Events', label: 'Empty message', max: 60, help: 'Shown when nothing is published.' },
   'home.events.link_label': { value: 'See all events', kind: 'text', page: 'Home', section: 'Events', label: 'Link text', max: 28 },
+  'home.events.link_href': { value: '/events', kind: 'url', page: 'Home', section: 'Events', label: 'Link address', max: 200 },
 
   // Home / Partners
   'home.partners.eyebrow': { value: 'Partners', kind: 'text', page: 'Home', section: 'Partners', label: 'Eyebrow', max: 24 },
   'home.partners.title_line1': { value: 'Who we work with', kind: 'text', page: 'Home', section: 'Partners', label: 'Heading', max: 24 },
   'home.partners.link_label': { value: 'See all partners', kind: 'text', page: 'Home', section: 'Partners', label: 'Link text', max: 28 },
+  'home.partners.link_href': { value: '/sponsors', kind: 'url', page: 'Home', section: 'Partners', label: 'Link address', max: 200 },
 
   // Home / Contact
   'home.contact.eyebrow': { value: 'Contact', kind: 'text', page: 'Home', section: 'Contact', label: 'Eyebrow', max: 24 },

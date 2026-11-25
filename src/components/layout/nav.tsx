@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { indicatorTransition, navItem, navPanelTransition } from "@/lib/motion";
+import { EditableButton } from "@/edit";
 
 /*
   Nav: one component, two modes, never two menus.
@@ -14,6 +15,11 @@ import { indicatorTransition, navItem, navPanelTransition } from "@/lib/motion";
 
   Mobile: the same pill, hamburger on the right, growing downward into a
   panel: sequence 12, Nav Expand. There is no drawer and no scrim.
+
+  The one action, Apply to join, sits in the pill at every width, phones
+  included, as a primary button. It reads home.cta.*, the same keys as the
+  hero, About and the closing band. Below 640 the wordmark gives way to it
+  and the shark alone marks the home link.
 
   design-system/components.md → Nav. design-system/motion.md → sequence 12.
 */
@@ -139,11 +145,12 @@ export default function Nav() {
           <div className="flex min-h-[50px] items-center gap-2 py-[7px] pl-[14px] pr-[7px] lg:min-h-[58px] lg:pl-6 lg:pr-3">
             <Link
               href="/"
+              aria-label="Western Sales Club, home"
               className="mr-auto flex min-w-0 items-center gap-[9px] no-underline"
               data-cursor="hover"
             >
               <Glyph />
-              <span className="truncate font-display text-[12px] font-black uppercase tracking-[0.07em] text-ink">
+              <span className="hidden truncate font-display sm:inline text-[12px] font-black uppercase tracking-[0.07em] text-ink">
                 Western Sales Club
               </span>
             </Link>
@@ -176,6 +183,12 @@ export default function Nav() {
                 );
               })}
             </div>
+
+            <EditableButton
+              labelKey="home.cta.button_label"
+              hrefKey="home.cta.button_href"
+              className="ml-1 flex-none lg:ml-3"
+            />
 
             {/* Hamburger, hidden at 1024 and up. Cross-fades to an X. */}
             <button

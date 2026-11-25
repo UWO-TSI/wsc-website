@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ClosingBand from "@/components/layout/closing-band";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -6,6 +7,7 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
+    <>
     <div className="px-[var(--gut)] pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
       <div className="mx-auto flex max-w-[720px] flex-col gap-10">
         <h1 className="title">Terms of Service</h1>
@@ -114,6 +116,8 @@ export default function TermsOfServicePage() {
         <p className="meta">Last Updated: May 7, 2025</p>
       </div>
     </div>
+    <ClosingBand />
+    </>
   );
 }
 

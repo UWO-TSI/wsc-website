@@ -22,6 +22,12 @@ import { useSiteContent } from '@/providers/site-content-provider';
   mask height and its descender allowance are computed from the wrapper's
   own font size. Each name line's ceiling (14 characters) is what stops an
   edit from wrapping it onto a second row.
+
+  Line Mask Reveal staggers by `.ln:nth-child()`, so all four lines must be
+  direct children of the h1 for the name to rise at 60, 120 and 180ms after
+  the greeting. The visitor branch renders the name lines itself for that
+  reason; while editing the stagger is off, so the lines field takes their
+  place, as the subtitle's does below.
 */
 
 const NAME_KEYS = ['home.hero.title_line2', 'home.hero.title_line3', 'home.hero.title_line4'] as const;
@@ -32,6 +38,7 @@ export default function Hero() {
   const { text } = useSiteContent();
   const { editing } = useEditMode();
   const greeting = text('home.hero.title_line1');
+  const names = NAME_KEYS.map((k) => ({ k, value: text(k) })).filter((line) => line.value);
 
   return (
     <section
@@ -51,12 +58,20 @@ export default function Hero() {
             </i>
           </span>
         )}
-        <EditableLines
-          keys={[...NAME_KEYS]}
-          as="span"
-          className="mt-[0.22em] block"
-          lineClassName="ln title-hero"
-        />
+        {editing ? (
+          <EditableLines
+            keys={[...NAME_KEYS]}
+            as="span"
+            className="mt-[0.22em] block"
+            lineClassName="ln title-hero"
+          />
+        ) : (
+          names.map((name, i) => (
+            <span key={name.k} className={`ln title-hero ${i === 0 ? 'mt-[0.22em]' : ''}`.trim()}>
+              <i>{name.value}</i>
+            </span>
+          ))
+        )}
       </h1>
 
       {/*

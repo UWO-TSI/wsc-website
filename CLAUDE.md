@@ -58,7 +58,7 @@ Moved verbatim to `docs/CLAUDE-reference.md` (same heading). Read it before work
 | `headshots` | Executive portraits | `executives.headshot_path` |
 | `sponsor-logos` | Sponsor logos | `sponsors.logo_path` |
 | `gallery` | Gallery photos (no page shows them; admin tab hidden) | `gallery_photos.image_path` |
-| `site-images` | The 12 photo slots in `src/lib/image-slots.ts` | `site_images.object_name` |
+| `site-images` | The photo slots in `src/lib/image-slots.ts` | `site_images.object_name` |
 
 ### Tables
 

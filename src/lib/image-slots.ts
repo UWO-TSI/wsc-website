@@ -68,11 +68,6 @@ export const IMAGE_SLOTS = {
     aspect: 3 / 4, aspectClass: 'aspect-[3/4]', minWidth: 840,
     alt: 'Western Sales Club members at a club event',
   },
-  'home.cta.image1': {
-    page: 'Home', section: 'Join', label: 'Join band',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 1040,
-    alt: 'Western Sales Club members together at a club event',
-  },
   'about.story.image1': {
     page: 'About', section: 'Fact 1', label: 'Below the paragraphs',
     aspect: 3 / 2, aspectClass: 'aspect-[3/2]', minWidth: 1400,

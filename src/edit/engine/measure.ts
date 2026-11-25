@@ -79,13 +79,13 @@ export function columnWidth(el: HTMLElement): number {
 /*
   "This line wraps on phones." The check sets the line in the heading's own
   type role as it resolves on a 375px screen, against that screen's column:
-  375px minus the 16px page gutter on each side (--gut below 700px), and
-  minus the 22px phone slab padding on each side when the heading is inside
-  a slab. Those two values are copied from globals.css.
+  375px minus the 16px page gutter on each side (--gut below 700px). Slabs
+  span the full width and pad their content by the same gutter, so the
+  column is the same inside a slab and on the bare page. The value is
+  copied from globals.css.
 */
 const PHONE = 375;
 const PHONE_GUTTER = 16;
-const PHONE_SLAB_PAD = 22;
 const ROLES = ['title-hero', 'title', 'title-sm'];
 
 function phoneFontSize(el: HTMLElement): string | undefined {
@@ -99,8 +99,7 @@ function phoneFontSize(el: HTMLElement): string | undefined {
 
 export function wrapsOnPhones(el: HTMLElement, line: string): boolean {
   if (!line) return false;
-  const inSlab = Boolean(el.closest('.slab'));
-  const column = PHONE - 2 * PHONE_GUTTER - (inSlab ? 2 * PHONE_SLAB_PAD : 0);
+  const column = PHONE - 2 * PHONE_GUTTER;
   return textWidth(el, line, phoneFontSize(el)) > column;
 }
 

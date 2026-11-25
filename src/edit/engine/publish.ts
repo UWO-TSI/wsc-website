@@ -81,6 +81,29 @@ export const LIST_FILES: Partial<Record<ListTable, { bucket: string; column: str
   sponsors: { bucket: 'sponsor-logos', column: 'logo_path' },
 };
 
+/*
+  The field that names a row in each list: an executive's name, an event's
+  title, a partner's name, a figure's label. A new row without it blocks
+  Publish (spec section 3, Lists), so the bar checks missingName() before
+  it calls publishDraft.
+*/
+export const NAME_FIELD: Record<ListTable, string> = {
+  executives: 'name',
+  events: 'title',
+  sponsors: 'name',
+  site_stats: 'label',
+};
+
+/** The first new row whose name field is empty, or null when every new row has one. */
+export function missingName(): { table: ListTable; id: string; field: string } | null {
+  for (const [table, d] of pendingLists()) {
+    const field = NAME_FIELD[table];
+    const id = Object.keys(d.added).find((rowId) => !String(d.added[rowId][field] ?? '').trim());
+    if (id) return { table, id, field };
+  }
+  return null;
+}
+
 export interface PublishResult {
   failed: number;
   expired: boolean;

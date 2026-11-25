@@ -72,7 +72,7 @@ export const COPY = {
   partlyFailed: (n: number) =>
     `${n} ${n === 1 ? 'change did' : 'changes did'} not publish and ${n === 1 ? 'is' : 'are'} still in your draft. Try again.`,
   blockedLabel: 'Cannot publish yet',
-  missingName: 'Add a name for the new executive before publishing.',
+  // Missing name: one line per list, in `list` below.
   offlineLabel: 'Offline',
   offline: 'You are offline. Your changes are saved in this browser. Publish when you reconnect.',
   expiredLabel: 'Signed out',
@@ -121,6 +121,7 @@ export const COPY = {
       show: 'Show on team page',
       remove: 'Remove from team',
       keep: 'Keep on team',
+      missing: 'Add a name for the new executive before publishing.',
     },
     events: {
       kind: 'Event',
@@ -129,6 +130,7 @@ export const COPY = {
       show: 'Show on events page',
       remove: 'Remove event',
       keep: 'Keep event',
+      missing: 'Add a title for the new event before publishing.',
     },
     sponsors: {
       kind: 'Partner',
@@ -137,6 +139,7 @@ export const COPY = {
       show: 'Show on partners page',
       remove: 'Remove partner',
       keep: 'Keep partner',
+      missing: 'Add a name for the new partner before publishing.',
     },
     site_stats: {
       kind: 'Figure',
@@ -145,6 +148,7 @@ export const COPY = {
       show: 'Show on home page',
       remove: 'Remove figure',
       keep: 'Keep figure',
+      missing: 'Add a label for the new figure before publishing.',
     },
   },
   /** Names of the row fields, for screen readers and placeholders. */

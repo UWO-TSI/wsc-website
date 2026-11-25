@@ -46,7 +46,7 @@ const litGround = {
 
 /*
   The tone of the nearest enclosing Slab. Button reads it so a primary on an
-  inverse or accent slab takes the page fill without the page passing a flag.
+  inverse, accent or logo slab takes the page fill without the page passing a flag.
   Outside any Slab it is 'page'.
 */
 const SlabToneContext = createContext<SlabTone>('page');

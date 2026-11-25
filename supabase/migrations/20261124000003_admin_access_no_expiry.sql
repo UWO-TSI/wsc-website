@@ -17,10 +17,9 @@
 --   1. Replace is_admin() and claim_admin_invite() first. Their SQL
 --      bodies are not tracked as dependencies, so dropping the column
 --      while they still name it would break sign-in at runtime.
---   2. Delete non-owner rows whose access has already ended. Without
---      this step, dropping the column would give those people access
---      again. After this migration the set of people who can sign in
---      is the same as before it.
+--   2. Delete every non-owner admin and every unused invite. The
+--      permanent roster starts from the owner alone; everyone else
+--      joins again through a new per-email invite.
 --   3. Drop admins.expires_at.
 -- ================================================================
 
@@ -107,20 +106,25 @@ GRANT  EXECUTE ON FUNCTION public.claim_admin_invite() TO authenticated;
 
 
 -- ----------------------------------------------------------------
--- 2. Remove rows whose access had already ended
+-- 2. Start the permanent roster from the owner alone
 -- ----------------------------------------------------------------
--- The old is_admin() refused a non-owner whose expires_at was NULL or
--- in the past. Those rows are deleted so the people they name do not
--- get access back. The admins_audit_del trigger records each one as
--- 'removed'. To give someone access again, invite them.
+-- Access no longer ends on a date, so every non-owner admin is removed
+-- and every unused invite is withdrawn. Each admin then joins again
+-- through a new per-email invite. The admins_audit_del trigger records
+-- each removed row as 'removed'. The owner row stays, so someone can
+-- always sign in and invite the rest.
 DO $$
-DECLARE v_count INT;
+DECLARE v_admins INT; v_invites INT;
 BEGIN
   DELETE FROM public.admins
-  WHERE is_owner = false
-    AND (expires_at IS NULL OR expires_at <= now());
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-  RAISE NOTICE 'Removed % admin row(s) whose access had already ended.', v_count;
+  WHERE is_owner = false;
+  GET DIAGNOSTICS v_admins = ROW_COUNT;
+
+  DELETE FROM public.admin_invites
+  WHERE used_at IS NULL;
+  GET DIAGNOSTICS v_invites = ROW_COUNT;
+
+  RAISE NOTICE 'Removed % non-owner admin row(s) and % unused invite(s).', v_admins, v_invites;
 END $$;
 
 

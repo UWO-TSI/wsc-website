@@ -45,7 +45,7 @@ Running copy holds a 62 character measure. `.meta` and any figure set `tabular-n
 - On `--inverse` use `--on-inverse`. On `--accent` use `--on-accent`. Neither ever appears on the page ground.
 - A tile inside an inverse slab is `--inverse-tile`: `--on-inverse` at 7 percent.
 - The accent as a **shape** is `--accent`. The accent as a **word** is `--accent-ink`. On a loud slab the word falls back to the slab's own ink (`.accent-mark`), because `--accent-ink` is the ground itself there.
-- The focus ring is `--focus` (velvet). On an inverse or accent slab it takes the slab's text colour, because velvet does not show on those grounds.
+- The focus ring is `--focus` (velvet). On an inverse, accent or logo slab it takes the slab's text colour, because velvet does not show on those grounds.
 - `--logo-ground` is the constant near-black behind every supplied logo, with `--on-logo-ground` as its ink.
 - Status is `--ok`, `--warn`, `--alert`, each always shipped with a word. `--ok` and `--alert` are at nearly the same lightness, so hue alone never carries the meaning.
 

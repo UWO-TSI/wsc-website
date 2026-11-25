@@ -82,7 +82,7 @@ Migrations in `supabase/migrations/` are applied in order:
 15. `20260929000010_event_time_structured.sql`: Event time as `HH:MM`, converting free text where it parses  
 16. `20261124000001_exec_roles_areas.sql`: `exec_groups.short_label`, the `exec_areas` table, `executives.area_id`
 17. `20261124000002_drop_executives_year.sql`: Drops `executives.year_of_study`
-18. `20261124000003_admin_access_no_expiry.sql`: Admin access no longer expires; drops `admins.expires_at` after removing rows whose access had already ended
+18. `20261124000003_admin_access_no_expiry.sql`: Admin access no longer expires; drops `admins.expires_at` after removing every non-owner admin and unused invite, so the roster restarts from the owner
 19. `20261124000004_admin_last_sign_in.sql`: `admin_last_sign_ins()`, each admin's last sign-in time
 20. `20261124000005_events_register_url.sql`: Optional `events.register_url`
 

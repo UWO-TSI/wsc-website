@@ -12,7 +12,7 @@ import { useSlabTone } from './slab';
   is 14px block and 24px inline, which clears 44px at every size. One primary
   per section, and no icon-only buttons on the marketing site.
 
-  On an inverse or accent slab the primary takes the page fill (the secondary
+  On an inverse, accent or logo slab the primary takes the page fill (the secondary
   look), because an accent button on a loud ground has nowhere to go. The
   button reads the tone from the enclosing Slab, so pages pass no flag.
 
@@ -69,7 +69,7 @@ const variants: Record<ButtonVariant, string> = {
   tertiary: 'bg-transparent text-accent-ink hover:bg-accent-veil',
 };
 
-/* Inside an inverse or accent slab. The secondary and tertiary take the
+/* Inside an inverse, accent or logo slab. The secondary and tertiary take the
    slab's own ink; their hover fill is derived from it in globals.css. */
 const loudVariants: Record<ButtonVariant, string> = {
   primary: variants.secondary,
@@ -94,7 +94,7 @@ export default function Button({
 }: ButtonProps) {
   const magnetRef = useMagnetic<HTMLElement>(!disabled);
   const slabTone = useSlabTone();
-  const loud = slabTone === 'inverse' || slabTone === 'accent';
+  const loud = slabTone === 'inverse' || slabTone === 'accent' || slabTone === 'logo';
 
   const tone = disabled
     ? disabledStyles

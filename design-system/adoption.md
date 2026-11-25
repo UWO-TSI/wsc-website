@@ -57,7 +57,7 @@ All in `src/components/`. Compose from these; do not rebuild them.
 
 | Import | Props worth knowing |
 | --- | --- |
-| `ui/button` | `variant: 'primary' \| 'secondary' \| 'tertiary'`, `href`, `arrow`, `disabled`. Magnetic Pull is built in. One primary per section. Inside an inverse or accent `Slab` the primary takes the page fill on its own; `onAccent` is deprecated and does nothing. |
+| `ui/button` | `variant: 'primary' \| 'secondary' \| 'tertiary'`, `href`, `arrow`, `disabled`. Magnetic Pull is built in. One primary per section. Inside an inverse, accent or logo `Slab` the primary takes the page fill on its own; `onAccent` is deprecated and does nothing. |
 | `ui/eyebrow` | `index` renders the section numeral in `--accent-ink`. |
 | `ui/slab` | `tone: 'page' \| 'raised' \| 'sunken' \| 'inverse' \| 'accent' \| 'logo'`, `texture` (inverse and accent only: `sweep`, `rise`, `arc`, `waist`, `pair`), `clip` for Slab Clip, `overflowHidden`, `as`. Provides its tone to `useSlabTone()`. |
 | `ui/section-head` | `title` is an **array, one entry per visual line**. Owns its own Line Mask Reveal. |
@@ -76,7 +76,7 @@ apart: wrap them in `.stack`. Do not add `mx-[var(--gut)]` or any side margin to
   Archivo title, then at most three lines of copy, then the buttons.
 - **Reading content is left-aligned:** long paragraphs and the event ledger.
 
-On an inverse or accent slab the focus ring and the primary button adapt on their own (see
+On an inverse, accent or logo slab the focus ring and the primary button adapt on their own (see
 `Slab` and `Button` in `components.md`). A loud slab that sells takes `texture`; see the shape
 table in `components.md`.
 

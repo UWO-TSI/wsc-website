@@ -44,6 +44,10 @@
   outline-color: var(--on-accent);
 }
 
+.slab-logo .ed:focus-within {
+  outline-color: var(--on-logo-ground);
+}
+
 .ed-in {
   display: block;
   width: 100%;

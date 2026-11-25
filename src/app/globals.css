@@ -393,6 +393,10 @@ img {
   outline-color: var(--on-accent);
 }
 
+.slab-logo :focus-visible {
+  outline-color: var(--on-logo-ground);
+}
+
 .slab-logo .label,
 .slab-logo .subtitle,
 .slab-logo .meta,
@@ -439,7 +443,8 @@ img {
 .slab-acc .btn-tertiary:hover,
 .slab-logo .btn-tertiary:hover,
 .slab-inv .btn-secondary:hover,
-.slab-acc .btn-secondary:hover {
+.slab-acc .btn-secondary:hover,
+.slab-logo .btn-secondary:hover {
   background: color-mix(in srgb, currentColor 14%, transparent);
 }
 

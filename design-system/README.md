@@ -77,7 +77,7 @@ Rounded shapes stay for the things inside a container: photos, fields, buttons a
 
 Adjacent containers never share a tone. `--inverse` and `--accent` never touch, and there is one of them per page. The page head (or the home hero) above the closing band is the one exception.
 
-A container carries weight only where it marks a change of role. On the inner pages (About, Events, Executive team, Partners, Contact and the legal pages) the page head and the closing band are the containers. Every content section between them sits bare on `--page`, with no raised or sunken tint, and is separated from its neighbours by room: `--pad-section` above and below. Two content sections keep a ground: the contact form, because its fields are a group on a `--sunken` bed, and the Partners logo wall, because supplied logos are light marks that need `--logo-ground`. The home page keeps its slabs.
+A container has a tone of its own only where it marks a change of role. On the inner pages (About, Events, Executive team, Partners, Contact and the legal pages) the page head and the closing band are the containers. Every content section between them sits bare on `--page`, with no raised or sunken tint, and is separated from its neighbours by room: `--pad-section` above and below. Two content sections keep a ground: the contact form, because its fields are a group on a `--sunken` bed, and the Partners logo wall, because supplied logos are light marks that need `--logo-ground`. The home page keeps its slabs.
 
 The hero is a full-width inverse container with a photo slot (`home.hero.image1`) as its background, under `--inverse-veil`. The footer takes `--pad-section` top and bottom, so it reads as a section.
 
@@ -86,7 +86,7 @@ A photo slot with no photo shows a placeholder at the slot's frame and aspect ra
 ## Alignment
 
 - **Selling moments are centred:** the hero, page heads, closing bands, and a home section head whose section is one message and a link (About, Partners). The order is the eyebrow, the bold Archivo title, at most three lines of copy, then the buttons. Use `CentredHead`.
-- **A section whose job is reading or scanning content is left-aligned, head included:** its eyebrow and title sit on the same left edge as the content below them. This covers the About story, the event ledger and the home events preview, the team roster, the contact form, the legal text and every long paragraph. Use `SectionHead`. A centred head over left-aligned content leaves the reader without one edge to return to.
+- **A section whose job is reading or scanning content is left-aligned, head included:** its eyebrow and title sit on the same left edge as the content below them. This covers the About story, the event ledger and the home events preview, the team roster, the contact form, the legal text and every long paragraph. Use `SectionHead`. A centred head over left-aligned content puts the head and the content on different edges.
 
 ## Signature texture
 

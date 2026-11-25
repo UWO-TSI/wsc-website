@@ -55,7 +55,7 @@ for (const row of rows) {
 
 const fmt = (d) => `dx ${d.dx}, dy ${d.dy}, dw ${d.dw}, dh ${d.dh}${d.detached ? ', replaced' : ''}`;
 const lines = [];
-lines.push('# E3 edit-mode stability results', '');
+lines.push('# Edit-mode stability results', '');
 lines.push(`Result files: ${tests}. With at least one failing check: ${withFailures}.`);
 lines.push(`Movement records: ${rows.length}. Distinct causes: ${groups.size}.`);
 lines.push(`Scroll-width failures: ${sw.length}. Harness errors: ${errors.length}. Residual drafts after Discard: ${residual.length}.`, '');

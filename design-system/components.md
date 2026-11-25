@@ -170,7 +170,7 @@ Four states, and none of them is a blank screen: loading, error with a retry, em
 
 As built there is exactly **one** tier group, labelled Partners: the `sponsors` table has no `tier` column and `supabase/` is off limits, so scale comes from `display_order` (the lead tile spans two columns) rather than an invented tier. The paragraph below is what to build the day a `tier` column exists.
 
-Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile behind each one. A per-logo panel on a light slab read as a grid of stickers. Same treatment for the landing page marquee. On Partners this puts three dark sections in a row (the inverse page head, the wall, the closing band). That is an accepted exception to the one-loud-pair rule: supplied logos are mostly light marks on transparent backgrounds and need the dark ground.
+Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile behind each one. A per-logo panel on a light slab read as a grid of separate dark patches. Same treatment for the landing page marquee. On Partners this puts three dark sections in a row (the inverse page head, the wall, the closing band). That is an accepted exception to the one-loud-pair rule: supplied logos are mostly light marks on transparent backgrounds and need the dark ground.
 
 Sponsors grouped by tier, `--gold` for the tier bar and label, the explicit mark rather than `--accent`, because a sponsor's tier must look the same on every page. Tile scale carries the hierarchy, not a border.
 

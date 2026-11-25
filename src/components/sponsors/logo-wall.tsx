@@ -51,7 +51,7 @@ function WallSkeleton() {
 
   The whole wall sits on the constant --logo-ground slab and the marks sit
   directly on it, the same treatment as the landing marquee. A dark plate
-  per logo on a light bed read as a grid of stickers
+  per logo on a light bed read as a grid of separate dark patches
   (design-system/components.md, LogoWall).
 
   The slab and the tier bar are outside the async wrapper: both are known

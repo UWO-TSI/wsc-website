@@ -392,7 +392,7 @@ img {
 /*
   A slab on the constant logo ground, for a section built entirely around
   supplied marks. The whole panel is dark rather than each tile carrying its
-  own dark patch, which read as a grid of stickers.
+  own dark patch, which read as a grid of separate dark patches.
 */
 .slab-logo {
   background: var(--logo-ground);

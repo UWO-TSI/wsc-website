@@ -54,6 +54,25 @@ export function sample(base: string, length: number): string {
   return s.slice(0, length);
 }
 
+/**
+ * Samples for a wrapped field's reserve: the value's own words and the
+ * fallback sentence, each started at each of its first words. A wrapped
+ * value's row count depends on its word lengths and on where its words fall
+ * at the row ends, so one arrangement can come up a row short for another
+ * value of the same length: at 1280 a 60-character page title measured
+ * three rows from its published words and needed four for other words. The
+ * caller keeps the tallest.
+ */
+export function samples(base: string, length: number, most = 8): string[] {
+  const rotations = (text: string) => {
+    const words = text.replace(/\s+/g, ' ').trim().split(' ');
+    return Array.from({ length: Math.min(words.length, most) }, (_, i) =>
+      sample([...words.slice(i), ...words.slice(0, i)].join(' '), length)
+    );
+  };
+  return [...(base.trim() ? rotations(base) : []), ...rotations(FALLBACK_SAMPLE)];
+}
+
 /** Width of one line of text in the font of `el`, without wrapping. */
 export function textWidth(el: HTMLElement, text: string, fontSize?: string): number {
   const m = measureBox();
@@ -72,6 +91,42 @@ export function textHeight(el: HTMLElement, text: string, width: number): number
   m.style.width = `${width}px`;
   m.textContent = text;
   return Math.max(m.scrollHeight, lineHeightOf(el));
+}
+
+let areaBox: HTMLTextAreaElement | null = null;
+
+/**
+ * The height `el`, a field's textarea, needs to show `text` at its current
+ * width without scrolling, padding included. Measured in a hidden textarea
+ * with the same font, padding and wrapping, because a textarea's scroll
+ * height is not a div's: Chrome counts the font's full ascent and descent
+ * there, which on a tight title line-height is taller than the line box,
+ * so a reserve taken from the line-height alone left a heading 2px short.
+ */
+export function fieldHeight(el: HTMLTextAreaElement, text: string): number {
+  if (!areaBox) {
+    areaBox = document.createElement('textarea');
+    areaBox.setAttribute('aria-hidden', 'true');
+    areaBox.tabIndex = -1;
+    areaBox.className = 'ed-measure';
+    document.body.appendChild(areaBox);
+  }
+  const m = areaBox;
+  const cs = getComputedStyle(el);
+  copyFont(el, m);
+  m.style.boxSizing = 'border-box';
+  m.style.border = '0';
+  m.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+  m.style.whiteSpace = cs.whiteSpace;
+  m.style.overflowWrap = cs.overflowWrap;
+  m.style.wordBreak = cs.wordBreak;
+  m.style.overflow = 'hidden';
+  m.style.resize = 'none';
+  m.style.minHeight = '0';
+  m.style.width = `${el.getBoundingClientRect().width}px`;
+  m.style.height = '0';
+  m.value = text;
+  return m.scrollHeight;
 }
 
 const px = (v: string) => parseFloat(v) || 0;

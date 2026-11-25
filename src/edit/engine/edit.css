@@ -77,10 +77,14 @@
   opacity: 0.45;
 }
 
-/* A heading's lines never wrap inside the field. The block padding is the
-   Line Mask's descender allowance, so tight title line-heights do not clip. */
+/* A heading line wider than the column wraps inside the field and never
+   hides text; the field's reserved height already holds every line at its
+   longest allowed value. A single word wider than the column breaks. The
+   block padding is the Line Mask's descender allowance, so tight title
+   line-heights do not clip. */
 .ed-lines {
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   padding-block: 0.06em;
 }
 

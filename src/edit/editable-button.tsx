@@ -4,13 +4,15 @@ import Button, { type ButtonVariant } from '@/components/ui/button';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { externalLinkProps } from '@/lib/link-utils';
 import type { SiteContentKey } from '@/lib/site-content-defaults';
+import { EditBranch, useEditBranch } from '@/edit/edit-mode';
 
 /*
   A button whose label and link are site_content keys.
 
-  View mode: the Button primitive, opening external links in a new tab
-  through externalLinkProps. In edit mode the label is a field inside the
-  button and the link address shows in the tray.
+  View mode and Preview: the Button primitive, opening external links in a
+  new tab through externalLinkProps. While editing, the engine's
+  InlineLabel renders instead: the label is a field inside the button and
+  the link address shows in the tray.
 */
 
 export interface EditableButtonProps {
@@ -23,15 +25,10 @@ export interface EditableButtonProps {
   className?: string;
 }
 
-export default function EditableButton({
-  labelKey,
-  hrefKey,
-  variant,
-  arrow,
-  onAccent,
-  className,
-}: EditableButtonProps) {
+export default function EditableButton(props: EditableButtonProps) {
+  const { labelKey, hrefKey, variant, arrow, onAccent, className } = props;
   const { text } = useSiteContent();
+  if (useEditBranch()) return <EditBranch name="Button" props={props} />;
   const href = text(hrefKey);
 
   return (

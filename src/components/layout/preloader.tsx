@@ -9,10 +9,8 @@ import { curtain } from "@/lib/motion";
   2px progress rail that fills over 900ms, then the panel exits
   translateY(-101%) over --d-arrive on --e-exit.
 
-  The ground is --logo-ground, not --inverse. --inverse flips to near-white in
-  Afterhours, which would make the first thing a dark-theme viewer sees a white
-  flash before the site loads behind it. The curtain is always black, in both
-  themes, so the entrance reads the same either way.
+  The ground is --logo-ground, the constant near-black used behind every
+  supplied mark.
 
   Under reduced motion it does not render at all: onLoadComplete fires
   immediately and the panel never paints.

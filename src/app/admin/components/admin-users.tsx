@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format, formatDistanceToNowStrict, isPast } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSupabaseMutation } from '@/lib/supabase/hooks/use-supabase-mutation';
 import { useAdminAuth } from '@/providers/admin-auth-provider';
-import type { AdminRow, AdminInvite, AdminAuditEntry } from '@/types/database';
+import type { AdminRow, AdminInvite, AdminAuditEntry, AdminLastSignIn } from '@/types/database';
 import { FIELD_WELL } from '@/components/contact/field';
 import Slab from '@/components/ui/slab';
 import Button from '@/components/ui/button';
@@ -44,6 +44,25 @@ export default function AdminUsers() {
     { orderBy: 'created_at', ascending: false }
   );
 
+  /* auth.users is not readable through the API, so sign-in times come from
+     the admin_last_sign_ins() RPC. A failure only blanks the column. */
+  const [lastSignIn, setLastSignIn] = useState<Record<string, string | null>>({});
+  const [lastSignInRun, setLastSignInRun] = useState(0);
+  useEffect(() => {
+    let current = true;
+    supabase.rpc('admin_last_sign_ins').then(({ data, error }) => {
+      if (!current || error) return;
+      setLastSignIn(
+        Object.fromEntries(
+          ((data ?? []) as AdminLastSignIn[]).map((r) => [r.user_id, r.last_sign_in_at])
+        )
+      );
+    });
+    return () => {
+      current = false;
+    };
+  }, [lastSignInRun]);
+
   const { mutate, loading: mutating, error: mutError, reset } = useSupabaseMutation();
 
   const [email, setEmail] = useState('');
@@ -60,6 +79,7 @@ export default function AdminUsers() {
     refetchAdmins();
     refetchInvites();
     refetchAudit();
+    setLastSignInRun((n) => n + 1);
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -70,7 +90,7 @@ export default function AdminUsers() {
     // Also enforced by an RLS WITH CHECK, but saying so here is kinder
     // than a generic permission error.
     if (target === user.email.toLowerCase()) {
-      setNotice('You cannot invite yourself. Ask another admin to extend your access.');
+      setNotice('You cannot invite yourself. You already have access.');
       return;
     }
 
@@ -125,8 +145,8 @@ export default function AdminUsers() {
       <div>
         <h2 className="title-sm text-ink">Admins</h2>
         <p className="meta text-ink-faint mt-1">
-          Anyone here can invite or remove anyone else. Access lasts ten months and then
-          expires on its own.
+          Anyone here can invite or remove anyone else. Access lasts until another admin
+          removes it.
         </p>
       </div>
 
@@ -247,7 +267,7 @@ export default function AdminUsers() {
                 <tr>
                   <th className={th}>Email</th>
                   <th className={th}>Note</th>
-                  <th className={th}>Access ends</th>
+                  <th className={th}>Last sign-in</th>
                   <th className={`${th} w-24`} />
                 </tr>
               </thead>
@@ -262,15 +282,14 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-3 py-3 body-sm text-ink-muted">{admin.note || 'None'}</td>
                       <td className="px-3 py-3">
-                        {admin.is_owner ? (
-                          <Chip status="ok">Never, site owner</Chip>
-                        ) : admin.expires_at ? (
+                        {lastSignIn[admin.user_id] ? (
                           <span className="meta">
-                            {format(new Date(admin.expires_at), 'd MMM yyyy')} (
-                            {formatDistanceToNowStrict(new Date(admin.expires_at))} left)
+                            {format(new Date(lastSignIn[admin.user_id]!), 'd MMM yyyy')}
                           </span>
                         ) : (
-                          <Chip status="alert">Expired</Chip>
+                          <span className="meta text-ink-faint">
+                            {admin.user_id in lastSignIn ? 'Never' : 'Unknown'}
+                          </span>
                         )}
                       </td>
                       <td className="px-3 py-3 rounded-r-md">

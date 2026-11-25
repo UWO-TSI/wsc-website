@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/providers/admin-auth-provider';
 import { CONTENT_CONFIG } from '@/lib/admin-config';
 import Button from '@/components/ui/button';
-import ThemeToggle from '@/components/ui/theme-toggle';
 import AdminSection from './components/admin-section';
 import AdminSiteContent from './components/admin-site-content';
 import AdminImages from './components/admin-images';
@@ -170,7 +169,6 @@ function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <span className="meta text-ink-faint hidden sm:block">westernsalesclub.ca</span>
-            <ThemeToggle />
           </div>
         </header>
 

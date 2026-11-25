@@ -46,7 +46,7 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
 
   /*
     The tile is the constant dark logo ground. The wall behind it is sunken,
-    so the black plate is visible in both themes, and a light-on-transparent
+    so the black plate is visible against it, and a light-on-transparent
     mark still has the ground it was drawn for.
   */
   const tileClass = [

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMagnetic } from '@/hooks/use-magnetic';
+import { useSlabTone } from './slab';
 
 /*
   Every button is a pill. Nothing else in the system uses --r-pill, which is
@@ -10,6 +11,10 @@ import { useMagnetic } from '@/hooks/use-magnetic';
   Label is Instrument Sans 15px / 500, sentence case, never wrapping. Padding
   is 14px block and 24px inline, which clears 44px at every size. One primary
   per section, and no icon-only buttons on the marketing site.
+
+  On an inverse, accent or logo slab the primary takes the page fill (the secondary
+  look), because an accent button on a loud ground has nowhere to go. The
+  button reads the tone from the enclosing Slab, so pages pass no flag.
 
   design-system/components.md → Button.
 */
@@ -29,8 +34,8 @@ interface ButtonProps {
   /** A trailing arrow means the action leaves the page. */
   arrow?: boolean;
   /**
-   * Set on an --accent slab. A primary inverts to a --page fill with --ink,
-   * because an accent button on an accent field has nowhere to go.
+   * @deprecated Has no effect. The button reads the enclosing Slab's tone
+   * instead. Kept so existing callers compile; remove once none pass it.
    */
   onAccent?: boolean;
   'aria-label'?: string;
@@ -64,10 +69,12 @@ const variants: Record<ButtonVariant, string> = {
   tertiary: 'bg-transparent text-accent-ink hover:bg-accent-veil',
 };
 
-const onAccentVariants: Record<ButtonVariant, string> = {
-  primary: 'bg-page text-ink shadow-2 hover:bg-raised hover:shadow-3',
-  secondary: 'bg-transparent text-on-accent shadow-none hover:bg-[rgba(255,255,255,0.12)]',
-  tertiary: 'bg-transparent text-on-accent hover:bg-[rgba(255,255,255,0.12)]',
+/* Inside an inverse, accent or logo slab. The secondary and tertiary take the
+   slab's own ink; their hover fill is derived from it in globals.css. */
+const loudVariants: Record<ButtonVariant, string> = {
+  primary: variants.secondary,
+  secondary: 'bg-transparent text-current shadow-none',
+  tertiary: variants.tertiary,
 };
 
 const disabledStyles = 'bg-sunken text-ink-faint shadow-none cursor-not-allowed';
@@ -83,21 +90,23 @@ export default function Button({
   target,
   rel,
   arrow = false,
-  onAccent = false,
   'aria-label': ariaLabel,
 }: ButtonProps) {
   const magnetRef = useMagnetic<HTMLElement>(!disabled);
+  const slabTone = useSlabTone();
+  const loud = slabTone === 'inverse' || slabTone === 'accent' || slabTone === 'logo';
 
   const tone = disabled
     ? disabledStyles
-    : onAccent
-      ? onAccentVariants[variant]
+    : loud
+      ? loudVariants[variant]
       : variants[variant];
 
   /*
     `btn-${variant}` carries no styling of its own. It is the hook globals.css
-    uses to give a tertiary button legible ink inside a loud slab, where
-    --accent-ink is the ground itself and --accent-veil is invisible.
+    uses to give a secondary or tertiary button legible ink and a hover fill
+    inside a loud slab, where --accent-ink is the ground itself and
+    --accent-veil is invisible.
   */
   const classes = `group btn-${variant} ${base} ${tone} ${className}`.trim();
 

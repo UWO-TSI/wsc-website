@@ -16,9 +16,9 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | SectionHead | `landing/about-section.tsx` | Line Mask Reveal |
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |
+| Texture | `ui/texture.tsx` | Grain Shift (a loop) |
 | Marquee | `landing/partners-marquee.tsx` | Marquee Drift |
 | ExecutiveGrid | `team/executive-grid.tsx` | one move on arrival |
-| ThemeToggle | `ui/theme-toggle.tsx` | Theme Wipe |
 | Avatar | `ui/avatar.tsx` | none |
 | Chip | `ui/chip.tsx` | none |
 | TimelineEvent | `events/timeline-event.tsx` | Row Expand |
@@ -36,8 +36,6 @@ One component, two modes, never two menus.
 
 **Mobile.** The same pill with the hamburger on the right. It expands downward into a panel: see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, and on a click outside. There is no drawer and no scrim.
 
-The theme toggle lives in the bar at every breakpoint, outside the panel, so it is reachable without opening the menu.
-
 ## Button
 
 Every button is a pill. Nothing else in the system uses `--r-pill`, which is how a pressable thing announces itself with no borders.
@@ -49,7 +47,7 @@ Every button is a pill. Nothing else in the system uses `--r-pill`, which is how
 | Tertiary | No fill, `--accent-ink` label | `--accent-veil` fill |
 | Disabled | `--sunken` fill, `--ink-faint` label | none |
 
-On an `--accent` slab the primary inverts to a `--page` fill with `--ink`, because an accent button on an accent field has nowhere to go.
+On an `--inverse`, `--accent` or `--logo-ground` slab the primary takes the page fill (the secondary variant), because a velvet button on these grounds has too little contrast to read as a button. The secondary and tertiary take the slab's own ink, with a hover fill mixed from it. Button reads the tone from the enclosing `Slab`, so a page passes no flag. The old `onAccent` prop is deprecated and has no effect.
 
 Label is Instrument Sans 15px weight 500, sentence case, never wrapping. Padding 14px block, 24px inline, which clears 44px at every size. The label names the action and the confirmation echoes it: **Apply to join**, then **Application received**. A trailing arrow means the action leaves the page.
 
@@ -59,7 +57,7 @@ One primary per section. No icon-only buttons on the marketing site.
 
 The component a borderless system has to get right.
 
-The form sits in a `--sunken` slab and each input is a `--page` well at `--r-sm` inside it, one tone step away from its container in both themes. Label above in `.label`, value in `.body`, no stroke.
+The form sits in a `--sunken` slab and each input is a `--page` well at `--r-sm` inside it, one tone step away from its container. Label above in `.label`, value in `.body`, no stroke.
 
 A light fill on white cannot reach 3:1, and no borderless light theme can. Identification is carried by the persistent visible label, which is why a placeholder-only field is forbidden here rather than discouraged. State is `--focus` at focus and `--alert` plus written text at error.
 
@@ -69,13 +67,31 @@ Every field needs a stable `id` and a `<label for>`.
 
 ## Slab
 
-The only divider. Inset from the viewport by the page gutter, `--r-xl` from tablet up and `--r-lg` below, separated from neighbours by 24px of visible `--page`.
+The only divider. A slab spans the full viewport width with no side gap and takes `--r-xl`. Slabs that meet are 2px apart (`.stack`), and that 2px of `--page` plus the tone change is the divider. The page gutter is the slab's inline padding, so content keeps its inset. Photos, fields, buttons and chips inside keep their own rounded shapes.
 
 Tones in order of distance from the ground: `--raised` (default), `--sunken` (recessed: footer, form bed, gallery bed), `--inverse` and `--accent` (the statement and the offer).
 
-Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page. Do not slab everything: the hero and at least one section per page sit bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
+Adjacent slabs never share a tone, the two loud tones never touch, one loud slab per page. Do not slab everything: the hero and at least one section per page are bare. A slab that clips its children sets `overflow: hidden` on itself so the child inherits the corner.
 
-Never put a shadow above `--sh-1` on a slab. A slab is the page, not a thing floating above it.
+A slab is flat. A shadow would fill the 2px join, and a slab is the page, not a thing floating above it.
+
+On an `--inverse`, `--accent` or `--logo-ground` slab the focus ring takes the slab's text colour, and a primary button takes the page fill. Both are handled by the slab; the page does nothing.
+
+`texture` (`sweep`, `rise`, `arc`, `waist`, `pair`) is allowed on the two loud tones only and is a type error elsewhere. It gives the slab its lit ground and draws the Texture behind the content.
+
+## Texture
+
+The signature Lit velvet texture, in `ui/texture.tsx`, drawn only by `Slab`. Layers, back to front: the lit ground (the slab's background, lit from one point), moving grain, the ribbon, the dot matrix. The ribbon is an SVG of solid lines `--tex-dot` thick, drawn on the client into an absolutely positioned layer, so drawing it moves nothing. It redraws only when the slab's size changes, and the same size always draws the same ribbon.
+
+| Shape | Use |
+| --- | --- |
+| `sweep` | Closing band. Bottom edge to right edge. |
+| `rise` | Statement slab. Left edge to top edge. |
+| `arc` | Stats band. One crest that swells in the middle. |
+| `waist` | Page head. Wide, narrow, wide. |
+| `pair` | Wide, short band. Two ribbons, one following the other. |
+
+Accent gives lit velvet, inverse gives lit velvet black. Every shape works on both. The numbers, the `RIBBONS` table and the `SPREAD` table are copied from `docs/redesign/reference.html`; change them there first. The dev-only route `/texture-lab` renders every shape on both grounds at its band size.
 
 ## ExecutiveGrid
 
@@ -111,7 +127,7 @@ As built there is exactly **one** tier group, labelled Partners: the `sponsors` 
 
 Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile behind each one. A per-logo panel on a light slab read as a grid of stickers. Same treatment for the landing page marquee.
 
-Sponsors grouped by tier, `--gold` for the tier bar and label, the explicit mark rather than `--accent`, because a sponsor's tier must look the same in both themes. Tile scale carries the hierarchy, not a border.
+Sponsors grouped by tier, `--gold` for the tier bar and label, the explicit mark rather than `--accent`, because a sponsor's tier must look the same on every page. Tile scale carries the hierarchy, not a border.
 
 Never redraw a sponsor's mark. Use their file. Where there is none, set the name in `--f-display` weight 700 in the same tile. Logos sit on `--sunken` so a single-ink mark has a predictable ground.
 

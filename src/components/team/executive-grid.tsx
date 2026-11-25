@@ -5,7 +5,8 @@ import Avatar from '@/components/ui/avatar';
 import Skeleton from '@/components/ui/skeleton';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
-import type { Executive } from '@/types/database';
+import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
+import type { ExecArea, ExecGroup, Executive } from '@/types/database';
 
 /*
   The roster, as one grid read left to right.
@@ -59,7 +60,26 @@ export function ExecutiveGridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
+/*
+  The line under the name. With an area it is built from the role's short
+  label and the area: "VP, Marketing". Without one it is the stored title,
+  which keeps the page as it was until the area backfill has been reviewed.
+  The stored title is also used if the role or area has not loaded.
+*/
+function titleOf(executive: Executive, groups: ExecGroup[], areas: ExecArea[]): string {
+  if (!executive.area_id) return executive.title;
+  const group = groups.find((g) => g.slug === executive.group);
+  const area = areas.find((a) => a.id === executive.area_id);
+  const role = group?.short_label ?? group?.singular_label;
+  return role && area ? `${role}, ${area.name}` : executive.title;
+}
+
 export default function ExecutiveGrid({ executives }: { executives: Executive[] }) {
+  /* Roles and areas are fetched only once someone has an area set. */
+  const needsLookups = executives.some((executive) => !!executive.area_id);
+  const { data: groups } = useSupabaseQuery<ExecGroup>('exec_groups', { enabled: needsLookups });
+  const { data: areas } = useSupabaseQuery<ExecArea>('exec_areas', { enabled: needsLookups });
+
   const photos = executives.flatMap((executive) => {
     const src = getPublicUrl('headshots', executive.headshot_path);
     return src ? [{ id: executive.id, src }] : [];
@@ -101,10 +121,7 @@ export default function ExecutiveGrid({ executives }: { executives: Executive[] 
 
           <div className="flex flex-col gap-1">
             <span className="title-sm">{executive.name}</span>
-            <span className="meta">
-              {executive.title}
-              {executive.year_of_study ? ` · Year ${executive.year_of_study}` : ''}
-            </span>
+            <span className="meta">{titleOf(executive, groups, areas)}</span>
           </div>
         </li>
         );

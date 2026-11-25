@@ -1,0 +1,337 @@
+/*
+  Edit mode styles. Imported by edit-engine.tsx only, so this file ships in
+  the edit chunk and never in a visitor's CSS. Every value is a Floor token
+  through var(), except the sizes the spec gives in pixels (the Field's
+  8px by 12px padding, the tray heights, the bar layout) and the 9 percent
+  fill, which is the skeleton's mix in globals.css.
+
+  Nothing here animates. In edit mode the allowed motion is reorder, a new
+  Add tile, removal on Publish and the Publish label changing in place,
+  and none of those is styled in this file.
+*/
+
+/* ── Field ── */
+
+.ed {
+  position: relative;
+  max-width: 100%;
+  vertical-align: top;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  cursor: text;
+}
+
+.ed-line {
+  display: inline-block;
+}
+
+.ed-block {
+  display: block;
+}
+
+.ed:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* On a loud slab the ring takes the slab's text colour. */
+.slab-inv .ed:focus-within {
+  outline-color: var(--on-inverse);
+}
+
+.slab-acc .ed:focus-within {
+  outline-color: var(--on-accent);
+}
+
+.slab-logo .ed:focus-within {
+  outline-color: var(--on-logo-ground);
+}
+
+.ed-in {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  resize: none;
+  overflow: hidden;
+  cursor: text;
+}
+
+.ed-in:focus-visible {
+  outline: none;
+}
+
+.ed-in::placeholder {
+  color: currentColor;
+  opacity: 0.45;
+}
+
+/* A heading's lines never wrap inside the field. The block padding is the
+   Line Mask's descender allowance, so tight title line-heights do not clip. */
+.ed-lines {
+  white-space: pre;
+  padding-block: 0.06em;
+}
+
+.ed-measure {
+  position: absolute;
+  top: 0;
+  left: -9999px;
+  visibility: hidden;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+/* ── InlineLabel: the field over an inert Button, in one grid cell ──
+   Positioned, so the spacer's offsetLeft is measured from the cell. */
+
+.ed-btn {
+  position: relative;
+  display: inline-grid;
+  vertical-align: middle;
+}
+
+.ed-btn > * {
+  grid-area: 1 / 1;
+}
+
+.ed-btn-face {
+  display: grid;
+}
+
+.ed-btn-spacer {
+  display: inline-block;
+  height: 1em;
+}
+
+.ed.ed-inbtn {
+  align-self: center;
+  justify-self: start;
+  padding: 3px 8px;
+  border-radius: var(--r-xs);
+}
+
+.ed-inbtn .ed-in {
+  white-space: pre;
+}
+
+/* Inside a button the ring takes the label's colour, which is the one
+   colour guaranteed to show on that button's fill. */
+.ed-inbtn:focus-within {
+  outline-color: currentColor;
+  outline-offset: 1px;
+}
+
+/* ── PhotoSlot ── */
+
+/* In a layer so the caller's own utilities (an absolute fill, a grid
+   placement) still win over these defaults. */
+@layer components {
+  .ed-photo {
+    position: relative;
+    display: block;
+  }
+}
+
+.ed-photo > .reveal-frame {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.ed-photo-btn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ed-photo-chip {
+  color: var(--accent-ink);
+}
+
+/* ── Edit bar and tray ── */
+
+html.ed-on body {
+  padding-bottom: calc(var(--ed-bar-h, 0px) + 24px);
+}
+
+.ed-bar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: var(--layer-nav);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'status seg'
+    'tray tray'
+    'discard publish';
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--page);
+  color: var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+}
+
+@media (min-width: 900px) {
+  .ed-bar {
+    grid-template-columns: 150px minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'status tray seg discard publish';
+    padding: 12px 14px 12px 20px;
+    border-radius: var(--r-xl);
+  }
+}
+
+.ed-status {
+  grid-area: status;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .ed-status {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.ed-status .label {
+  color: var(--accent-ink);
+}
+
+.ed-seg {
+  grid-area: seg;
+  justify-self: end;
+  display: inline-flex;
+  padding: 4px;
+  background: var(--sunken);
+  border-radius: var(--r-pill);
+}
+
+.ed-seg button {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--f-text);
+  font-size: var(--t-body-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ed-seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+.ed-tray {
+  grid-area: tray;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 3px;
+  height: 84px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 9px 12px;
+  background: var(--raised);
+  border-radius: var(--r-md);
+}
+
+@media (min-width: 900px) {
+  .ed-tray {
+    height: 62px;
+  }
+}
+
+.ed-tray-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ed-tray-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: var(--t-body-sm);
+  line-height: 1.35;
+}
+
+.ed-tray-body input {
+  width: 100%;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--f-text);
+  font-size: var(--t-body-sm);
+}
+
+.ed-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.ed-flex-none {
+  flex: none;
+}
+
+.ed-t-ok {
+  color: var(--ok);
+}
+
+.ed-t-warn {
+  color: var(--warn);
+}
+
+.ed-t-alert {
+  color: var(--alert);
+}
+
+/* Buttons inside the tray: the reference's small size, so they fit its row. */
+.ed-tray .ed-small {
+  flex: none;
+  padding: 7px 14px;
+  font-size: var(--t-meta);
+}
+
+.ed-discard {
+  grid-area: discard;
+}
+
+.ed-publish {
+  grid-area: publish;
+  justify-self: end;
+}
+
+/* Fixed width, wide enough for "Publish 99 changes", so the label
+   changing to Publishing and Published never moves the bar. */
+.ed-publish > * {
+  min-width: 190px;
+}

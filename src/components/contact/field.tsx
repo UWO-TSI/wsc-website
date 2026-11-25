@@ -6,7 +6,7 @@ import type { ChangeEvent, FocusEvent, ReactNode } from 'react';
   Field. The component a borderless system has to get right.
 
   Each field is a --page well at --r-sm inside the --sunken form slab it
-  lives in, one tone step away from its container in both themes. No stroke.
+  lives in, one tone step away from its container. No stroke.
   Label sits above in .label, value in .body.
 
   A light fill on white cannot reach 3:1, and no borderless light theme can,

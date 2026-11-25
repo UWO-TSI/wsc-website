@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../client';
+import { useEditSnapshot } from '@/edit/edit-mode';
 import { classifyError } from '@/lib/error-utils';
 import type { QueryError, QueryResult } from '@/types/database';
 
@@ -27,6 +28,11 @@ interface QueryOptions {
 
 /**
  * Generic hook for Supabase SELECT queries with loading/error/data states.
+ *
+ * In edit mode the rows pass through the edit engine, which lays the list
+ * draft over them (added, changed, reordered and removed rows), so a page
+ * shows drafted rows wherever it would show published ones. After Publish
+ * the engine bumps `refresh` and every query loads again in place.
  */
 export function useSupabaseQuery<T>(
   table: string,
@@ -96,9 +102,17 @@ export function useSupabaseQuery<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [table, select, orderBy, ascending, thenBy, JSON.stringify(filters), enabled]);
 
+  const { engine, rev, refresh } = useEditSnapshot();
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, refresh]);
 
-  return { data, loading, error, refetch: fetchData };
+  const shown = useMemo(
+    () => (engine ? engine.rows(table, data) : data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [engine, rev, table, data]
+  );
+
+  return { data: shown, loading, error, refetch: fetchData };
 }

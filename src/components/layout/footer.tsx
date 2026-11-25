@@ -87,7 +87,7 @@ export default function Footer() {
                   Both social SVGs are hardcoded fill="#ffffff", so rendering
                   them as images put a white glyph on the Showroom ground and
                   they disappeared. Masked and filled with currentColor they
-                  inherit the link's own colour and flip with the theme.
+                  inherit the link's own colour, including on hover.
                 */}
                 <span
                   aria-hidden="true"

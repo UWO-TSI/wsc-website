@@ -10,7 +10,7 @@
 - **Affiliation**: Tethos (formerly TSI, Tech for Social Impact)
 
 **Pages**: Home, About, Executive Team, Events, Partners (Sponsors), Contact, Terms, Privacy Policy
-**Protected**: `/admin`, the content management dashboard. Google OAuth plus mandatory TOTP 2FA; invite-only, ten-month access. See `supabase/README.md`.
+**Protected**: `/admin`, the content management dashboard. Google OAuth plus mandatory TOTP 2FA; invite-only by Google email; access does not expire. See `supabase/README.md`.
 
 ---
 
@@ -20,16 +20,16 @@ The site is being rebuilt on **WSC Floor**, which lives in `design-system/`.
 
 | File | What |
 | ---- | ---- |
-| `design-system/floor.html` | The live visual reference. **Open it in a browser first.** Palette in both themes, type, corners, elevation, all twelve motion sequences running, a card per component. |
-| `design-system/README.md` | The five rules, colour, type, corners, elevation, layout, and the protocol for extending the system. |
+| `design-system/floor.html` | The live visual reference. **Open it in a browser first.** Palette, type, corners, elevation, all eleven motion sequences running, the signature texture, a card per component. |
+| `design-system/README.md` | The four rules, colour, type, corners, elevation, layout, alignment, the texture, and the protocol for extending the system. |
 | `design-system/tokens.css` | What the app consumes. Replaces the `@theme` block in `src/app/globals.css`. |
-| `design-system/motion.md` | The twelve named motion sequences with code. |
+| `design-system/motion.md` | The eleven named motion sequences with code, and the two loops. |
 | `design-system/components.md` | Component inventory, mapped to the files in `src/components/`. |
 | `design-system/adoption.md` | **Start here for code.** What the app already provides: token utilities, the primitives in `src/components/ui/`, how to run a sequence, and the data decisions taken during adoption. |
 
-**Never design a component freehand.** When something you need is not in the system: compose it from existing components, spend only existing tokens, reuse one of the twelve sequences, then add its card to `floor.html` in the same change. Do not invent a colour, a radius, a duration, or a one-off animation. Do not add a border to separate anything.
+**Never design a component freehand.** When something you need is not in the system: compose it from existing components, spend only existing tokens, reuse one of the eleven sequences, then add its card to `floor.html` in the same change. Do not invent a colour, a radius, a duration, or a one-off animation. Do not add a border to separate anything.
 
-Headline rules: no borders anywhere (the focus ring is the only outline), the accent flips with the theme (velvet in Showroom, gold in Afterhours), four type roles only, every title is Archivo all-caps, and motion arrives and stops.
+Headline rules: one theme (Showroom, white and velvet), no borders anywhere (the focus ring is the only outline), the accent is velvet, four type roles only, every title is Archivo all-caps, sections are full-width containers 2px apart, and motion arrives and stops.
 
 ---
 

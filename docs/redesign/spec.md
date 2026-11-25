@@ -133,7 +133,9 @@ the only region whose content changes), Settings page. Sizes and behaviour are i
 ### Lists
 - Executives, events, sponsors: every field inline, add through the Add tile, drag to reorder,
   hide with the chip, remove from the tray. A removed item stays in place with Will be removed until
-  Publish.
+  Publish. Events are not dragged: their date sets the order.
+- A new item without its name (an executive's name, an event's title, a partner's name, a
+  figure's label) blocks Publish with the matching Missing name line.
 - Executive title is built: role short label, comma, area ("VP, Marketing"); no area shows the role
   alone. Role and area are two selects. Area ends with "Add an area", which turns into a text input
   in place; a name that matches an existing area ignoring case is refused.

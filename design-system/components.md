@@ -14,6 +14,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Field | `contact/field.tsx` | none |
 | KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade |
 | SectionHead | `landing/about-section.tsx` | Line Mask Reveal |
+| CentredHead | `ui/centred-head.tsx` | Line Mask Reveal |
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |
 | Texture | `ui/texture.tsx` | Grain Shift (a loop) |
@@ -26,13 +27,15 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | AsyncState | `shared/async-state-wrapper.tsx` | none |
 | Skeleton | `ui/skeleton.tsx`, `ui/row-skeleton.tsx` | sweep |
 | RevealImage | `ui/reveal-image.tsx` | Clip Reveal |
-| CTABand | `landing/cta-section.tsx` | Slab Clip |
+| ClosingBand | `layout/closing-band.tsx` (was `landing/cta-section.tsx`) | Slab Clip |
 
 ## Nav
 
 One component, two modes, never two menus.
 
 **Desktop, 1024 and up.** A floating pill: glyph, wordmark, links inline, and a `--r-pill` `--accent` indicator that slides between items on `layoutId`. No hamburger.
+
+**The one action.** Apply to join sits in the pill as a primary `Button` at every width, phones included, after the links on desktop and before the hamburger on mobile. It reads `home.cta.button_label` and `home.cta.button_href` through `EditableButton`, the same keys as the hero, About and the closing band. Below 640 the wordmark gives way to it and the shark alone marks the home link (the link keeps its accessible name).
 
 **Mobile.** The same pill with the hamburger on the right. It expands downward into a panel: see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, and on a click outside. There is no drawer and no scrim.
 
@@ -52,6 +55,18 @@ On an `--inverse`, `--accent` or `--logo-ground` slab the primary takes the page
 Label is Instrument Sans 15px weight 500, sentence case, never wrapping. Padding 14px block, 24px inline, which clears 44px at every size. The label names the action and the confirmation echoes it: **Apply to join**, then **Application received**. A trailing arrow means the action leaves the page.
 
 One primary per section. No icon-only buttons on the marketing site.
+
+## CentredHead
+
+The head of a selling section: the hero's order, for every section head and closing band. Eyebrow, the Archivo title (one `site_content` key per visual line, Line Mask Reveal), at most three lines of copy, then the buttons as children in one centred row. Every string is read through the edit components, so in edit mode the head is a filled-in form. Reading content below it (long paragraphs, the event ledger) stays left-aligned.
+
+Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a section head, `subtitle` for a closing band), `id`, `as` (`h2` by default), `children`.
+
+## ClosingBand
+
+The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink. No eyebrow by default, since one over the title Join repeats it; `eyebrowKey` adds one.
+
+It is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
 
 ## Field
 

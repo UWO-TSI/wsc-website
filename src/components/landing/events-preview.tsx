@@ -1,12 +1,11 @@
 'use client';
 
-import RevealImage from '@/components/ui/reveal-image';
 import { format, parseISO, startOfDay } from 'date-fns';
 
 import type { Event, QueryError } from '@/types/database';
-import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
-import SectionHead from '@/components/ui/section-head';
+import CentredHead from '@/components/ui/centred-head';
+import { EditableButton, EditableImage, useEditMode } from '@/edit';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import { useReveal } from '@/lib/reveal';
@@ -41,28 +40,30 @@ function isUpcoming(date: string) {
 }
 
 export default function EventsPreview({ events, loading, error }: EventsPreviewProps) {
-  const ref = useReveal<HTMLElement>();
+  const ref = useReveal<HTMLDivElement>();
 
-  const { text, image } = useSiteContent();
+  const { text } = useSiteContent();
   const upcoming = events.filter((event) => event.published).slice(0, PREVIEW_COUNT);
 
   return (
-    <section ref={ref} className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
-      {/*
-        Asymmetric on purpose: the list carries the information and takes the
-        wider column, the photo is support and takes the narrower one. A 50/50
-        split would give the image equal billing with the calendar. Below the
-        lg breakpoint the image drops under the list rather than squeezing.
-      */}
-      <div className="mx-auto grid max-w-[1100px] grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-14">
-        <div className="flex flex-col gap-10">
-          <SectionHead
-            eyebrow={text('home.events.eyebrow')}
-            index="02"
-            id="events-heading"
-            title={[text('home.events.title_line1'), text('home.events.title_line2')].filter(Boolean)}
-          />
+    <section className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
+      <div className="mx-auto flex max-w-[1100px] flex-col gap-12">
+        <CentredHead
+          id="events-heading"
+          eyebrowKey="home.events.eyebrow"
+          titleKeys={['home.events.title_line1', 'home.events.title_line2']}
+        />
 
+        {/*
+          Asymmetric on purpose: the ledger carries the information and takes
+          the wider column, the photo is support and takes the narrower one.
+          The ledger is reading content, so it stays left-aligned under the
+          centred head. Below lg the photo drops under the list.
+        */}
+        <div
+          ref={ref}
+          className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-14"
+        >
           <AsyncStateWrapper
             loading={loading}
             error={error}
@@ -77,19 +78,22 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
             </div>
           </AsyncStateWrapper>
 
-          <div>
-            <Button href="/events" variant="secondary" arrow>
-              {text('home.events.link_label')}
-            </Button>
-          </div>
+          {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
+          <EditableImage
+            slot="home.events.image1"
+            sizes="(max-width: 1024px) 100vw, 420px"
+            className="aspect-[3/4] w-full rounded-md lg:sticky lg:top-28"
+          />
         </div>
 
-        {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
-        <RevealImage
-          {...image('home.events.image1')}
-          sizes="(max-width: 1024px) 100vw, 420px"
-          className="aspect-[3/4] w-full rounded-md lg:sticky lg:top-28"
-        />
+        <div className="flex justify-center">
+          <EditableButton
+            labelKey="home.events.link_label"
+            hrefKey="home.events.link_href"
+            variant="secondary"
+            arrow
+          />
+        </div>
       </div>
     </section>
   );
@@ -97,12 +101,14 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
 
 function EventRow({ event }: { event: Event }) {
   const open = isUpcoming(event.date);
+  /* Row Expand is off in edit mode, like every self-running motion. */
+  const { editing } = useEditMode();
   const formatted = format(parseISO(event.date), 'MMM d').toUpperCase();
 
   return (
     <div
       className={`flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-md px-4 py-4 transition-[background-color,box-shadow] duration-[var(--d-move)] ease-move ${
-        open ? 'hover:bg-raised hover:shadow-2' : ''
+        open && !editing ? 'hover:bg-raised hover:shadow-2' : ''
       }`}
     >
       <span className="meta w-14 shrink-0">{formatted}</span>

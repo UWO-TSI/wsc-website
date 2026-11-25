@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import RevealImage from '@/components/ui/reveal-image';
 
 import type { Sponsor } from '@/types/database';
-import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
-import SectionHead from '@/components/ui/section-head';
+import CentredHead from '@/components/ui/centred-head';
 import Skeleton from '@/components/ui/skeleton';
+import { EditableButton, useEditMode } from '@/edit';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { useSiteContent } from '@/providers/site-content-provider';
 
 /*
   Partners marquee: sequence 7, Marquee Drift. The one ambient loop in the
@@ -39,7 +38,8 @@ import { useSiteContent } from '@/providers/site-content-provider';
   The logos themselves sit directly on it with no tile behind them.
 
   Pauses on hover, on focus-within, and on visibilitychange. Under reduced
-  motion the loop stops and the track reflows to a static wrapped row.
+  motion the loop stops and the track reflows to a static wrapped row. In
+  edit mode it is off too: one copy of the logos as a static wrapped grid.
 */
 
 /** Pixels per second. Slow enough to read a mark as it passes. */
@@ -56,7 +56,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
   const [copies, setCopies] = useState(2);
   const [duration, setDuration] = useState(48);
   const [hidden, setHidden] = useState(false);
-  const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   const active = sponsors.filter((sponsor) => sponsor.active);
 
@@ -91,7 +91,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     observer.observe(viewport);
     observer.observe(group);
     return () => observer.disconnect();
-  }, [active.length]);
+  }, [active.length, editing]);
 
   /*
     Only bail once we know there is nothing to show. Returning null while the
@@ -103,13 +103,12 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
   if (!loading && active.length === 0) return null;
 
   return (
-    <Slab tone="logo" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
-      <div className="flex flex-col gap-8">
-        <SectionHead
-          eyebrow={text('home.partners.eyebrow')}
-          index="03"
+    <Slab tone="logo" aria-labelledby="partners-heading">
+      <div className="flex flex-col gap-10">
+        <CentredHead
           id="partners-heading"
-          title={[text('home.partners.title_line1')]}
+          eyebrowKey="home.partners.eyebrow"
+          titleKeys={['home.partners.title_line1']}
         />
 
         {loading ? (
@@ -119,6 +118,12 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                 <Skeleton key={i} index={i} className="h-12 w-36 rounded-md sm:h-14 sm:w-44" />
               ))}
             </div>
+          </div>
+        ) : editing ? (
+          <div className="flex flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8">
+            {active.map((sponsor) => (
+              <SponsorMark key={sponsor.id} sponsor={sponsor} still />
+            ))}
           </div>
         ) : (
           /* No role and no label: the section is already labelled by its
@@ -142,42 +147,52 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                   className="mq-group"
                   aria-hidden={copy > 0}
                 >
-                  {active.map((sponsor) => {
-                    const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
-
-                    return (
-                      <div key={`${copy}-${sponsor.id}`} className="mq-item h-12 w-36 sm:h-14 sm:w-44">
-                        {logoUrl ? (
-                          <RevealImage
-                            src={logoUrl}
-                            alt={sponsor.name}
-                            sizes="176px"
-                            className="h-full w-full"
-                            fit="contain"
-                            sequence="fade"
-                          />
-                        ) : (
-                          /* Never redraw a sponsor's mark. With no file, their
-                             name set in the display face stands in for it. */
-                          <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
-                            {sponsor.name}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {active.map((sponsor) => (
+                    <SponsorMark key={`${copy}-${sponsor.id}`} sponsor={sponsor} />
+                  ))}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div>
-          <Button href="/sponsors" variant="tertiary" arrow>
-            {text('home.partners.link_label')}
-          </Button>
+        <div className="flex justify-center">
+          <EditableButton
+            labelKey="home.partners.link_label"
+            hrefKey="home.partners.link_href"
+            variant="tertiary"
+            arrow
+          />
         </div>
       </div>
     </Slab>
+  );
+}
+
+/* `still` drops the hover scale, for the static grid in edit mode. */
+function SponsorMark({ sponsor, still = false }: { sponsor: Sponsor; still?: boolean }) {
+  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
+
+  return (
+    <div
+      className={`${still ? 'flex flex-none items-center justify-center' : 'mq-item'} h-12 w-36 sm:h-14 sm:w-44`}
+    >
+      {logoUrl ? (
+        <RevealImage
+          src={logoUrl}
+          alt={sponsor.name}
+          sizes="176px"
+          className="h-full w-full"
+          fit="contain"
+          sequence="fade"
+        />
+      ) : (
+        /* Never redraw a sponsor's mark. With no file, their name set in the
+           display face stands in for it. */
+        <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
+          {sponsor.name}
+        </span>
+      )}
+    </div>
   );
 }

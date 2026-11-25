@@ -79,11 +79,12 @@ velvet or velvet-black container. Port its code
 - The second action is See events.
 - Home order: nav; centred hero (eyebrow, headline, subtitle, Apply to join and See events); the
   three counted figures from `site_stats`; partner logos on `--logo-ground`; About; events preview;
-  closing band (velvet, sweep ribbon) that repeats the headline next to Apply to join.
+  closing band (velvet, sweep ribbon) with the title Join and two actions: Apply to join for
+  students, and Get in touch for businesses.
 - Event rows show a Register button when the event has a registration link (new column, section 4).
   Past events show no button.
-- Every page ends with the closing band. Partners ends with "Become a partner", which opens the
-  contact form.
+- Every page ends with the closing band. On Partners the band's business action is "Become a
+  partner", which opens the contact form; Apply to join stays beside it.
 - Copy stays in `site_content`. New strings are new keys with their limits.
 
 ## 3. Edit mode

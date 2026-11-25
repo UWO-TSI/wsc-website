@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useEditMode } from '@/edit/edit-mode';
 import { MAGNET_RANGE, MAGNET_RANGE_Y, MAGNET_PULL_TAU, MAGNET_RELEASE_TAU } from '@/lib/motion';
 
 /**
@@ -24,10 +25,12 @@ import { MAGNET_RANGE, MAGNET_RANGE_Y, MAGNET_PULL_TAU, MAGNET_RELEASE_TAU } fro
  */
 export function useMagnetic<T extends HTMLElement>(enabled = true) {
   const ref = useRef<T>(null);
+  const { editing } = useEditMode();
+  const active = enabled && !editing;
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || !enabled) return;
+    if (!el || !active) return;
 
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
     const still = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -108,7 +111,7 @@ export function useMagnetic<T extends HTMLElement>(enabled = true) {
       cancelAnimationFrame(frame);
       el.style.translate = '';
     };
-  }, [enabled]);
+  }, [active]);
 
   return ref;
 }

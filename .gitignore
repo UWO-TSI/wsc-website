@@ -12,7 +12,12 @@ supabase/scripts
 
 # Misc files
 _reference/
-docs/
+docs/*
+!docs/CLAUDE-reference.md
+!docs/redesign/
+docs/redesign/*
+!docs/redesign/spec.md
+!docs/redesign/reference.html
 
 # dependencies
 /node_modules

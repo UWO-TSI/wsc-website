@@ -1,0 +1,1686 @@
+<!-- WSC redesign reference: the approved spec page with a working edit-mode demo.
+     Open it in a browser. docs/redesign/spec.md is the written spec; plan.md is the build plan. -->
+<title>WSC Edit Mode</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- writing-lint: private -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Geist+Mono:wght@400..600&family=Instrument+Sans:wght@400..700&display=swap">
+<style>
+  /* Layout: WSC Floor page. A stack of slabs on the page ground, hero and some
+     sections bare. Every value is copied from design-system/tokens.css, except
+     --inverse-tile, which this spec proposes adding. */
+  :root {
+    --page: #ffffff; --raised: #f6f6f7; --sunken: #ececed; --inverse: #150920;
+    --accent: #3a1a57; --accent-deep: #23102f; --accent-ink: #3a1a57; --accent-veil: rgba(58, 26, 87, 0.09);
+    --ink: #16101c; --ink-muted: #55505e; --ink-faint: #8a8492;
+    --on-inverse: #f1ecf6; --on-accent: #f4f0f8;
+    --ok: #1a6b47; --warn: #8a5a00; --alert: #a8241a; --focus: #3a1a57;
+    --sh-1: 0 1px 2px rgba(20, 16, 26, 0.05), 0 5px 14px -8px rgba(20, 16, 26, 0.10);
+    --sh-2: 0 2px 4px rgba(20, 16, 26, 0.06), 0 12px 26px -12px rgba(20, 16, 26, 0.16);
+    --sh-3: 0 4px 8px rgba(20, 16, 26, 0.07), 0 28px 56px -22px rgba(20, 16, 26, 0.24);
+    --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-pill: 999px; --r-disc: 50%;
+    --d-tap: 90ms; --d-hover: 180ms; --d-move: 320ms; --d-arrive: 620ms; --d-seq: 1100ms;
+    --e-enter: cubic-bezier(0.16, 1, 0.3, 1); --e-exit: cubic-bezier(0.5, 0, 0.9, 0.2);
+    --e-move: cubic-bezier(0.65, 0, 0.35, 1); --e-snap: cubic-bezier(0.22, 1.2, 0.36, 1);
+    --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-text: "Instrument Sans", system-ui, -apple-system, sans-serif;
+    --f-data: "Geist Mono", ui-monospace, Menlo, monospace;
+    --gut: 16px;
+    /* proposed: the tile inside an inverse slab */
+    --inverse-tile: color-mix(in srgb, var(--on-inverse) 7%, transparent);
+  }
+  @media (min-width: 700px) { :root { --gut: 40px; } }
+  /* One theme: Showroom, white and velvet. No dark palette is defined, and
+     color-scheme stays light so form controls and scrollbars match. */
+  :root {
+    color-scheme: light;
+    /* proposed: the signature texture. Grain is grey noise blended over the
+       ground; waves are hairlines in the ground's own text colour. No gradients. */
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --logo-ground: #0a0a09; --on-logo-ground: #f7f4ee;
+    --grain-strength: 0.32;
+    --wave-strength: 0.3;
+  }
+
+  /* Signature texture: flat velvet, grain, wave lines. */
+  .textured { position: relative; isolation: isolate; overflow: hidden; }
+  .textured::before { content: ""; position: absolute; inset: 0; background-image: var(--grain); background-size: 180px 180px; mix-blend-mode: overlay; opacity: var(--grain-strength); pointer-events: none; z-index: -1; }
+  .textured > svg.waves { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; color: var(--on-inverse); pointer-events: none; }
+  .g-velvet { background: var(--accent); color: var(--on-accent); }
+  .g-black { background: var(--inverse); color: var(--on-inverse); }
+  .grounds { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 760px) { .grounds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .ground { border-radius: var(--r-lg); min-height: 210px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; box-shadow: var(--sh-2); }
+  .ground .label { color: inherit; opacity: 0.8; }
+  .ground .title-sm { color: inherit; }
+  .hero-band { border-radius: var(--r-xl); padding: 64px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: var(--sh-2); }
+  .hero-band .label, .hero-band .sub { color: color-mix(in srgb, currentColor 75%, transparent); }
+
+  /* page previews */
+  .pv { background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-2); overflow: hidden; }
+  .pv-hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 56px 18px 36px; }
+  .pv-hero .title-hero { font-size: clamp(2.4rem, 8vw, 5.6rem); }
+  .pv-hero .subtitle { max-width: 30rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: 640px; margin: 0 auto; padding: 8px 18px 36px; text-align: center; }
+  .stat .n { font-family: var(--f-data); font-size: clamp(32px, 6vw, 56px); line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .stat .n span { color: var(--accent-ink); }
+  .m-inv.lit-velvet { background: radial-gradient(130% 150% at 14% 8%, var(--accent) 0%, var(--accent) 40%, var(--inverse) 108%); color: var(--on-accent); }
+  .slab.inv.lit-black { background: radial-gradient(120% 140% at 88% 92%, var(--accent) 0%, var(--inverse) 58%, var(--inverse) 100%); }
+  .logos { background: var(--logo-ground); margin: 0 14px; border-radius: var(--r-lg); padding: 22px; display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: center; align-items: center; }
+  .logos .lg { height: 14px; width: 96px; border-radius: var(--r-xs); background: color-mix(in srgb, var(--on-logo-ground) 30%, transparent); }
+  .logos .label { width: 100%; text-align: center; color: color-mix(in srgb, var(--on-logo-ground) 70%, transparent); }
+  .pv-sec { padding: 44px 18px; display: flex; flex-direction: column; gap: 18px; }
+  .pv-head { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .pv-head .label { color: var(--accent-ink); }
+  .ledger { display: flex; flex-direction: column; gap: 4px; background: var(--raised); border-radius: var(--r-lg); padding: 8px; max-width: 760px; width: 100%; margin: 0 auto; }
+  .lrow { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: var(--r-md); }
+  .lrow .ix { font-family: var(--f-data); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-faint); }
+  .lrow .nm { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; font-size: 15px; }
+  .lrow .rt { display: flex; gap: 10px; align-items: center; }
+  @media (max-width: 560px) { .lrow .rt .meta { display: none; } }
+  .pv-band { margin: 0 14px 14px; border-radius: var(--r-lg); padding: 64px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .pv-band .label, .pv-band .sub { color: color-mix(in srgb, currentColor 75%, transparent); }
+  .minis { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+  @media (min-width: 860px) { .minis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .mini { padding: 26px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .mini .pv-head .title { font-size: 26px; }
+  .mini-band { border-radius: var(--r-md); padding: 26px 14px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .mini-band .title-sm { color: inherit; }
+  .discs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .discs span { aspect-ratio: 1; border-radius: var(--r-disc); background: var(--sunken); }
+  .caption { text-align: center; }
+
+  /* Production texture: lit velvet. A soft light falls across the container, mostly
+     its own colour with the other velvet at the far side. Billboard grain is
+     two noise scales together, fine and coarse, stronger than the base grain. */
+  :root {
+    --grain-coarse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.42' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
+  }
+  .lit-velvet { background: radial-gradient(130% 150% at 14% 8%, var(--accent) 0%, var(--accent) 40%, var(--inverse) 108%); color: var(--on-accent); }
+  .lit-black { background: radial-gradient(120% 140% at 88% 92%, var(--accent) 0%, var(--inverse) 58%, var(--inverse) 100%); color: var(--on-inverse); }
+  .billboard::before { background-image: var(--grain), var(--grain-coarse); background-size: 180px 180px, 420px 420px; opacity: 0.8; }
+  /* Where the light falls, per ground. The gradient and the dot matrix both read
+     the same point, so the texture brightens where the light falls. */
+  .lit-velvet { --lx: 14%; --ly: 8%; }
+  .lit-black { --lx: 88%; --ly: 92%; }
+  /* Dot matrix: a regular grid of 1px dots in the ground's text colour,
+     brightest under the light, like an LED billboard. */
+  /* One unit for every mark in the texture: a dot is --tex-dot across, a
+     ribbon line is --tex-dot thick, and both repeat every --tex-pitch. */
+  :root { --tex-dot: 1.6px; --tex-pitch: 7px; --dot-strength: 0.16; }
+  .dots::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background-image: radial-gradient(circle, currentColor calc(var(--tex-dot) / 2), transparent calc(var(--tex-dot) / 2 + 0.5px));
+    background-size: var(--tex-pitch) var(--tex-pitch); opacity: var(--dot-strength);
+    -webkit-mask-image: radial-gradient(120% 110% at var(--lx) var(--ly), #000 0%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.12) 100%);
+    mask-image: radial-gradient(120% 110% at var(--lx) var(--ly), #000 0%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.12) 100%);
+  }
+  .dotted-ribbon svg.waves .rib { stroke-dasharray: 0 var(--tex-pitch); }
+  .alive::before { animation: grain-shift 0.9s steps(6) infinite; }
+  @keyframes grain-shift {
+    0% { background-position: 0 0, 0 0; }
+    17% { background-position: -47px 23px, 61px -38px; }
+    33% { background-position: 31px -52px, -83px 17px; }
+    50% { background-position: -12px 64px, 29px 71px; }
+    67% { background-position: 58px 9px, -44px -66px; }
+    83% { background-position: -66px -31px, 92px 12px; }
+    100% { background-position: 0 0, 0 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .alive::before { animation: none; } }
+  .lab-ctl { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .lab-ctl .seg button[aria-pressed="true"] { background: var(--accent); }
+  .lab { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 0 !important; border-radius: 0 !important; background: var(--page); }
+  @media (min-width: 760px) { .lab { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .lab .shape { border-radius: var(--r-xl); }
+  .lab .band { grid-column: 1 / -1; border-radius: var(--r-xl); padding: 72px max(var(--gut), env(safe-area-inset-left, 0px)); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .lab .band .label, .lab .band .sub { color: color-mix(in srgb, currentColor 75%, transparent); }
+
+  /* Full-width containers: a section spans the viewport with no side gap and
+     keeps Floor's corner step for its size: --r-xl at full width, --r-lg and
+     --r-md inside the smaller page previews. Containers that meet sit 2px apart. */
+  .bleed {
+    margin-left: calc(-1 * max(var(--gut), env(safe-area-inset-left, 0px)));
+    margin-right: calc(-1 * max(var(--gut), env(safe-area-inset-right, 0px)));
+    padding-left: max(var(--gut), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--gut), env(safe-area-inset-right, 0px));
+    border-radius: var(--r-xl) !important; box-shadow: none !important;
+  }
+  .grounds.bleed { gap: 2px; padding: 0 !important; border-radius: 0 !important; }
+  .shapes { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 0 !important; background: var(--page); border-radius: 0 !important; }
+  .shape { border-radius: var(--r-xl); }
+  @media (min-width: 760px) { .shapes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .shape { min-height: 300px; padding: 26px max(var(--gut), env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; justify-content: flex-start; gap: 6px; }
+  .shape.wide { grid-column: 1 / -1; min-height: 340px; }
+  .shape .label { color: color-mix(in srgb, currentColor 75%, transparent); }
+  .shape .title-sm { color: inherit; }
+  .grounds.bleed .ground { border-radius: var(--r-xl); box-shadow: none; padding: 32px max(var(--gut), env(safe-area-inset-left, 0px)); }
+  .logos { margin: 0; border-radius: var(--r-lg); }
+  .ev-band { background: var(--raised); border-radius: var(--r-lg); margin-top: 2px; }
+  .ledger { background: transparent; padding: 0; border-radius: 0; }
+  .pv-band { margin: 2px 0 0; border-radius: var(--r-lg); }
+  .mini { padding-bottom: 0; }
+  .mini .logos { margin: 0 -16px; }
+  .mini-band { margin: auto -16px 0; border-radius: var(--r-md); padding-block: 30px; }
+  .site { padding: 0; gap: 2px; }
+  @media (min-width: 700px) { .site { padding: 0; } }
+  .m-slab, .m-inv { border-radius: var(--r-lg); box-shadow: none; }
+  .m-bare { padding: 52px 20px 44px; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: var(--f-text); font-size: 16px; line-height: 1.6;
+    padding-left: max(var(--gut), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--gut), env(safe-area-inset-right, 0px));
+    padding-block: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  p { margin: 0; }
+
+  .title-hero, .title, .title-sm { font-family: var(--f-display); text-transform: uppercase; margin: 0; text-wrap: balance; }
+  .title-hero { font-weight: 900; font-size: clamp(2.6rem, 11.5vw, 9rem); line-height: 0.84; letter-spacing: -0.02em; }
+  .title { font-weight: 900; font-size: clamp(1.75rem, 5vw, 3.25rem); line-height: 0.92; letter-spacing: -0.015em; }
+  .title-sm { font-weight: 800; font-size: 19px; line-height: 1.1; letter-spacing: 0.005em; }
+  .subtitle { font-size: 19px; line-height: 1.4; color: var(--ink-muted); max-width: 34rem; }
+  .body { font-size: 16px; line-height: 1.6; }
+  .body-sm { font-size: 14px; line-height: 1.5; color: var(--ink-muted); }
+  .label { font-family: var(--f-data); font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-muted); }
+  .meta { font-family: var(--f-data); font-size: 13px; letter-spacing: 0.02em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .measure { max-width: 62ch; }
+  b { font-weight: 600; }
+  code { font-family: var(--f-data); font-size: 0.86em; background: var(--accent-veil); color: var(--accent-ink); padding: 1px 5px; border-radius: var(--r-xs); overflow-wrap: anywhere; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 18px 0; }
+  .mark { font-family: var(--f-display); font-weight: 900; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .stack { display: flex; flex-direction: column; gap: 24px; padding-block: 0 48px; }
+  .slab { background: var(--raised); border-radius: var(--r-lg); padding: 28px 20px; box-shadow: var(--sh-1); min-width: 0; }
+  @media (min-width: 700px) { .slab { border-radius: var(--r-xl); padding: 44px 40px; } }
+  .slab.sunk { background: var(--sunken); box-shadow: none; }
+  .slab.inv { background: var(--inverse); color: var(--on-inverse); box-shadow: var(--sh-2); }
+  .slab.inv .label, .slab.inv .body-sm { color: color-mix(in srgb, var(--on-inverse) 72%, transparent); }
+  .slab.inv code { background: color-mix(in srgb, var(--on-inverse) 12%, transparent); color: var(--on-inverse); }
+  .slab.inv .sechead .label { color: color-mix(in srgb, var(--on-inverse) 72%, transparent); }
+  .bare { padding-block: 20px; min-width: 0; }
+  .sechead { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+  .sechead .label { color: var(--accent-ink); }
+
+  .hero { padding-block: clamp(56px, 10vh, 120px) 24px; display: flex; flex-direction: column; gap: 22px; }
+  .ln { display: block; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip-s { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-family: var(--f-data); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; background: var(--page); color: var(--ink-muted); border: 0; border-radius: var(--r-pill); padding: 8px 13px; box-shadow: var(--sh-1); white-space: nowrap; line-height: 1; }
+  .chip-s .d { width: 6px; height: 6px; border-radius: var(--r-disc); background: var(--ink-faint); flex: none; }
+  .c-ok { color: var(--ok); } .c-ok .d { background: var(--ok); }
+  .c-wn { color: var(--warn); } .c-wn .d { background: var(--warn); }
+  .c-al { color: var(--alert); } .c-al .d { background: var(--alert); }
+
+  .btn { font-family: var(--f-text); font-size: 15px; font-weight: 500; border: 0; border-radius: var(--r-pill); padding: 14px 24px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; text-decoration: none; transition: background-color var(--d-hover) var(--e-enter), transform var(--d-move) var(--e-enter); }
+  .btn:active { transform: scale(0.97); transition-duration: var(--d-tap); }
+  .btn.sm { padding: 10px 18px; font-size: 14px; }
+  .b1 { background: var(--accent); color: var(--on-accent); box-shadow: var(--sh-2); }
+  .b1:hover { background: var(--accent-deep); box-shadow: var(--sh-3); }
+  .b2 { background: var(--page); color: var(--ink); box-shadow: var(--sh-1); }
+  .b2:hover { background: var(--raised); }
+  .b3 { background: transparent; color: var(--accent-ink); }
+  .b3:hover { background: var(--accent-veil); }
+  .btn:disabled, .btn.off { background: var(--sunken); color: var(--ink-faint); box-shadow: none; cursor: not-allowed; transform: none; }
+  .btn.danger { color: var(--alert); }
+
+  /* purpose */
+  .defs { display: grid; grid-template-columns: 1fr; gap: 18px 32px; }
+  @media (min-width: 760px) { .defs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .def { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .problem { margin-top: 28px; background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-1); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* the rule */
+  .rule-line { font-family: var(--f-display); font-weight: 900; text-transform: uppercase; font-size: clamp(1.5rem, 4.4vw, 2.75rem); line-height: 0.95; letter-spacing: -0.01em; margin: 0 0 22px; text-wrap: balance; }
+  .moves { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 22px; }
+  @media (min-width: 760px) { .moves { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .mv { background: var(--inverse-tile); border-radius: var(--r-md); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .mv .label { color: color-mix(in srgb, var(--on-inverse) 72%, transparent); }
+  .mv p { font-size: 14px; line-height: 1.5; }
+
+  /* flow */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  .step { background: var(--raised); border-radius: var(--r-lg); box-shadow: var(--sh-1); padding: 20px 18px; display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+  .step .no { font-family: var(--f-display); font-weight: 900; font-size: 26px; line-height: 1; color: var(--accent-ink); }
+  .step .hd { font-family: var(--f-display); font-weight: 900; text-transform: uppercase; font-size: 13px; letter-spacing: 0.03em; }
+  .step p { font-size: 14px; line-height: 1.5; color: var(--ink-muted); }
+
+  /* tables, borderless: rows are tone steps separated by a 4px gap */
+  .tbl-wrap { overflow-x: auto; }
+  .tbl { display: grid; gap: 4px; min-width: 640px; }
+  .tr { display: grid; gap: 16px; padding: 12px 14px; border-radius: var(--r-md); background: var(--page); align-items: start; }
+  .slab.sunk .tr, .bare .tr { background: var(--raised); }
+  .tr.th { background: transparent !important; padding-block: 0 4px; }
+  .tr > * { min-width: 0; font-size: 14px; line-height: 1.5; }
+  .tr .nmc { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; font-size: 13px; letter-spacing: 0.02em; }
+  .tr .mut { color: var(--ink-muted); }
+  .cols-comp { grid-template-columns: 1.05fr 1.6fr 1.5fr 1.2fr; }
+  .cols-motion { grid-template-columns: 1.1fr 1.6fr 1.3fr; }
+  .cols-state { grid-template-columns: 1fr 2fr 1.2fr; }
+  .cols-title { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-ref { grid-template-columns: 0.7fr 1.6fr 1fr 1.5fr; }
+  .tbl.narrow { min-width: 0; }
+
+  /* ═══ Demo: the site in edit mode ═══ */
+  .demo-ctl { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .frame { position: relative; overflow: clip; border-radius: var(--r-lg); background: var(--page); box-shadow: var(--sh-2); }
+  .m-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 14px 0; padding: 8px 8px 8px 18px; border-radius: var(--r-pill); background: var(--page); box-shadow: var(--sh-2); }
+  .m-nav .links { display: none; gap: 18px; }
+  @media (min-width: 760px) { .m-nav .links { display: flex; } }
+  .site { display: flex; flex-direction: column; gap: 24px; padding: 24px 18px 28px; }
+  @media (min-width: 700px) { .site { padding: 32px 28px 36px; } }
+  .m-slab { position: relative; background: var(--raised); border-radius: var(--r-lg); padding: 44px 20px 32px; box-shadow: var(--sh-1); }
+  @media (min-width: 700px) { .m-slab { padding: 52px 36px 40px; } }
+  .m-inv { position: relative; background: var(--inverse); color: var(--on-inverse); border-radius: var(--r-lg); padding: 52px 20px 44px; box-shadow: var(--sh-2); }
+  .m-inv .label { color: color-mix(in srgb, var(--on-inverse) 72%, transparent); }
+  .m-inv .sub { color: color-mix(in srgb, var(--on-inverse) 72%, transparent); }
+  .m-bare { position: relative; padding-top: 20px; }
+  .slot-chip { position: absolute; top: 14px; right: 14px; }
+
+  /* centered sales column: eyebrow, bold title, short copy, then the action */
+  .col { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; max-width: 62ch; margin: 0 auto; }
+  .col > * { width: 100%; }
+  .col .label.eyebrow { color: var(--accent-ink); }
+  .m-inv .col .label.eyebrow { color: color-mix(in srgb, var(--on-inverse) 72%, transparent); }
+  .cta-row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+
+  /* segmented switch, Fill Sweep indicator */
+  .seg { position: relative; display: inline-flex; background: var(--sunken); border-radius: var(--r-pill); padding: 4px; }
+  .seg button { position: relative; z-index: 1; border: 0; background: transparent; font-family: var(--f-text); font-size: 14px; font-weight: 500; color: var(--ink-muted); padding: 8px 16px; border-radius: var(--r-pill); cursor: pointer; transition: color var(--d-hover) var(--e-enter); }
+  .seg button[aria-pressed="true"] { color: var(--on-accent); font-weight: 600; }
+  .seg .ind { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; border-radius: var(--r-pill); background: var(--accent); transition: transform var(--d-move) var(--e-move), width var(--d-move) var(--e-move); }
+
+  /* Inline field. One field per value, a heading of two lines included. The
+     fill is the text colour at 9 percent, the same mix as the skeleton, so it
+     shows on white, raised and inverse grounds and inside buttons. Inner padding makes the page read as
+     a form that is already filled in. The box is sized to the longest allowed
+     value and never changes while typing. Hover changes only the cursor. */
+  .ed { display: block; position: relative; background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-sm); padding: 8px 12px; }
+  .ed:focus-within { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .m-inv .ed:focus-within { outline-color: var(--on-inverse); }
+  .ed-line { display: inline-block; max-width: 100%; width: auto !important; justify-self: center; }
+  .col > .ed-wrap { display: flex; justify-content: center; }
+  .ed-inbtn { display: inline-block; padding: 3px 8px; margin: -3px 0; border-radius: var(--r-xs); }
+  .btn-ed { cursor: text; }
+  .btn-ed:active { transform: none; }
+  .fld-in { font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; line-height: inherit; text-align: inherit; background: transparent; border: 0; padding: 0; margin: 0; width: 100%; display: block; resize: none; overflow: hidden; cursor: text; }
+  .fld-in:focus-visible { outline: none; }
+  .fld-in::placeholder { color: currentColor; opacity: 0.45; }
+  textarea.fld-in { white-space: pre-wrap; }
+  .measure-box { position: absolute; visibility: hidden; left: -9999px; top: 0; white-space: pre-wrap; overflow-wrap: break-word; }
+
+  /* photo slots */
+  button.disc, button.ph { cursor: pointer; }
+  .disc img, .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .pick { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); pointer-events: none; padding: 7px 10px; color: var(--accent-ink); }
+  .strip { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 26px; }
+  @media (min-width: 560px) { .strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .ph { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--r-md); background: var(--sunken); border: 0; padding: 0; width: 100%; display: block; }
+  .ph .pick { left: 10px; bottom: 10px; transform: none; }
+
+  /* roster */
+  .roster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 20px; margin-top: 28px; }
+  @media (min-width: 560px) { .roster { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (min-width: 1000px) { .roster { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+  .person { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; min-width: 0; }
+  .person > .ed, .person > .tl-fields { width: 100%; }
+  .disc-wrap { position: relative; width: 100%; }
+  .disc { position: relative; overflow: hidden; width: 100%; aspect-ratio: 1; border-radius: var(--r-disc); background: var(--sunken); border: 0; padding: 0; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: clamp(1.1rem, 4vw, 1.8rem); color: var(--ink-faint); }
+  .person .nm { font-family: var(--f-display); font-weight: 800; text-transform: uppercase; font-size: 15px; line-height: 1.15; letter-spacing: 0.005em; }
+  .tl-fields { display: flex; flex-direction: column; gap: 8px; }
+  .over-tl { position: absolute; top: 0; left: 0; }
+  .over-tr { position: absolute; top: 0; right: 0; }
+  .vis { cursor: pointer; padding: 7px 10px; min-width: 84px; }
+  .vis[aria-pressed="false"] { color: var(--ink-faint); }
+  .grip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; background: var(--page); color: var(--ink-muted); border-radius: var(--r-disc); cursor: grab; touch-action: none; box-shadow: var(--sh-1); transition: background-color var(--d-hover) var(--e-enter), color var(--d-hover) var(--e-enter); }
+  .grip:hover { background: var(--accent-veil); color: var(--accent-ink); }
+  .state-row { height: 30px; display: flex; justify-content: center; align-items: center; }
+  .state-chip { visibility: hidden; padding: 7px 10px; }
+  .state-chip.on { visibility: visible; }
+  .person.removing .nm, .person.removing .tl-fields { color: var(--ink-faint); }
+  .person.hid .nm { color: var(--ink-muted); }
+  .person.held { position: relative; z-index: 30; background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
+  .person.held .grip { cursor: grabbing; }
+
+  /* select as a field: value centred, chevron always shown */
+  .sel { padding: 6px 30px 6px 12px; }
+  .sel select { appearance: none; -webkit-appearance: none; font: inherit; color: inherit; letter-spacing: inherit; background: transparent; border: 0; padding: 0; margin: 0; width: 100%; cursor: pointer; text-align: center; text-align-last: center; }
+  .sel select:focus-visible { outline: none; }
+  .sel input { font: inherit; color: inherit; letter-spacing: inherit; background: transparent; border: 0; padding: 0; margin: 0; width: 100%; text-align: center; }
+  .sel input:focus-visible { outline: none; }
+  .sel .chev { position: absolute; right: 12px; top: 50%; width: 10px; height: 10px; margin-top: -5px; pointer-events: none; color: var(--accent-ink); }
+  @media (pointer: coarse) { .sel select, .sel input { font-size: 16px; } }
+
+  .add-tile .disc { cursor: pointer; color: var(--accent-ink); font-family: var(--f-data); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
+  .add-tile .disc:hover { background: var(--accent-veil); }
+  .add-tile .disc .plus { display: block; font-family: var(--f-display); font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+  .add-tile.appear { animation: clipin var(--d-arrive) var(--e-enter); }
+  @keyframes clipin { from { clip-path: inset(0 0 100% 0 round var(--r-md)); } to { clip-path: inset(0 0 0 0 round var(--r-md)); } }
+
+  /* edit bar: one fixed-size region. The tray is the only part whose content changes. */
+  .ebar { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); margin: 0 12px 12px; z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-3); padding: 12px 14px; }
+  @media (min-width: 900px) { .ebar { grid-template-columns: 150px minmax(0, 1fr) auto; align-items: center; border-radius: var(--r-xl); padding: 12px 14px 12px 20px; } }
+  .eb-status { display: flex; flex-direction: row; gap: 10px; align-items: baseline; }
+  @media (min-width: 900px) { .eb-status { flex-direction: column; gap: 2px; } }
+  .eb-status .label { color: var(--accent-ink); }
+  .tray { height: 62px; overflow: hidden; background: var(--raised); border-radius: var(--r-md); padding: 9px 12px; display: grid; grid-template-rows: auto 1fr; gap: 3px; min-width: 0; }
+  @media (max-width: 899px) { .tray { height: 84px; } }
+  .tray .label { color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tray-body { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; line-height: 1.35; }
+  .tray-body .grow { flex: 1; min-width: 0; }
+  .tray-body .t-err { color: var(--alert); }
+  .tray-body .t-ok { color: var(--ok); }
+  .tray-body .t-wn { color: var(--warn); }
+  .tray-body input { font-family: var(--f-text); font-size: 14px; color: var(--ink); background: var(--page); border: 0; border-radius: var(--r-sm); padding: 7px 10px; width: 100%; min-width: 0; }
+  .tray-body .btn { padding: 7px 14px; font-size: 13px; flex: none; }
+  .eb-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #pubBtn { min-width: 172px; }
+
+  .demo.preview .edit-only { display: none; }
+
+  /* settings mock */
+  .edlist { display: flex; flex-direction: column; gap: 8px; background: var(--page); border-radius: var(--r-lg); padding: 12px; box-shadow: var(--sh-1); }
+  .edrow { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--sunken); border-radius: var(--r-md); padding: 10px 12px; }
+  .edrow > * { min-width: 0; overflow-wrap: anywhere; }
+  .two { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 860px) { .two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .decide { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 760px) { .decide { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .opt { border-radius: var(--r-lg); padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .opt.rec { background: var(--page); box-shadow: var(--sh-2); }
+  .opt.alt { background: var(--raised); }
+  .opt ul, .list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6; color: var(--ink-muted); display: flex; flex-direction: column; gap: 6px; }
+  .list.ink { color: var(--ink); }
+  .order { counter-reset: o; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .order li { counter-increment: o; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; background: var(--raised); border-radius: var(--r-md); padding: 12px 14px; font-size: 14px; line-height: 1.5; }
+  .slab .order li { background: var(--page); }
+  .order li::before { content: counter(o); font-family: var(--f-display); font-weight: 900; font-size: 20px; line-height: 1.1; color: var(--accent-ink); }
+  .order li b { display: block; }
+  footer { padding-block: 10px 40px; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seg .ind, .btn, .grip { transition: none !important; }
+    .add-tile.appear { animation: none; }
+  }
+</style>
+
+<div class="top">
+  <span class="mark">WSC Floor &middot; Admin spec</span>
+</div>
+
+<main class="stack">
+
+  <section class="hero">
+    <span class="label">Approved redesign spec</span>
+    <h1 class="title-hero"><span class="ln">The site</span><span class="ln">is the</span><span class="ln">editor</span></h1>
+    <p class="subtitle">Signing in turns the public site into an editable copy of itself. Every word, photo and person is changed where it appears, in a field that already holds the current value.</p>
+    <div class="chips">
+      <span class="chip-s c-wn"><span class="d"></span>Approved</span>
+      <span class="chip-s"><span class="d"></span>Publish model: draft, then Publish</span>
+      <span class="chip-s"><span class="d"></span>No modals</span>
+      <span class="chip-s"><span class="d"></span>One theme: white and velvet</span>
+    </div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">Signature texture</span><h2 class="title">Velvet, grain, waves</h2></div>
+    <div class="hero-band lit-velvet textured billboard dots alive bleed">
+      <span class="label">Join</span>
+      <h3 class="title-hero" style="font-size:clamp(2.2rem,7vw,5rem)"><span class="ln">Learn to sell</span><span class="ln">before you graduate</span></h3>
+      <p class="body sub">Membership is sold through the Western USC store.</p>
+      <span class="btn b2">Apply to join <span aria-hidden="true">&#8594;</span></span>
+    </div>
+    <div class="grounds bleed" style="margin-top:24px">
+      <div class="ground lit-velvet textured billboard dots alive"><span class="label">--accent &middot; the selling band</span><span class="title-sm">Velvet</span></div>
+      <div class="ground lit-black textured billboard dots alive"><span class="label">--inverse &middot; the statement slab</span><span class="title-sm">Velvet black</span></div>
+    </div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">Band catalogue</span><h2 class="title">Five ribbon shapes</h2></div>
+    <div class="shapes bleed">
+      <div class="shape lit-velvet textured billboard dots alive" data-shape="sweep"><span class="title-sm">Sweep</span><span class="label">Bottom edge to right edge. Closing band.</span></div>
+      <div class="shape lit-black textured billboard dots alive" data-shape="rise"><span class="title-sm">Rise</span><span class="label">Left edge to top edge. Statement slab.</span></div>
+      <div class="shape lit-black textured billboard dots alive" data-shape="arc"><span class="title-sm">Arc</span><span class="label">One crest along the lower half. Stats band.</span></div>
+      <div class="shape lit-velvet textured billboard dots alive" data-shape="waist"><span class="title-sm">Waist</span><span class="label">Wide, narrow, wide. Page heads.</span></div>
+      <div class="shape wide lit-velvet textured billboard dots alive" data-shape="pair"><span class="title-sm">Pair</span><span class="label">Two narrower ribbons, one following the other. Wide, short bands.</span></div>
+    </div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">Production texture</span><h2 class="title">Lit velvet</h2><p class="body-sm measure">Every textured container on the site: a lit ground, the dot matrix, solid ribbon lines and moving grain. Grain is still only under reduced motion.</p></div>
+    <div class="lab bleed" id="lab">
+      <div class="shape lit-velvet textured billboard dots alive" data-shape="sweep"><span class="title-sm">Lit velvet</span><span class="label">Mostly velvet, velvet black at the far side</span></div>
+      <div class="shape lit-black textured billboard dots alive" data-shape="rise"><span class="title-sm">Lit velvet black</span><span class="label">Mostly velvet black, velvet where the light falls</span></div>
+      <div class="band lit-velvet textured billboard dots alive" data-shape="pair">
+        <span class="label">Join</span>
+        <h3 class="title"><span class="ln">Learn to sell</span><span class="ln">before you graduate</span></h3>
+        <p class="body sub">Membership is sold through the Western USC store.</p>
+        <span class="btn b2">Apply to join <span aria-hidden="true">&#8594;</span></span>
+      </div>
+      <div class="band lit-black textured billboard dots alive" data-shape="arc">
+        <span class="label">The floor</span>
+        <h3 class="title"><span class="ln">150+ members</span><span class="ln">10+ events a year</span></h3>
+        <span class="btn b2">See events <span aria-hidden="true">&#8594;</span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">On the pages</span><h2 class="title">Home</h2></div>
+    <div class="pv">
+      <div class="m-nav">
+        <span class="mark">WSC</span>
+        <span class="links meta"><span>About</span><span>Events</span><span>Team</span><span>Partners</span></span>
+        <span class="btn b1 sm">Apply to join</span>
+      </div>
+      <div class="pv-hero">
+        <span class="label" style="color:var(--accent-ink)">Western Sales Club</span>
+        <h3 class="title-hero"><span class="ln">Learn to sell</span><span class="ln">before you</span><span class="ln">graduate</span></h3>
+        <p class="subtitle">A student-run sales organization at Western University.</p>
+        <div class="cta-row"><span class="btn b1">Apply to join <span aria-hidden="true">&#8594;</span></span><span class="btn b2">See events</span></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="n">150<span>+</span></div><span class="label">Members</span></div>
+        <div class="stat"><div class="n">10<span>+</span></div><span class="label">Annual events</span></div>
+        <div class="stat"><div class="n">5<span>+</span></div><span class="label">Industry partners</span></div>
+      </div>
+      <div class="logos"><span class="label">Our partners</span><span class="lg"></span><span class="lg"></span><span class="lg"></span><span class="lg"></span><span class="lg"></span></div>
+      <div class="pv-sec ev-band">
+        <div class="pv-head"><span class="label">Events</span><h3 class="title">On the calendar</h3></div>
+        <div class="ledger">
+          <div class="lrow"><span class="ix">01</span><span class="nm">Cold call clinic</span><span class="rt"><span class="meta">Jan 22</span><span class="btn b1 sm">Register</span></span></div>
+          <div class="lrow"><span class="ix">02</span><span class="nm">Sales competition</span><span class="rt"><span class="meta">Feb 12</span><span class="btn b1 sm">Register</span></span></div>
+          <div class="lrow"><span class="ix">03</span><span class="nm">Recruiter panel</span><span class="rt"><span class="meta">Mar 05</span><span class="btn b1 sm">Register</span></span></div>
+        </div>
+        <div class="cta-row"><span class="btn b3">See all events <span aria-hidden="true">&#8594;</span></span></div>
+      </div>
+      <div class="pv-band lit-velvet textured billboard dots alive">
+        <span class="label">Join</span>
+        <h3 class="title"><span class="ln">Learn to sell</span><span class="ln">before you graduate</span></h3>
+        <p class="body sub">Membership is sold through the Western USC store.</p>
+        <span class="btn b2">Apply to join <span aria-hidden="true">&#8594;</span></span>
+      </div>
+    </div>
+    <p class="meta caption" style="margin-top:10px">Example copy and events. Register needs an optional registration link on each event.</p>
+
+    <div class="minis">
+      <div class="pv mini">
+        <div class="pv-head"><span class="label">Events</span><h3 class="title">Events</h3></div>
+        <div class="ledger">
+          <div class="lrow"><span class="ix">01</span><span class="nm">Cold call clinic</span><span class="rt"><span class="btn b1 sm">Register</span></span></div>
+          <div class="lrow"><span class="ix">02</span><span class="nm" style="color:var(--ink-muted)">Kickoff night</span><span class="rt"><span class="meta">Past</span></span></div>
+        </div>
+        <div class="mini-band lit-velvet textured billboard dots alive"><span class="title-sm">Learn to sell before you graduate</span><span class="btn b2 sm">Apply to join</span></div>
+      </div>
+      <div class="pv mini">
+        <div class="pv-head"><span class="label">Team</span><h3 class="title">Meet the execs</h3></div>
+        <div class="discs"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="mini-band lit-velvet textured billboard dots alive"><span class="title-sm">Learn to sell before you graduate</span><span class="btn b2 sm">Apply to join</span></div>
+      </div>
+      <div class="pv mini">
+        <div class="pv-head"><span class="label">Partners</span><h3 class="title">Who we work with</h3></div>
+        <div class="logos" style="margin:0"><span class="lg"></span><span class="lg"></span><span class="lg"></span><span class="lg"></span></div>
+        <div class="mini-band lit-velvet textured billboard dots alive"><span class="title-sm">Hire from the floor</span><span class="btn b2 sm">Become a partner</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label">Purpose</span><h2 class="title">Who edits, and what they need to see</h2></div>
+    <div class="defs">
+      <div class="def"><span class="label">Who</span><p class="body">The president and the VP Marketing. Neither is a developer. They edit a few times a month, often from a phone, usually right after an event or a change on the exec team.</p></div>
+      <div class="def"><span class="label">The job</span><p class="body">Keep the site current: add an event, replace a photo, change a heading, add or remove an executive, update a sponsor.</p></div>
+      <div class="def"><span class="label">What they must understand</span><p class="body">Which part of the site a change affects, what it will look like, and whether visitors can see it yet.</p></div>
+      <div class="def"><span class="label">Primary action</span><p class="body">Publish. Everything else on the screen is the site itself.</p></div>
+    </div>
+    <div class="problem">
+      <span class="label">The problem today</span>
+      <p class="body measure">The current portal is a separate set of forms. Fields are named by position, such as "Strip, left" and "Heading, line 2", so the editor has to work out which part of the site each field controls. The result is only visible after saving and opening the site in another tab.</p>
+    </div>
+  </section>
+
+  <section class="slab inv lit-black textured billboard dots alive bleed">
+    <div class="sechead"><span class="label">The rules for edit mode</span></div>
+    <p class="rule-line">Typing changes the text inside a field. It never changes the size of the field.</p>
+    <p class="body measure">Each field is sized to its longest allowed value at the current screen width: one-line fields by width, paragraphs and headings by height. The database already stores that limit for every string (<code>site_content.max_length</code>), so the size comes from the same numbers that stop over-long input.</p>
+    <p class="rule-line" style="margin-top:30px">The page reads as a form that is already filled in.</p>
+    <p class="body measure">Every text field on every page has a tinted fill and inner padding at rest, so you can see where it starts and ends without hovering. A heading of two lines is one field; Enter starts the second line. Because fields are only as wide as their longest value, neighbouring fields keep space between them. Every selector shows its chevron. Every photo shows Replace photo or Add photo, and clicking it opens the device's own file picker: Finder on a Mac, File Explorer on Windows, the photo library on a phone. Hover changes only the cursor.</p>
+    <div class="moves">
+      <div class="mv"><span class="label">Allowed move: reorder</span><p>You drag a person or event by its grip, with a mouse or a finger, or move it with the arrow keys. Neighbours slide to their new places on the move timing.</p></div>
+      <div class="mv"><span class="label">Allowed move: add</span><p>The new item takes the place of the Add tile, so nothing shifts. A fresh Add tile appears in the next cell.</p></div>
+      <div class="mv"><span class="label">Allowed move: publish</span><p>Removed items stay in place, marked, until you press Publish. Only then do they leave and the gap closes.</p></div>
+      <div class="mv"><span class="label">Allowed move: preview</span><p>Preview removes the fills and padding so you see the exact visitor layout. The section you were looking at stays at the same height on screen.</p></div>
+    </div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">The flow</span><h2 class="title">From sign-in to live</h2></div>
+    <div class="steps">
+      <div class="step"><span class="no">1</span><span class="hd">Sign in</span><p>At /admin: Google, then the six-digit code from the authenticator app. Same as today.</p></div>
+      <div class="step"><span class="no">2</span><span class="hd">The site opens</span><p>Home page, in edit mode, with the edit bar at the bottom. There is no dashboard.</p></div>
+      <div class="step"><span class="no">3</span><span class="hd">Type and pick</span><p>Every heading, paragraph, button label, photo and person is already a field. Change it where it is.</p></div>
+      <div class="step"><span class="no">4</span><span class="hd">Check it</span><p>Changed sections carry an Unpublished chip and the bar counts them. Switch to Preview to see the visitor layout.</p></div>
+      <div class="step"><span class="no">5</span><span class="hd">Publish</span><p>Publish writes every change at once. Discard drops them all.</p></div>
+    </div>
+  </section>
+
+  <section class="slab sunk">
+    <div class="sechead">
+      <span class="label">Working demo</span>
+      <h2 class="title">Try it</h2>
+      <p class="body-sm measure">Three home sections in edit mode, laid out in the centred sales direction from further down this page. Type in any field. Click a photo to choose one from your computer or phone. Drag a person by the grip at the top right of their photo. Example names and copy only; nothing is connected to the real site, and photos stay in your browser.</p>
+    </div>
+
+    <div class="demo-ctl">
+      <span class="meta">westernsalesclub.ca, signed in</span>
+      <div class="seg" role="group" aria-label="Edit or preview">
+        <span class="ind" id="segInd" aria-hidden="true"></span>
+        <button type="button" id="modeEdit" aria-pressed="true">Edit</button>
+        <button type="button" id="modePreview" aria-pressed="false">Preview</button>
+      </div>
+    </div>
+
+    <div class="frame demo" id="demo">
+      <div class="m-nav">
+        <span class="mark">WSC</span>
+        <span class="links meta"><span>About</span><span>Events</span><span>Team</span><span>Partners</span></span>
+        <span class="btn b1 sm" aria-hidden="true">Apply to join</span>
+      </div>
+
+      <div class="site" id="site">
+        <section class="m-slab" id="sec-about" aria-label="About section">
+          <span class="chip-s c-wn state-chip slot-chip edit-only" id="chip-about"><span class="d"></span>Unpublished</span>
+          <div class="col" id="aboutBody"></div>
+          <div id="aboutStrip"></div>
+        </section>
+
+        <section class="m-bare" id="sec-team" aria-label="Executive team">
+          <span class="chip-s c-wn state-chip slot-chip edit-only" id="chip-team"><span class="d"></span>Unpublished</span>
+          <div class="col" id="teamHead"></div>
+          <div class="roster" id="roster"></div>
+        </section>
+
+        <section class="m-inv lit-velvet textured billboard dots alive" id="sec-cta" aria-label="Join band">
+          <span class="chip-s c-wn state-chip slot-chip edit-only" id="chip-cta"><span class="d"></span>Unpublished</span>
+          <div class="col" id="ctaBody"></div>
+        </section>
+      </div>
+
+      <div class="ebar edit-only" id="ebar">
+        <div class="eb-status"><span class="label">Editing</span><span class="meta" id="cnt">No changes</span></div>
+        <div class="tray" id="tray" aria-live="polite"><span class="label" id="trayLabel"></span><div class="tray-body" id="trayBody"></div></div>
+        <div class="eb-acts">
+          <button class="btn b2 sm" type="button" id="discardBtn">Discard</button>
+          <button class="btn b1 sm" type="button" id="pubBtn">Publish</button>
+        </div>
+      </div>
+      <div class="sr" id="announce" aria-live="assertive"></div>
+    </div>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label">Components</span><h2 class="title">What edit mode is made of</h2><p class="body-sm measure">Every part is an existing Floor component or token. Each new one gets a card in <code>floor.html</code> in the same change, under a new card 16, Edit mode, beside card 15, Editor.</p></div>
+    <div class="tbl-wrap"><div class="tbl">
+      <div class="tr th cols-comp"><span class="label">Component</span><span class="label">What it does</span><span class="label">Built from</span><span class="label">Size rule</span></div>
+      <div class="tr cols-comp"><span class="nmc">Field</span><span>The shell every editable value sits in.</span><span class="mut">The text colour at 9 percent as a fill (the skeleton's mix), <code>--r-sm</code>, 8px by 12px padding. Focus ring on the shell, in the slab's text colour on loud slabs.</span><span class="mut">Set by what it holds, below. Never by what is typed.</span></div>
+      <div class="tr cols-comp"><span class="nmc">InlineText</span><span>One-line values: eyebrows, single-line headings, names of things.</span><span class="mut">An <code>input</code> inside a Field, inheriting the element's font, case and colour.</span><span class="mut">Width of the longest allowed value, capped at the column.</span></div>
+      <div class="tr cols-comp"><span class="nmc">InlineHeading</span><span>A heading of two lines as one field. Enter starts line 2; a third line is refused.</span><span class="mut">A two-row <code>textarea</code> in a Field. Line 1 and line 2 save to <code>title_line1</code> and <code>title_line2</code>.</span><span class="mut">Full column width, two lines tall. Each line keeps its own limit.</span></div>
+      <div class="tr cols-comp"><span class="nmc">InlineParagraph</span><span>Body copy, subtitles and descriptions.</span><span class="mut">A <code>textarea</code> in a Field. Enter is refused; paragraph breaks are separate keys.</span><span class="mut">Height of the maximum length at the current width, measured in the paragraph's own font.</span></div>
+      <div class="tr cols-comp"><span class="nmc">InlineLabel</span><span>The words on a button. Its link address shows in the tray.</span><span class="mut">Button, any variant, with a Field around the label only.</span><span class="mut">Width of the longest allowed label, so the button beside it never shifts.</span></div>
+      <div class="tr cols-comp"><span class="nmc">InlineSelect</span><span>Role and area on an executive, one field each. Area ends with "Add an area".</span><span class="mut">Native <code>select</code> in a Field, value centred, chevron always shown.</span><span class="mut">Full cell width.</span></div>
+      <div class="tr cols-comp"><span class="nmc">InlineNumber</span><span>The counted figures under the hero.</span><span class="mut">StatFigure with the number in a Field. Counter Roll is off in edit mode.</span><span class="mut">Width of the largest allowed value.</span></div>
+      <div class="tr cols-comp"><span class="nmc">PhotoSlot</span><span>Every photo and headshot shows Replace photo or Add photo. Clicking opens the device's file picker, and the chosen file replaces the photo in the same frame.</span><span class="mut">RevealImage and Avatar, a hidden <code>input type="file" accept="image/*"</code>, and the resolution check from today's uploader.</span><span class="mut">The frame keeps its aspect ratio. The crop is the frame.</span></div>
+      <div class="tr cols-comp"><span class="nmc">VisibilityChip</span><span>Shows Visible or Hidden on each item. Press it to switch.</span><span class="mut">Chip, as a toggle button with <code>aria-pressed</code>.</span><span class="mut">Width of the longer word.</span></div>
+      <div class="tr cols-comp"><span class="nmc">StateChip</span><span>Unpublished (warn) or Will be removed (alert).</span><span class="mut">Chip.</span><span class="mut">Its slot is always reserved, empty when unchanged.</span></div>
+      <div class="tr cols-comp"><span class="nmc">Grip</span><span>Drag handle for people, events and sponsors, by mouse or touch. Arrow keys move one step.</span><span class="mut">The grip from card 15, on a disc so it reads over a photo.</span><span class="mut">36px, overlaid on the item's corner.</span></div>
+      <div class="tr cols-comp"><span class="nmc">AddTile</span><span>The last cell of every grid or list. Adds an item in its place.</span><span class="mut">The empty photo-slot surface with a tertiary label.</span><span class="mut">Same size as an item.</span></div>
+      <div class="tr cols-comp"><span class="nmc">EditBar and Tray</span><span>Change count, Discard, Publish, and a tray for whatever has focus: field name, character count, link address, Remove, errors, confirmations.</span><span class="mut">Nav pill shape and <code>--sh-3</code>, Button, the save logic from card 15.</span><span class="mut">Fixed height. The tray is the only region whose content changes.</span></div>
+      <div class="tr cols-comp"><span class="nmc">Settings page</span><span>Admin accounts, roles, and the area list. Opened from the bar.</span><span class="mut">Editor list rows from card 15.</span><span class="mut">A separate page, because none of it appears on the public site.</span></div>
+    </div></div>
+    <p class="body-sm measure" style="margin-top:20px">There are no dialogs. Confirming Discard, removing a person and adding an area all happen in the tray. The three modals in today's dashboard, which use a raw <code>rgba(0,0,0,0.6)</code> scrim, are deleted with it.</p>
+  </section>
+
+  <section class="slab sunk">
+    <div class="sechead"><span class="label">Motion</span><h2 class="title">What moves in edit mode</h2><p class="body-sm measure">Three moves, each caused by the editor. Everything that moves by itself is off. No new sequence is added.</p></div>
+    <div class="tbl-wrap"><div class="tbl">
+      <div class="tr th cols-motion"><span class="label">Move</span><span class="label">When</span><span class="label">Sequence and timing</span></div>
+      <div class="tr cols-motion"><span class="nmc">Hover</span><span>Any field or photo.</span><span class="mut">No motion. Fields already show their fill, so hover changes only the cursor.</span></div>
+      <div class="tr cols-motion"><span class="nmc">Reorder</span><span>A grip is dragged or moved with the arrow keys.</span><span class="mut">Card 15 move row: held item <code>--sh-3</code>, neighbours <code>--d-move</code>, <code>--e-move</code>.</span></div>
+      <div class="tr cols-motion"><span class="nmc">New Add tile</span><span>After an item is added in the old tile's place.</span><span class="mut">Clip Reveal, <code>--d-arrive</code>, <code>--e-enter</code>.</span></div>
+      <div class="tr cols-motion"><span class="nmc">Removal</span><span>Only on Publish, for items marked Will be removed.</span><span class="mut">Leave on <code>--d-move</code>, <code>--e-exit</code>, then neighbours close the gap on <code>--e-move</code>.</span></div>
+    </div></div>
+    <div class="two" style="margin-top:22px">
+      <div><span class="label">Off in edit mode</span>
+        <ul class="list ink" style="margin-top:10px">
+          <li>Line Mask Reveal, Word Cascade, Slab Clip and Clip Reveal on scroll. Every section shows in its final state.</li>
+          <li>Counter Roll. Figures show their real value so they can be edited.</li>
+          <li>Row Expand on event rows. It changes padding on hover.</li>
+          <li>Magnetic Pull on buttons. A button you are typing into must not follow the pointer.</li>
+          <li>Marquee Drift. The partner strip shows as a static wrapped grid, the same as reduced motion.</li>
+          <li>The preloader curtain.</li>
+        </ul>
+      </div>
+      <div><span class="label">Kept</span>
+        <ul class="list ink" style="margin-top:10px">
+          <li>Button press scale, <code>--d-tap</code>, on buttons that are not being edited.</li>
+          <li>The Publish label changing in place: Publish 3 changes, then Publishing, then Published for two seconds.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead">
+      <span class="label">Selling the club</span>
+      <h2 class="title">What sales sites do with one action</h2>
+      <p class="body-sm measure">These six home pages exist to get one action from a visitor. The table lists each headline and its buttons in page order, read from the page HTML on 24 November 2026. I did not take screenshots, so it records structure and wording, and says nothing about their visual layout.</p>
+    </div>
+    <div class="tbl-wrap"><div class="tbl">
+      <div class="tr th cols-ref"><span class="label">Site</span><span class="label">Headline</span><span class="label">Primary button</span><span class="label">Where it repeats, and the proof after the hero</span></div>
+      <div class="tr cols-ref"><span class="nmc">Owner</span><span>The AI platform restaurants use to grow online discovery.</span><span>Get a free demo</span><span class="mut">Header, then twice in the closing section beside "See how it works". Proof: "Grow sales like these owners", then a 4.8 rating across 1,000+ reviews.</span></div>
+      <div class="tr cols-ref"><span class="nmc">Ramp</span><span>Time is money. Save both.</span><span>Get started for free</span><span class="mut">The closing section repeats the same headline and the same button. Proof: "Join 85,000 of the world's most ambitious companies".</span></div>
+      <div class="tr cols-ref"><span class="nmc">Gong</span><span>More wins, less work.</span><span>Book a demo</span><span class="mut">Header and hero, with "Explore the platform" as the second button. Proof: "Trusted by 5,000+ revenue teams".</span></div>
+      <div class="tr cols-ref"><span class="nmc">Close</span><span>The CRM that sells with you</span><span>Try Close free</span><span class="mut">Hero and closing section, which says "Sell like a much bigger team."</span></div>
+      <div class="tr cols-ref"><span class="nmc">Mercury</span><span>Radically different banking</span><span>Open account</span><span class="mut">Hero. Proof: "Loved by 450K+ of the most ambitious entrepreneurs".</span></div>
+      <div class="tr cols-ref"><span class="nmc">Apollo</span><span>Grow revenue with one connected GTM system</span><span>Sign up for free</span><span class="mut">Hero and a closing "Get started for free".</span></div>
+    </div></div>
+
+    <div class="two" style="margin-top:26px">
+      <div class="def"><span class="label">What they share</span>
+        <ul class="list ink">
+          <li>One action with one label. The same words appear in the header, the hero and the closing section.</li>
+          <li>The headline is a promise of three to eight words.</li>
+          <li>A number comes right after the hero: members, customers, rating.</li>
+          <li>A second button asks for less: "See how it works", "Explore the platform".</li>
+          <li>The page ends by restating the promise next to the same button.</li>
+          <li>Each section between hero and close supports one claim.</li>
+        </ul>
+      </div>
+      <div class="def"><span class="label">Applied to westernsalesclub.ca</span>
+        <ul class="list ink">
+          <li>The one action is <b>Apply to join</b>, already the hero button and the label of <code>home.cta.button_label</code>. It goes in the nav pill at every width, the hero, the About section and a closing band on every page.</li>
+          <li>The second action is <b>See events</b>, which asks only for a look.</li>
+          <li>Hero, section heads and the closing band are centred: eyebrow, bold Archivo title, at most three lines of copy, then the buttons. Long reading copy and the event ledger stay left-aligned.</li>
+          <li>The counted figures (<code>site_stats</code>) move to directly under the hero, then the partner logos as proof.</li>
+          <li>The closing band is a textured velvet band: centred title, the same Apply to join.</li>
+          <li>The Partners page ends with "Become a partner", which opens the contact form.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="def" style="margin-top:26px"><span class="label">Changes to Floor this needs, separate from edit mode</span>
+      <ul class="list ink measure">
+        <li>An alignment rule in the README: selling sections centred, reading sections left-aligned.</li>
+        <li>Layout: a slab spans the full viewport width with no side gap, and keeps its <code>--r-xl</code> corners. Where two slabs meet they sit 2px apart. The 24px inset gutter around slabs is removed; content inside keeps the gutter as padding.</li>
+        <li>The nav pill gets a primary button. <code>components.md</code> currently lists only glyph, wordmark, links and the indicator.</li>
+        <li>A new token, <code>--inverse-tile</code>, for tiles inside an inverse slab, as used in the rules section above.</li>
+        <li>The signature texture as tokens and one utility: <code>--grain</code>, <code>--grain-strength</code>, <code>--wave-strength</code> and a <code>textured</code> class for loud slabs. Velvet for selling bands, velvet black for statement slabs. One hairline ribbon in a corner, grain across the whole slab, no gradients.</li>
+        <li>Focus ring on inverse and accent slabs in the slab's text colour, since <code>--focus</code> is velvet and does not show on the velvet-black ground.</li>
+        <li>On an inverse slab the primary button uses the page fill, the same exception Floor already makes for accent slabs.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slab sunk">
+    <div class="sechead">
+      <span class="label">One theme</span>
+      <h2 class="title">White and velvet, everywhere</h2>
+      <p class="body-sm measure">Afterhours, the near-black and gold theme, is removed. Every visitor sees Showroom whatever their device is set to. The brand reads as one colour pair on every page and in every screenshot, and every component is designed and checked once.</p>
+    </div>
+    <div class="two">
+      <div class="def"><span class="label">Removed from the app</span>
+        <ul class="list ink">
+          <li>The dark palette blocks in <code>tokens.css</code> and <code>src/app/globals.css</code>.</li>
+          <li><code>theme-toggle.tsx</code>, <code>theme-provider.tsx</code>, <code>src/lib/theme.ts</code>, and the toggle in <code>nav.tsx</code> and <code>admin-dashboard.tsx</code>.</li>
+          <li>The blocking theme script in <code>layout.tsx</code>. It existed only to stop the wrong theme flashing on load.</li>
+          <li><code>color-scheme: light</code> is set on the root, so a phone in dark mode still draws light form controls and scrollbars.</li>
+        </ul>
+      </div>
+      <div class="def"><span class="label">Changed in Floor</span>
+        <ul class="list ink">
+          <li>Rule 2, "the accent flips with the theme", becomes "the accent is velvet". Rule 5, "both themes ship together", is removed.</li>
+          <li>Theme Wipe, sequence 11, is retired. Floor keeps eleven sequences.</li>
+          <li><code>--gold</code> stays as a fixed mark for sponsor tiers. <code>--logo-ground</code> stays near-black, because supplied logos are light artwork.</li>
+          <li><code>floor.html</code> loses its theme toggle and its Afterhours swatches. The project <code>CLAUDE.md</code> headline rules are updated to match.</li>
+          <li>The inverse band is velvet-black on every device.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label">Data changes</span><h2 class="title">Roles, areas, years and access</h2><p class="body-sm measure">Each is a new migration. Existing migrations are not edited. The project rule against touching <code>supabase/</code> is lifted for these three changes only.</p></div>
+
+    <span class="label">Executive titles are built, never typed</span>
+    <div class="tbl narrow" style="margin-top:10px">
+      <div class="tr th cols-title"><span class="label">Role</span><span class="label">Area</span><span class="label">Shows as</span></div>
+      <div class="tr cols-title"><span>President</span><span class="mut">none</span><span class="nmc">President</span></div>
+      <div class="tr cols-title"><span>Vice President</span><span>Marketing</span><span class="nmc">VP, Marketing</span></div>
+      <div class="tr cols-title"><span>Assistant Vice President</span><span>Projects</span><span class="nmc">AVP, Projects</span></div>
+      <div class="tr cols-title"><span class="mut">Typed "AVP projects"</span><span class="mut"></span><span class="mut">Not possible. There is no text field for a title.</span></div>
+    </div>
+
+    <div class="two" style="margin-top:28px">
+      <div class="def"><span class="label">1. Roles and areas</span>
+        <ul class="list ink">
+          <li><code>exec_groups</code> gets <code>short_label</code> (President, VP, AVP). Roles are added in Settings, rarely.</li>
+          <li>New table <code>exec_areas</code>: name, display order, unique ignoring case, so "projects" cannot be added beside "Projects".</li>
+          <li><code>executives.area_id</code>, nullable, delete restricted while anyone uses the area.</li>
+          <li>The title is computed when shown, short label plus comma plus area. It is never stored, so it cannot disagree with the role.</li>
+          <li>Backfill maps today's free-text titles to a role and area by hand, then drops <code>executives.title</code>.</li>
+        </ul>
+      </div>
+      <div class="def"><span class="label">2. Year of study</span>
+        <ul class="list ink">
+          <li>Drop <code>executives.year_of_study</code>.</li>
+          <li>Remove the field from <code>form-config.ts</code> and the "Year N" suffix in <code>executive-grid.tsx</code>.</li>
+        </ul>
+        <span class="label" style="margin-top:18px">3. Access never expires</span>
+        <ul class="list ink">
+          <li><code>is_admin()</code> stops checking <code>expires_at</code>. <code>claim_admin_invite()</code> stops setting it. The column is dropped.</li>
+          <li>Unclaimed invites still expire after 14 days. An unused invite is a way in for whoever holds that email.</li>
+          <li>Google sign-in, the authenticator code and <code>is_admin()</code> as the only admin check all stay.</li>
+          <li>A read-only function returns each admin's last sign-in time, so Settings shows who has stopped using their account.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:28px"><span class="label">Settings page, as it will look</span></div>
+    <div class="two" style="margin-top:10px">
+      <div class="edlist">
+        <span class="title-sm" style="padding:4px 4px 2px">Admin accounts</span>
+        <div class="edrow"><span class="body-sm" style="color:var(--ink)">president@example.ca</span><span class="meta">Signed in 2 days ago</span><button class="btn b3 sm danger" type="button">Remove</button></div>
+        <div class="edrow"><span class="body-sm" style="color:var(--ink)">vp.marketing@example.ca</span><span class="meta">Signed in today</span><button class="btn b3 sm danger" type="button">Remove</button></div>
+        <div class="edrow"><span class="body-sm" style="color:var(--ink)">owner@example.ca</span><span class="meta">Owner</span><span class="chip-s"><span class="d"></span>Owner</span></div>
+        <div class="edrow" style="grid-template-columns:minmax(0,1fr) auto"><span class="meta">Invite by Google email</span><button class="btn b1 sm" type="button">Send invite</button></div>
+      </div>
+      <div class="edlist">
+        <span class="title-sm" style="padding:4px 4px 2px">Areas</span>
+        <div class="edrow"><span class="body-sm" style="color:var(--ink)">Marketing</span><span class="meta">2 executives</span><button class="btn b3 sm" type="button">Rename</button></div>
+        <div class="edrow"><span class="body-sm" style="color:var(--ink)">Events</span><span class="meta">1 executive</span><button class="btn b3 sm" type="button">Rename</button></div>
+        <div class="edrow"><span class="body-sm" style="color:var(--ink)">Finance</span><span class="meta">Not used</span><button class="btn b3 sm danger" type="button">Delete</button></div>
+        <p class="body-sm" style="padding:4px">An area in use cannot be deleted. Renaming one renames it on every executive.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slab sunk">
+    <div class="sechead"><span class="label">Publish model</span><h2 class="title">When does a change go live?</h2></div>
+    <div class="decide">
+      <div class="opt rec">
+        <span class="chip-s c-ok" style="align-self:flex-start"><span class="d"></span>Chosen</span>
+        <span class="title-sm">Draft, then Publish</span>
+        <ul>
+          <li>Edits change the page in your own browser only. Publish writes all of them together.</li>
+          <li>You can work across several pages and check them in Preview before any visitor sees them.</li>
+          <li>Cost: one draft store, read by the site content provider and by the shared list query hook. Chosen photos wait in browser storage until Publish.</li>
+          <li>A draft lives in one browser. A draft started on a laptop is not on your phone.</li>
+        </ul>
+      </div>
+      <div class="opt alt">
+        <span class="title-sm">Save as you go</span>
+        <ul>
+          <li>Each field writes when you leave it. No Publish button.</li>
+          <li>Less code: no draft store.</li>
+          <li>Cost: a half-finished change is live while you work on the next one, and Preview has nothing to show.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label">States</span><h2 class="title">Every state, with its words</h2></div>
+    <div class="tbl-wrap"><div class="tbl">
+      <div class="tr th cols-state"><span class="label">State</span><span class="label">What the editor sees</span><span class="label">Where</span></div>
+      <div class="tr cols-state"><span class="nmc">Visitor</span><span>The public site. No edit code is downloaded.</span><span class="mut">Everyone not signed in</span></div>
+      <div class="tr cols-state"><span class="nmc">First sign-in</span><span>"Every text and photo on the page is a field. Change it where it is. Nothing goes live until you press Publish."</span><span class="mut">Tray, until the first edit</span></div>
+      <div class="tr cols-state"><span class="nmc">Field focused</span><span>"About · Body copy" and "212 of 320 characters".</span><span class="mut">Tray</span></div>
+      <div class="tr cols-state"><span class="nmc">Heading focused</span><span>"Line 1: 13 of 24. Line 2: 15 of 24. Enter starts line 2; leave it empty for one line."</span><span class="mut">Tray</span></div>
+      <div class="tr cols-state"><span class="nmc">Line too wide</span><span>"This line wraps on phones. Shorten it to keep the heading on one line."</span><span class="mut">Tray, warn</span></div>
+      <div class="tr cols-state"><span class="nmc">Pending</span><span>"3 unpublished changes". Discard and Publish 3 changes enabled. Changed sections and people show Unpublished.</span><span class="mut">Bar, items</span></div>
+      <div class="tr cols-state"><span class="nmc">Confirm discard</span><span>"Discard 3 unpublished changes? This cannot be undone." with Keep editing and Discard 3.</span><span class="mut">Tray</span></div>
+      <div class="tr cols-state"><span class="nmc">Missing name</span><span>"Add a name for the new executive before publishing." Focus moves to the empty name.</span><span class="mut">Tray, alert</span></div>
+      <div class="tr cols-state"><span class="nmc">Publishing</span><span>Publish reads "Publishing" and is disabled. Fields stay editable.</span><span class="mut">Bar</span></div>
+      <div class="tr cols-state"><span class="nmc">Published</span><span>"Published. Visitors see the changes now." Publish reads "Published" for two seconds.</span><span class="mut">Bar, tray</span></div>
+      <div class="tr cols-state"><span class="nmc">Partly failed</span><span>"2 changes did not publish and are still in your draft. Try again." Failed items keep their Unpublished chip.</span><span class="mut">Tray, alert</span></div>
+      <div class="tr cols-state"><span class="nmc">Offline</span><span>"You are offline. Your changes are saved in this browser. Publish when you reconnect." Publish disabled.</span><span class="mut">Tray, warn</span></div>
+      <div class="tr cols-state"><span class="nmc">Sign-in expired</span><span>"Your sign-in expired. Your changes are saved in this browser. Sign in again to publish them."</span><span class="mut">Tray, with Sign in</span></div>
+      <div class="tr cols-state"><span class="nmc">Draft from earlier</span><span>"You have 3 unpublished changes from Tuesday." Fields already hold their draft values.</span><span class="mut">Tray, on sign-in</span></div>
+      <div class="tr cols-state"><span class="nmc">Photo too small</span><span>"This photo is 420px wide and will look soft here. Use one at least 840px wide." Below half the minimum it is refused.</span><span class="mut">Tray, warn or alert</span></div>
+    </div></div>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">Access and screens</span><h2 class="title">Keyboard, phones, both themes</h2></div>
+    <div class="two">
+      <ul class="list ink">
+        <li>Every field is labelled from <code>site_content.label</code> plus its section, for example "About, heading".</li>
+        <li>The field fill is the text colour mixed at 9 percent, so it shows on the page ground, raised slabs, the inverse band and inside buttons.</li>
+        <li>Tab order follows the page. The focus ring is drawn on the field's shell.</li>
+        <li>Grips move with the arrow keys and announce "Moved Amara Boateng to position 2 of 5".</li>
+        <li>The tray announces errors and publish results only.</li>
+        <li>The visibility chip is a toggle button with a pressed state.</li>
+      </ul>
+      <ul class="list ink">
+        <li>On phones the bar keeps one fixed height with the tray on its own row. Pages get bottom padding equal to the bar so the footer stays reachable.</li>
+        <li>Inputs smaller than 16px make iOS zoom on focus. On touch screens the role and area selects use 16px.</li>
+        <li>Edit mode pages are not indexed. The edit code loads only after <code>is_admin()</code> returns true at the authenticator-code level.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="slab sunk">
+    <div class="sechead"><span class="label">Verification</span><h2 class="title">How we check that nothing moves</h2></div>
+    <ul class="list ink measure">
+      <li>Typecheck and lint on every step.</li>
+      <li>Unit tests for the draft overlay, the change count, the title builder, the two-line heading split and the reserved-size measure.</li>
+      <li>A stability test: a headless browser opens each page in edit mode at 375, 768 and 1280px, marks every persistent element, types the maximum length into every field, and fails if any marked box changes position or size. It also hovers and focuses each field and checks the same boxes.</li>
+      <li>The publish flow against the local Supabase stack, including a forced failure to check the partly-failed state.</li>
+      <li>Reduced motion, by eye, on the rendered pages.</li>
+    </ul>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label">Build order</span><h2 class="title">Eight steps, each shippable</h2><p class="body-sm measure">Removing the dark theme comes first, because it shrinks every later step to one palette. The sales direction is its own track. It changes Floor and the public pages, and can ship before or after edit mode.</p></div>
+    <ol class="order">
+      <li><span><b>Migrations</b>Roles and areas, drop year of study, remove the access lifetime. The current dashboard gets the matching form changes, so it keeps working until step 8.</span></li>
+      <li><span><b>Floor card 16</b>Field, inline text, heading, paragraph, label and select, chips, grip, Add tile, edit bar and tray, before any app code.</span></li>
+      <li><span><b>Draft store</b>One store for text, photos and list rows. The site content provider and the list query hook read through it.</span></li>
+      <li><span><b>Edit mode switch</b>Sign-in at /admin opens the site in edit mode. Scroll reveals, counters, marquee and preloader turn off.</span></li>
+      <li><span><b>Text and photos</b>All 67 strings and 12 photo slots, page by page, with reserved sizes. Two-line headings become one field each.</span></li>
+      <li><span><b>Lists</b>Executives, events and sponsors: fields, add, drag to reorder, hide and remove.</span></li>
+      <li><span><b>Publish</b>Uploads first, then rows, then deletes with storage first, as <code>deleteContentItem</code> already does.</span></li>
+      <li><span><b>Settings and cleanup</b>The settings page, then delete the old dashboard tabs. /admin becomes the sign-in page only.</span></li>
+    </ol>
+  </section>
+
+  <section class="bare">
+    <div class="sechead"><span class="label">Edge cases</span><h2 class="title">Open items</h2></div>
+    <ul class="list ink measure">
+      <li><b>Proof needs content the club does not have yet.</b> The sales sites above lead with reviews and customer counts. WSC has member counts and partner logos. Member quotes would need a small new table.</li>
+      <li><b>The length limits now set the layout.</b> A limit that is too high makes a large empty field. Each of the 67 limits needs a check at phone width before step 5.</li>
+      <li><b>The owner account.</b> It is the one account that cannot be removed. Ownership moves to the president in Settings when the maintainer leaves the club.</li>
+      <li><b>Two editors at once.</b> If both publish the same field, the later one wins. Publish can compare update times and name the other editor later.</li>
+      <li><b>Hidden and past items.</b> In edit mode they show in their real positions with a chip. In Preview they disappear.</li>
+      <li><b>The gallery has no page.</b> Its admin tab goes away with the dashboard. The table and bucket stay.</li>
+    </ul>
+  </section>
+
+  <footer><span class="meta">Built from WSC Floor tokens. Example names, emails and copy only.</span></footer>
+</main>
+
+<script>
+(function () {
+  var root = document.documentElement;
+
+  // Experiment controls: grain scale and whether the grain moves.
+  document.querySelectorAll('.lab-ctl [data-grain], .lab-ctl [data-anim], .lab-ctl [data-rib]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var key = b.dataset.grain ? 'grain' : b.dataset.rib ? 'rib' : 'anim';
+      if (key === 'rib') {
+        b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        document.querySelectorAll('#lab > *').forEach(function (el) { el.classList.toggle('dotted-ribbon', b.dataset.rib === 'dotted'); });
+        return;
+      }
+      b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      document.querySelectorAll('#lab > *').forEach(function (el) {
+        if (key === 'grain') el.classList.toggle('dots', b.dataset.grain === 'dots');
+        else el.classList.toggle('alive', b.dataset.anim === 'on');
+      });
+    });
+  });
+
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function ms(name) { return parseFloat(getComputedStyle(root).getPropertyValue(name)) || 0; }
+  function ease(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // ── Every editable string in the demo. Limits match site_content.max_length. ──
+  var USC = 'https://westernusc.store/product/western-sales-club/';
+  var F = {
+    'about.eyebrow': { sec: 'about', label: 'Eyebrow', max: 24 },
+    'about.title':   { sec: 'about', label: 'Heading', max: 24, lines: 2 },
+    'about.body':    { sec: 'about', label: 'Body copy', max: 320, para: true },
+    'about.cta':     { sec: 'about', label: 'Main button', max: 28, href: true },
+    'about.link':    { sec: 'about', label: 'Second button', max: 28, href: true },
+    'team.eyebrow':  { sec: 'team', label: 'Eyebrow', max: 24 },
+    'team.title':    { sec: 'team', label: 'Heading', max: 24 },
+    'cta.eyebrow':   { sec: 'cta', label: 'Eyebrow', max: 24 },
+    'cta.title':     { sec: 'cta', label: 'Heading', max: 24, lines: 2 },
+    'cta.sub':       { sec: 'cta', label: 'Subtitle', max: 90, para: true },
+    'cta.button':    { sec: 'cta', label: 'Button', max: 28, href: true }
+  };
+  var SEC = { about: 'About', team: 'Team', cta: 'Join band' };
+  var NAME_MAX = 32;
+  var ROLES = [
+    { id: 'president', name: 'President', short: 'President' },
+    { id: 'vp', name: 'Vice President', short: 'VP' },
+    { id: 'avp', name: 'Assistant Vice President', short: 'AVP' }
+  ];
+  var SLOT_KEYS = ['image1', 'image2', 'image3'];
+  var SLOT_LABELS = ['Strip, left', 'Strip, middle', 'Strip, right'];
+
+  var pub = {
+    text: {
+      'about.eyebrow': 'About',
+      'about.title': 'A sales floor\nrun by students',
+      'about.body': 'Western Sales Club is a student-run organization at Western University. We run workshops and events through the year, and connect members with people who sell for a living.',
+      'about.cta': 'Apply to join',
+      'about.link': 'See events',
+      'team.eyebrow': 'The team',
+      'team.title': 'Meet the execs',
+      'cta.eyebrow': 'Join',
+      'cta.title': 'Learn to sell\nbefore you graduate',
+      'cta.sub': 'Membership is sold through the Western USC store.',
+      'cta.button': 'Apply to join'
+    },
+    href: { 'about.cta': USC, 'about.link': '/events', 'cta.button': USC },
+    slots: { image1: null, image2: null, image3: null },
+    areas: ['Events', 'Marketing', 'Partnerships', 'Projects'],
+    people: [
+      { id: 'p1', name: 'Daniel Osei', role: 'president', area: '', visible: true },
+      { id: 'p2', name: 'Mei Chen', role: 'vp', area: 'Partnerships', visible: true },
+      { id: 'p3', name: 'Amara Boateng', role: 'vp', area: 'Marketing', visible: true },
+      { id: 'p4', name: 'Jonas Keller', role: 'vp', area: 'Events', visible: false },
+      { id: 'p5', name: 'Priya Natarajan', role: 'avp', area: 'Projects', visible: true }
+    ]
+  };
+  var draft = clone(pub);
+  var mode = 'edit', seq = 6, confirmDiscard = false, flash = null, focusCtx = null;
+
+  var demo = document.getElementById('demo');
+  var site = document.getElementById('site');
+  var roster = document.getElementById('roster');
+  var trayLabel = document.getElementById('trayLabel');
+  var trayBody = document.getElementById('trayBody');
+  var cnt = document.getElementById('cnt');
+  var pubBtn = document.getElementById('pubBtn');
+  var discardBtn = document.getElementById('discardBtn');
+  var announce = document.getElementById('announce');
+
+  function roleShort(id) { var r = ROLES.find(function (x) { return x.id === id; }); return r ? r.short : ''; }
+  function titleOf(p) { return roleShort(p.role) + (p.area ? ', ' + p.area : ''); }
+  function initials(n) { var w = n.trim().split(/\s+/).filter(Boolean); return w.length ? (w[0][0] + (w[1] ? w[1][0] : '')).toUpperCase() : '+'; }
+  function pubPerson(id) { return pub.people.find(function (x) { return x.id === id; }); }
+  function personChanged(p) {
+    var o = pubPerson(p.id);
+    if (!o) return true;
+    return o.name !== p.name || o.role !== p.role || o.area !== p.area || o.visible !== p.visible || o.photo !== p.photo;
+  }
+  function textChanged(k) { return draft.text[k] !== pub.text[k] || (F[k].href && draft.href[k] !== pub.href[k]); }
+  function slotsChanged() { return SLOT_KEYS.some(function (k) { return draft.slots[k] !== pub.slots[k]; }); }
+  function orderChanged() {
+    var a = pub.people.map(function (p) { return p.id; }).join();
+    var b = draft.people.filter(function (p) { return pubPerson(p.id); }).map(function (p) { return p.id; }).join();
+    return a !== b;
+  }
+  function sectionChanged(s) {
+    var t = Object.keys(F).some(function (k) { return F[k].sec === s && textChanged(k); });
+    if (s === 'about') return t || slotsChanged();
+    if (s === 'team') return t || orderChanged();
+    return t;
+  }
+  function changeCount() {
+    var n = 0;
+    Object.keys(F).forEach(function (k) { if (draft.text[k] !== pub.text[k]) n++; if (F[k].href && draft.href[k] !== pub.href[k]) n++; });
+    SLOT_KEYS.forEach(function (k) { if (draft.slots[k] !== pub.slots[k]) n++; });
+    n += draft.areas.length - pub.areas.length;
+    draft.people.forEach(function (p) { if (p.removing || personChanged(p)) n++; });
+    if (orderChanged()) n++;
+    return n;
+  }
+
+  // ── Reserved size: the longest allowed value, measured in the field's own font ──
+  var meas = document.createElement('div');
+  meas.className = 'measure-box';
+  document.body.appendChild(meas);
+  function sample(text, len) {
+    var base = (text && text.trim()) ? text.replace(/\n/g, ' ') : 'Western Sales Club runs events';
+    var s = base;
+    while (s.length < len) s += ' ' + base;
+    return s.slice(0, len);
+  }
+  function copyFont(el) {
+    var cs = getComputedStyle(el);
+    meas.style.font = cs.font; meas.style.letterSpacing = cs.letterSpacing;
+    meas.style.textTransform = cs.textTransform; meas.style.lineHeight = cs.lineHeight;
+    return cs;
+  }
+  function lineHeight(cs) { var lh = parseFloat(cs.lineHeight); return isNaN(lh) ? parseFloat(cs.fontSize) * 1.2 : lh; }
+  function reserveHeight(el, len) {
+    var cs = copyFont(el);
+    meas.style.width = el.clientWidth + 'px'; meas.style.whiteSpace = 'pre-wrap';
+    meas.textContent = sample(el.value, len);
+    el.style.height = Math.max(meas.scrollHeight, lineHeight(cs)) + 'px';
+  }
+  function reserveLines(el, n) { el.style.height = (lineHeight(copyFont(el)) * n) + 'px'; }
+  function reserveWidth(el, len, cap) {
+    copyFont(el);
+    meas.style.width = 'auto'; meas.style.whiteSpace = 'pre';
+    meas.textContent = sample(el.value, len);
+    el.style.width = Math.max(40, Math.min(meas.scrollWidth + 2, cap)) + 'px';
+  }
+  function reserveAll() {
+    if (mode !== 'edit') return;
+    site.querySelectorAll('[data-k]').forEach(function (el) {
+      var f = F[el.dataset.k];
+      if (f.lines) reserveLines(el, f.lines);
+      else if (f.para) reserveHeight(el, f.max);
+      else {
+        var col = el.closest('.col');
+        var cap = (col ? col.clientWidth : 300) - (f.href ? 96 : 24);
+        reserveWidth(el, f.max, cap);
+      }
+    });
+    roster.querySelectorAll('textarea[data-f="name"]').forEach(function (t) { reserveLines(t, 2); });
+  }
+
+  // ── Field builders: edit mode and preview share one layout ──
+  function aria(k) { return SEC[F[k].sec] + ', ' + F[k].label.toLowerCase(); }
+  function field(k) {
+    var f = F[k], v = draft.text[k];
+    if (f.lines) return '<span class="ed"><textarea class="fld-in" data-k="' + k + '" rows="' + f.lines + '" maxlength="' + (f.max * f.lines + f.lines - 1) + '" aria-label="' + aria(k) + '">' + esc(v) + '</textarea></span>';
+    if (f.para) return '<span class="ed"><textarea class="fld-in" data-k="' + k + '" rows="1" maxlength="' + f.max + '" aria-label="' + aria(k) + '">' + esc(v) + '</textarea></span>';
+    return '<span class="ed-wrap"><span class="ed ed-line"><input class="fld-in" data-k="' + k + '" maxlength="' + f.max + '" aria-label="' + aria(k) + '" value="' + esc(v) + '"></span></span>';
+  }
+  function show(k) {
+    var f = F[k], v = draft.text[k];
+    if (f.lines) return v.split('\n').filter(Boolean).map(function (l) { return '<span class="ln">' + esc(l) + '</span>'; }).join('');
+    return esc(v);
+  }
+  function button(k, variant, arrow) {
+    var a = arrow ? ' <span aria-hidden="true">&#8594;</span>' : '';
+    if (mode === 'preview') return '<a class="btn ' + variant + '" href="#" onclick="return false">' + esc(draft.text[k]) + a + '</a>';
+    return '<span class="btn ' + variant + ' btn-ed"><span class="ed ed-inbtn"><input class="fld-in" data-k="' + k + '" maxlength="' + F[k].max + '" aria-label="' + aria(k) + '" value="' + esc(draft.text[k]) + '"></span>' + a + '</span>';
+  }
+  function block(k, tag, cls) {
+    return '<' + tag + ' class="' + cls + '">' + (mode === 'edit' ? field(k) : show(k)) + '</' + tag + '>';
+  }
+
+  function discInner(p) { return p.photo ? '<img alt="" src="' + p.photo + '">' : esc(initials(p.name)); }
+  function stripHTML() {
+    return '<div class="strip">' + SLOT_KEYS.map(function (k, i) {
+      var src = draft.slots[k];
+      var inner = src ? '<img alt="Example photo" src="' + src + '">' : '';
+      if (mode !== 'edit') return '<div class="ph">' + inner + '</div>';
+      return '<button class="ph" type="button" data-slot="' + k + '" aria-label="' + (src ? 'Replace' : 'Add') + ' photo, ' + SLOT_LABELS[i].toLowerCase() + '">' + inner +
+        '<span class="chip-s pick">' + (src ? 'Replace photo' : 'Add photo') + '</span></button>';
+    }).join('') + '</div>';
+  }
+
+  function renderAbout() {
+    document.getElementById('aboutBody').innerHTML =
+      block('about.eyebrow', 'div', 'label eyebrow') +
+      block('about.title', 'h3', 'title') +
+      block('about.body', 'div', 'body') +
+      '<div class="cta-row">' + button('about.cta', 'b1', true) + button('about.link', 'b3', false) + '</div>';
+    document.getElementById('aboutStrip').innerHTML = stripHTML();
+  }
+  function renderTeamHead() {
+    document.getElementById('teamHead').innerHTML = block('team.eyebrow', 'div', 'label eyebrow') + block('team.title', 'h3', 'title');
+  }
+  function renderCta() {
+    document.getElementById('ctaBody').innerHTML =
+      block('cta.eyebrow', 'div', 'label eyebrow') +
+      block('cta.title', 'h3', 'title') +
+      block('cta.sub', 'div', 'body sub') +
+      '<div class="cta-row">' + button('cta.button', 'b2', true) + '</div>';
+  }
+
+  // ── Roster ──
+  var CHEV = '<svg class="chev" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 3.5 5 6.5 8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var GRIP = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+
+  function personHTML(p, i) {
+    if (mode === 'preview') {
+      return '<div class="person" data-key="' + p.id + '"><div class="disc-wrap"><div class="disc">' + discInner(p) + '</div></div>' +
+        '<span class="nm">' + esc(p.name) + '</span><span class="meta">' + esc(titleOf(p)) + '</span></div>';
+    }
+    var roleOpts = ROLES.map(function (r) { return '<option value="' + r.id + '"' + (r.id === p.role ? ' selected' : '') + ' title="' + esc(r.name) + '">' + esc(r.short) + '</option>'; }).join('');
+    var areaOpts = '<option value=""' + (p.area ? '' : ' selected') + '>No area</option>' +
+      draft.areas.map(function (a) { return '<option' + (a === p.area ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') +
+      '<option value="__add">Add an area</option>';
+    var state = p.removing ? '<span class="chip-s c-al state-chip on"><span class="d"></span>Will be removed</span>'
+      : '<span class="chip-s c-wn state-chip' + (personChanged(p) ? ' on' : '') + '"><span class="d"></span>Unpublished</span>';
+    var who = esc(p.name || 'new executive');
+    return '<div class="person' + (p.removing ? ' removing' : '') + (p.visible ? '' : ' hid') + '" data-key="' + p.id + '" data-id="' + p.id + '">' +
+      '<div class="disc-wrap">' +
+        '<button class="disc" type="button" data-act="photo" aria-label="' + (p.photo ? 'Replace' : 'Add') + ' headshot for ' + who + '">' + discInner(p) + '<span class="chip-s pick">' + (p.photo ? 'Replace photo' : 'Add photo') + '</span></button>' +
+        '<button class="chip-s vis over-tl" type="button" data-act="vis" aria-pressed="' + p.visible + '" aria-label="Show on team page"><span class="d" style="' + (p.visible ? 'background:var(--ok)' : '') + '"></span>' + (p.visible ? 'Visible' : 'Hidden') + '</button>' +
+        '<button class="grip over-tr" type="button" data-act="grip" aria-label="Reorder ' + who + ', position ' + (i + 1) + ' of ' + draft.people.length + '. Drag, or use arrow keys.">' + GRIP + '</button>' +
+      '</div>' +
+      '<span class="ed nm"><textarea class="fld-in" rows="2" data-f="name" maxlength="' + NAME_MAX + '" aria-label="Name" placeholder="Full name">' + esc(p.name) + '</textarea></span>' +
+      '<span class="tl-fields meta">' +
+        '<span class="ed sel"><select data-f="role" aria-label="Role">' + roleOpts + '</select>' + CHEV + '</span>' +
+        '<span class="ed sel"><select data-f="area" aria-label="Area">' + areaOpts + '</select>' + CHEV + '</span>' +
+      '</span>' +
+      '<span class="state-row">' + state + '</span>' +
+    '</div>';
+  }
+
+  function renderRoster(opts) {
+    opts = opts || {};
+    var list = mode === 'preview' ? draft.people.filter(function (p) { return p.visible && !p.removing; }) : draft.people;
+    var html = list.map(personHTML).join('');
+    if (mode === 'edit') {
+      html += '<div class="person add-tile' + (opts.appear ? ' appear' : '') + '" data-key="add"><div class="disc-wrap"><button class="disc" type="button" data-act="add"><span><span class="plus" aria-hidden="true">+</span>Add executive</span></button></div></div>';
+    }
+    roster.innerHTML = html;
+    if (mode === 'edit') roster.querySelectorAll('textarea[data-f="name"]').forEach(function (t) { reserveLines(t, 2); });
+  }
+
+  function renderAll() { renderAbout(); renderTeamHead(); renderRoster(); renderCta(); reserveAll(); drawAllWaves(); }
+
+  // ── Signature ribbon: parallel hairlines offset from one curve that
+  // sweeps up from the bottom edge to the right edge. The ribbon widens and
+  // narrows along its length; centre lines are stronger than edge lines.
+  // Drawn once per size, no animation. ──
+  var NS = 'http://www.w3.org/2000/svg';
+  function drawWaves(el) {
+    var svg = el.querySelector(':scope > svg.waves');
+    if (!svg) {
+      svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('class', 'waves');
+      svg.setAttribute('aria-hidden', 'true');
+      el.insertBefore(svg, el.firstChild);
+    }
+    var W = el.clientWidth, H = el.clientHeight;
+    if (!W || !H) return;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var ribbons = RIBBONS[el.dataset.shape] || RIBBONS.sweep, out = '';
+    var steps = Math.max(48, Math.round(W / 5));
+    ribbons.forEach(function (rb) {
+      var P = rb.p.map(function (q) { return [q[0] * W, q[1] * H]; });
+      function bz(u, i) { var a = 1 - u; return a * a * a * P[0][i] + 3 * a * a * u * P[1][i] + 3 * a * u * u * P[2][i] + u * u * u * P[3][i]; }
+      function dz(u, i) { var a = 1 - u; return 3 * a * a * (P[1][i] - P[0][i]) + 6 * a * u * (P[2][i] - P[1][i]) + 3 * u * u * (P[3][i] - P[2][i]); }
+      // Same spacing at every size: the line count grows with the ribbon's
+      // width, so lines sit one texture pitch apart, matching the dot grid.
+      var amp = Math.min(H * rb.amp, rb.cap), N = Math.max(8, Math.round(amp / TEX_PITCH));
+      var seed = (rb.p[0][0] * 97 + rb.p[3][1] * 31) || 1;
+      for (var k = 0; k < N; k++) {
+        // Lines never cross. The gaps vary through one smooth field shared by
+        // every line: a bunching that travels along the ribbon. The field only
+        // ever stretches or squeezes the gaps (its slope across the ribbon
+        // stays above zero), so neighbouring lines keep their order and flow
+        // together. Opacity alone varies per line.
+        var r1 = rnd(seed + k * 3.1);
+        var t = k / (N - 1) - 0.5, s = '';
+        for (var j = 0; j <= steps; j++) {
+          var u = j / steps, x = bz(u, 0), y = bz(u, 1), dx = dz(u, 0), dy = dz(u, 1);
+          var len = Math.hypot(dx, dy) || 1;
+          var g = t + 0.05 * Math.sin(Math.PI * 3 * t + Math.PI * 1.8 * u + seed);
+          var off = g * amp * SPREAD[rb.spread](u)
+            + amp * 0.05 * Math.sin(Math.PI * 2 * u * 1.2 + seed);   // the whole ribbon undulates as one
+          s += (j ? 'L' : 'M') + (x - dy / len * off).toFixed(1) + ' ' + (y + dx / len * off).toFixed(1) + ' ';
+        }
+        var op = (0.25 + 0.75 * Math.pow(1 - Math.abs(2 * t), 0.8)) * (0.8 + 0.2 * r1);
+        out += '<path d="' + s + '" stroke-opacity="' + op.toFixed(2) + '"/>';
+      }
+    });
+    svg.innerHTML = '<g class="rib" fill="none" stroke="currentColor" stroke-width="' + TEX_DOT + '" stroke-linecap="round" stroke-linejoin="round" style="opacity:var(--wave-strength)">' + out + '</g>';
+  }
+
+  // The texture unit, read from the same CSS tokens the dot grid uses.
+  var TEX_DOT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tex-dot')) || 1.6;
+  var TEX_PITCH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tex-pitch')) || 7;
+  // Fixed pseudo-random number in 0..1 for a seed, so a band draws the same every time.
+  function rnd(n) { var x = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); }
+  // How the ribbon's width changes along its length. Two sines of different
+  // lengths, so the change is never a perfect repeat.
+  var SPREAD = {
+    breathe: function (u) { return 0.5 + 0.38 * Math.sin(Math.PI * 2 * u - 0.7) + 0.12 * Math.sin(Math.PI * 5.3 * u + 1.1); },
+    waist: function (u) { return 0.14 + 0.8 * Math.pow(Math.abs(2 * u - 1), 1.3) + 0.06 * Math.sin(Math.PI * 4.1 * u); },
+    swell: function (u) { return 0.22 + 0.7 * Math.pow(Math.sin(Math.PI * u), 1.6) + 0.08 * Math.sin(Math.PI * 4.7 * u + 0.6); },
+    even: function (u) { return 0.75 + 0.1 * Math.sin(Math.PI * 3.3 * u + 0.4); }
+  };
+  // The band catalogue. Points are fractions of the band's width and height;
+  // values past 0 or 1 start or end the ribbon outside the band.
+  var RIBBONS = {
+    sweep: [{ p: [[0.16, 1.15], [0.44, 1.02], [0.7, 0.46], [1.06, 0.2]], amp: 0.62, cap: 340, spread: 'breathe' }],
+    rise:  [{ p: [[-0.06, 0.9], [0.32, 0.98], [0.55, 0.12], [0.84, -0.15]], amp: 0.5, cap: 300, spread: 'breathe' }],
+    arc:   [{ p: [[-0.06, 0.95], [0.26, 0.2], [0.62, 0.44], [1.06, 0.82]], amp: 0.5, cap: 300, spread: 'swell' }],
+    waist: [{ p: [[-0.06, 0.25], [0.36, 1.15], [0.64, -0.15], [1.06, 0.75]], amp: 0.62, cap: 340, spread: 'waist' }],
+    pair:  [
+      { p: [[0.06, 1.15], [0.36, 1.0], [0.6, 0.5], [1.06, 0.34]], amp: 0.3, cap: 170, spread: 'breathe' },
+      { p: [[0.34, 1.15], [0.62, 1.02], [0.82, 0.7], [1.06, 0.66]], amp: 0.2, cap: 110, spread: 'even' }
+    ]
+  };
+  function drawAllWaves() { document.querySelectorAll('.textured').forEach(drawWaves); }
+
+  // FLIP: record boxes, change the DOM, animate each moved item from its old box.
+  function flip(mutate, skipEl) {
+    var first = {};
+    roster.querySelectorAll('[data-key]').forEach(function (el) { first[el.dataset.key] = el.getBoundingClientRect(); });
+    mutate();
+    if (reduce) return;
+    roster.querySelectorAll('[data-key]').forEach(function (el) {
+      var f = first[el.dataset.key];
+      if (!f || el === skipEl || el.classList.contains('appear')) return;
+      var l = el.getBoundingClientRect();
+      var dx = f.left - l.left, dy = f.top - l.top;
+      if (dx || dy) el.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: ms('--d-move'), easing: ease('--e-move') });
+    });
+  }
+
+  function findPerson(el) {
+    var cell = el.closest('[data-id]');
+    return cell ? draft.people.find(function (p) { return p.id === cell.dataset.id; }) : null;
+  }
+
+  // ── Text input ──
+  site.addEventListener('keydown', function (e) {
+    var k = e.target.dataset && e.target.dataset.k;
+    if (k && e.key === 'Enter') {
+      var f = F[k];
+      if (!f.lines || e.target.value.indexOf('\n') >= 0) e.preventDefault();
+    }
+    if (e.target.dataset && e.target.dataset.f === 'name' && e.key === 'Enter') e.preventDefault();
+  });
+  site.addEventListener('input', function (e) {
+    var k = e.target.dataset && e.target.dataset.k;
+    if (k) {
+      var f = F[k], v = e.target.value;
+      var nv = f.lines
+        ? v.split('\n').slice(0, f.lines).map(function (l) { return l.slice(0, f.max); }).join('\n')
+        : v.replace(/\s*\n\s*/g, ' ');
+      if (nv !== v) { var pos = e.target.selectionStart; e.target.value = nv; try { e.target.setSelectionRange(pos, pos); } catch (err) {} }
+      draft.text[k] = nv;
+      flash = null;
+      refresh();
+      return;
+    }
+    if (e.target.dataset && e.target.dataset.f === 'name') {
+      var p = findPerson(e.target);
+      p.name = e.target.value.replace(/\s*\n\s*/g, ' ');
+      if (e.target.value !== p.name) e.target.value = p.name;
+      var disc = e.target.closest('.person').querySelector('.disc');
+      if (!p.photo && disc.firstChild && disc.firstChild.nodeType === 3) disc.firstChild.nodeValue = initials(p.name);
+      flash = null;
+      refresh();
+    }
+  });
+
+  roster.addEventListener('change', function (e) {
+    var p = findPerson(e.target);
+    if (!p) return;
+    var f = e.target.dataset.f;
+    if (f === 'role') p.role = e.target.value;
+    if (f === 'area') {
+      if (e.target.value === '__add') { startAddArea(p, e.target); return; }
+      p.area = e.target.value;
+    }
+    flash = null;
+    refresh();
+  });
+
+  function startAddArea(p, select) {
+    var shell = select.parentNode;
+    var input = document.createElement('input');
+    input.setAttribute('aria-label', 'New area name');
+    input.maxLength = 24;
+    input.placeholder = 'New area';
+    shell.replaceChild(input, select);
+    focusCtx = { type: 'area' };
+    input.focus();
+    refresh();
+    var done = false;
+    function finish(save) {
+      if (done) return;
+      var name = input.value.trim().replace(/\s+/g, ' ');
+      if (save && name) {
+        var dup = draft.areas.find(function (a) { return a.toLowerCase() === name.toLowerCase(); });
+        if (dup) { flash = { kind: 'err', label: 'New area', text: dup + ' already exists. Pick it from the list.' }; renderTray(); input.select(); return; }
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        draft.areas.push(name);
+        draft.areas.sort();
+        p.area = name;
+      }
+      done = true; focusCtx = null; flash = null;
+      renderRoster();
+      var sel = roster.querySelector('[data-id="' + p.id + '"] select[data-f="area"]');
+      if (sel) sel.focus();
+      refresh();
+    }
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener('blur', function () { setTimeout(function () { finish(true); }, 0); });
+  }
+
+  // ── Photos: a click opens the device's own file picker ──
+  var fileIn = document.createElement('input');
+  fileIn.type = 'file'; fileIn.accept = 'image/*'; fileIn.hidden = true;
+  demo.appendChild(fileIn);
+  var pickTarget = null;
+  function pick(t) { pickTarget = t; fileIn.value = ''; fileIn.click(); }
+  fileIn.addEventListener('change', function () {
+    var f = fileIn.files && fileIn.files[0];
+    var t = pickTarget;
+    if (!f || !t) return;
+    var url = URL.createObjectURL(f);
+    var img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, min = t.min, sel;
+      if (w < min / 2) {
+        URL.revokeObjectURL(url);
+        flash = { kind: 'err', label: 'Photo not used', text: 'This photo is ' + w + 'px wide, too small for this spot. Use one at least ' + min + 'px wide.' };
+        refresh();
+        return;
+      }
+      if (t.kind === 'person') { t.person.photo = url; renderRoster(); sel = '[data-id="' + t.person.id + '"] [data-act="photo"]'; }
+      else { draft.slots[t.key] = url; document.getElementById('aboutStrip').innerHTML = stripHTML(); sel = '[data-slot="' + t.key + '"]'; }
+      var again = demo.querySelector(sel);
+      if (again) again.focus();
+      flash = w < min
+        ? { kind: 'wn', label: 'Photo replaced', text: 'This photo is ' + w + 'px wide and will look soft here. Use one at least ' + min + 'px wide.' }
+        : { kind: 'ok', label: 'Photo replaced', text: 'Photo replaced. It goes live when you publish.' };
+      refresh();
+    };
+    img.onerror = function () {
+      flash = { kind: 'err', label: 'Photo not used', text: 'That file is not a photo this browser can open. Try a JPG or PNG.' };
+      refresh();
+    };
+    img.src = url;
+  });
+  document.getElementById('aboutStrip').addEventListener('click', function (e) {
+    var s = e.target.closest('[data-slot]');
+    if (s) pick({ kind: 'slot', key: s.dataset.slot, min: 560 });
+  });
+
+  roster.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]');
+    if (!b) return;
+    var act = b.dataset.act;
+    if (act === 'add') {
+      var np = { id: 'p' + (seq++), name: '', role: 'vp', area: '', visible: true };
+      flip(function () { draft.people.push(np); renderRoster({ appear: true }); });
+      var t = roster.querySelector('[data-id="' + np.id + '"] textarea');
+      if (t) t.focus();
+      refresh();
+      return;
+    }
+    var p = findPerson(b);
+    if (!p) return;
+    if (act === 'vis') {
+      p.visible = !p.visible;
+      b.setAttribute('aria-pressed', String(p.visible));
+      b.innerHTML = '<span class="d" style="' + (p.visible ? 'background:var(--ok)' : '') + '"></span>' + (p.visible ? 'Visible' : 'Hidden');
+      b.closest('.person').classList.toggle('hid', !p.visible);
+      refresh();
+    }
+    if (act === 'photo') pick({ kind: 'person', person: p, min: 400 });
+  });
+
+  // ── Drag by the grip, mouse or touch ──
+  var drag = null;
+  function placeHeld(e) {
+    var el = drag.el;
+    el.style.transform = '';
+    var r = el.getBoundingClientRect();
+    el.style.transform = 'translate(' + (e.clientX - drag.ox - r.left) + 'px,' + (e.clientY - drag.oy - r.top) + 'px)';
+  }
+  roster.addEventListener('pointerdown', function (e) {
+    var g = e.target.closest('[data-act="grip"]');
+    if (!g || e.button !== 0) return;
+    e.preventDefault();
+    var el = g.closest('.person');
+    var r = el.getBoundingClientRect();
+    drag = { el: el, id: el.dataset.id, ox: e.clientX - r.left, oy: e.clientY - r.top, last: null, start: draft.people.map(function (p) { return p.id; }).join() };
+    try { g.setPointerCapture(e.pointerId); } catch (err) {}
+    el.classList.add('held');
+  });
+  roster.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var el = drag.el, hit = null;
+    Array.prototype.forEach.call(roster.children, function (c) {
+      if (c === el || !c.dataset.id) return;
+      var r = c.getBoundingClientRect();
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) hit = c;
+    });
+    if (hit && hit !== drag.last) {
+      drag.last = hit;
+      var kids = Array.prototype.slice.call(roster.children);
+      var after = kids.indexOf(el) < kids.indexOf(hit);
+      flip(function () { roster.insertBefore(el, after ? hit.nextSibling : hit); }, el);
+    } else if (!hit) drag.last = null;
+    placeHeld(e);
+  });
+  function endDrag() {
+    if (!drag) return;
+    var d = drag; drag = null;
+    var el = d.el, cur = el.style.transform;
+    el.style.transform = '';
+    function finish() {
+      el.classList.remove('held');
+      var order = Array.prototype.map.call(roster.querySelectorAll('[data-id]'), function (c) { return c.dataset.id; });
+      draft.people.sort(function (a, b) { return order.indexOf(a.id) - order.indexOf(b.id); });
+      renderRoster();
+      var p = draft.people.find(function (x) { return x.id === d.id; });
+      var g = roster.querySelector('[data-id="' + d.id + '"] [data-act="grip"]');
+      if (g) g.focus();
+      if (order.join() !== d.start) announce.textContent = 'Moved ' + (p.name || 'new executive') + ' to position ' + (order.indexOf(d.id) + 1) + ' of ' + order.length;
+      refresh();
+    }
+    if (cur && !reduce) {
+      el.animate([{ transform: cur }, { transform: 'none' }], { duration: ms('--d-move'), easing: ease('--e-move') }).finished.then(finish, finish);
+    } else finish();
+  }
+  roster.addEventListener('pointerup', endDrag);
+  roster.addEventListener('pointercancel', endDrag);
+
+  roster.addEventListener('keydown', function (e) {
+    var b = e.target.closest('[data-act="grip"]');
+    if (!b) return;
+    var dir = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+    if (!dir) return;
+    e.preventDefault();
+    var p = findPerson(b);
+    var i = draft.people.indexOf(p), j = i + dir;
+    if (j < 0 || j >= draft.people.length) return;
+    flip(function () { draft.people.splice(i, 1); draft.people.splice(j, 0, p); renderRoster(); });
+    var g = roster.querySelector('[data-id="' + p.id + '"] [data-act="grip"]');
+    if (g) g.focus();
+    announce.textContent = 'Moved ' + (p.name || 'new executive') + ' to position ' + (j + 1) + ' of ' + draft.people.length;
+    refresh();
+  });
+
+  function updateChips() {
+    roster.querySelectorAll('[data-id]').forEach(function (cell) {
+      var p = draft.people.find(function (x) { return x.id === cell.dataset.id; });
+      var c = cell.querySelector('.state-chip');
+      if (p && c && !p.removing) c.classList.toggle('on', personChanged(p));
+    });
+    ['about', 'team', 'cta'].forEach(function (s) {
+      document.getElementById('chip-' + s).classList.toggle('on', sectionChanged(s));
+    });
+  }
+
+  // ── Tray: the one region whose content changes ──
+  function ctxFromFocus() {
+    var a = document.activeElement;
+    if (!a || !demo.contains(a)) return null;
+    if (a.dataset && a.dataset.k) return { type: 'text', k: a.dataset.k };
+    if (a.dataset && a.dataset.slot) return { type: 'slot', k: a.dataset.slot };
+    if (a.closest && a.closest('[data-id]')) return { type: 'person', person: findPerson(a), field: a.dataset.f || a.dataset.act };
+    return null;
+  }
+  function setTray(label, html) { trayLabel.textContent = label; trayBody.innerHTML = html; }
+
+  function renderTray() {
+    var n = changeCount();
+    if (confirmDiscard) {
+      setTray('Discard', '<span class="grow">Discard ' + n + ' unpublished change' + (n === 1 ? '' : 's') + '? This cannot be undone.</span>' +
+        '<button class="btn b2" type="button" data-t="keep">Keep editing</button><button class="btn b1" type="button" data-t="discard">Discard ' + n + '</button>');
+      return;
+    }
+    if (flash) {
+      setTray(flash.label, '<span class="grow ' + ({ err: 't-err', ok: 't-ok', wn: 't-wn' }[flash.kind]) + '">' + esc(flash.text) + '</span>');
+      return;
+    }
+    var c = focusCtx || ctxFromFocus();
+    if (!c) {
+      setTray('Edit mode', '<span class="grow">Every text and photo on the page is a field. Change it where it is. Nothing goes live until you press Publish.</span>');
+      return;
+    }
+    if (c.type === 'text') {
+      var f = F[c.k], v = draft.text[c.k] || '';
+      var head = SEC[f.sec] + ' · ' + f.label;
+      if (f.href) {
+        setTray(head, '<span class="meta" style="flex:none">' + v.length + ' of ' + f.max + '</span>' +
+          '<input id="hrefIn" data-hk="' + c.k + '" aria-label="Link address for ' + esc(aria(c.k)) + '" value="' + esc(draft.href[c.k]) + '">');
+        return;
+      }
+      if (f.lines) {
+        var ls = v.split('\n');
+        setTray(head, '<span class="grow">Line 1: ' + (ls[0] || '').length + ' of ' + f.max + '. Line 2: ' + (ls[1] || '').length + ' of ' + f.max + '. Enter starts line 2; leave it empty for one line.</span>');
+        return;
+      }
+      setTray(head, '<span class="grow">' + v.length + ' of ' + f.max + ' characters.</span>');
+      return;
+    }
+    if (c.type === 'slot') {
+      var i = SLOT_KEYS.indexOf(c.k);
+      setTray('About · Photo, ' + SLOT_LABELS[i].toLowerCase(), '<span class="grow">Opens your files or photo library. Use a photo at least 560px wide.</span>');
+      return;
+    }
+    if (c.type === 'area') {
+      setTray('New area', '<span class="grow">Type the area name and press Enter. Escape cancels.</span>');
+      return;
+    }
+    if (c.type === 'person' && c.person) {
+      var p = c.person;
+      var hint = c.field === 'role' ? 'Roles are added in Settings. Shows as ' + titleOf(p) + '.'
+        : c.field === 'grip' ? 'Drag to move, or use the arrow keys.'
+        : c.field === 'photo' ? 'Opens your files or photo library.'
+        : 'Shows on the site as ' + titleOf(p) + '.';
+      var btn = p.removing ? '<button class="btn b2" type="button" data-t="unremove">Keep on team</button>'
+        : '<button class="btn b3 danger" type="button" data-t="remove">Remove from team</button>';
+      setTray('Executive · ' + (p.name || 'New executive'), '<span class="grow">' + esc(hint) + '</span>' + btn);
+    }
+  }
+
+  var lastPersonCtx = null;
+  var tray = document.getElementById('tray');
+  demo.addEventListener('focusin', function (e) {
+    if (e.target.closest('#tray')) return;
+    var c = ctxFromFocus();
+    if (c && c.type === 'person') lastPersonCtx = c;
+    if (!focusCtx || focusCtx.type !== 'area') focusCtx = null;
+    if (c) flash = null;
+    renderTray();
+  });
+  tray.addEventListener('mousedown', function (e) { if (e.target.closest('button')) e.preventDefault(); });
+  tray.addEventListener('input', function (e) {
+    if (e.target.id === 'hrefIn') { draft.href[e.target.dataset.hk] = e.target.value; updateChips(); updateBar(); }
+  });
+  tray.addEventListener('focusin', function (e) {
+    if (e.target.id === 'hrefIn') focusCtx = { type: 'text', k: e.target.dataset.hk };
+  });
+  tray.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]');
+    if (!b) return;
+    var t = b.dataset.t;
+    if (t === 'keep') { confirmDiscard = false; refresh(); }
+    if (t === 'discard') { confirmDiscard = false; draft = clone(pub); focusCtx = null; flash = null; renderAll(); refresh(); }
+    var c = lastPersonCtx;
+    if ((t === 'remove' || t === 'unremove') && c && c.person) {
+      var p = c.person;
+      if (t === 'remove' && !pubPerson(p.id)) {
+        flip(function () { draft.people.splice(draft.people.indexOf(p), 1); renderRoster(); });
+        lastPersonCtx = null; focusCtx = null;
+      } else {
+        p.removing = t === 'remove';
+        renderRoster();
+        var g = roster.querySelector('[data-id="' + p.id + '"] textarea');
+        if (g) g.focus();
+      }
+      refresh();
+    }
+  });
+
+  // ── Bar ──
+  var publishing = false, published = false;
+  function updateBar() {
+    var n = changeCount();
+    cnt.textContent = n ? n + ' unpublished change' + (n === 1 ? '' : 's') : 'No changes';
+    discardBtn.disabled = !n || publishing;
+    if (publishing) { pubBtn.textContent = 'Publishing'; pubBtn.disabled = true; }
+    else if (published) { pubBtn.textContent = 'Published'; pubBtn.disabled = true; }
+    else { pubBtn.textContent = n ? 'Publish ' + n + ' change' + (n === 1 ? '' : 's') : 'Publish'; pubBtn.disabled = !n; }
+  }
+  function refresh() { updateChips(); updateBar(); renderTray(); }
+
+  discardBtn.addEventListener('click', function () { confirmDiscard = true; flash = null; renderTray(); });
+
+  pubBtn.addEventListener('click', function () {
+    var missing = draft.people.find(function (p) { return !p.removing && !p.name.trim(); });
+    if (missing) {
+      var t = roster.querySelector('[data-id="' + missing.id + '"] textarea');
+      if (t) t.focus();
+      flash = { kind: 'err', label: 'Cannot publish yet', text: 'Add a name for the new executive before publishing.' };
+      renderTray();
+      return;
+    }
+    publishing = true; confirmDiscard = false; updateBar();
+    setTimeout(function () {
+      var gone = draft.people.filter(function (p) { return p.removing; });
+      function commit() {
+        flip(function () {
+          draft.people = draft.people.filter(function (p) { return !p.removing; });
+          pub = clone(draft);
+          renderRoster();
+        });
+        publishing = false; published = true;
+        flash = { kind: 'ok', label: 'Published', text: 'Published. Visitors see the changes now.' };
+        refresh();
+        setTimeout(function () { published = false; updateBar(); }, 2000);
+      }
+      if (gone.length && !reduce) {
+        Promise.all(gone.map(function (p) {
+          var el = roster.querySelector('[data-id="' + p.id + '"]');
+          return el ? el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms('--d-move'), easing: ease('--e-exit'), fill: 'forwards' }).finished : Promise.resolve();
+        })).then(commit);
+      } else commit();
+    }, 900);
+  });
+
+  // ── Edit / Preview ──
+  var segInd = document.getElementById('segInd');
+  var bEdit = document.getElementById('modeEdit'), bPrev = document.getElementById('modePreview');
+  function moveInd() {
+    var b = mode === 'edit' ? bEdit : bPrev;
+    segInd.style.width = b.offsetWidth + 'px';
+    segInd.style.transform = 'translateX(' + (b.offsetLeft - 4) + 'px)';
+  }
+  function setMode(m) {
+    if (m === mode) return;
+    // Keep the section nearest the top of the screen at the same height.
+    var secs = Array.prototype.slice.call(site.children);
+    var anchor = secs.find(function (s) { return s.getBoundingClientRect().bottom > 80; }) || secs[0];
+    var before = anchor.getBoundingClientRect().top;
+    mode = m;
+    demo.classList.toggle('preview', m === 'preview');
+    bEdit.setAttribute('aria-pressed', String(m === 'edit'));
+    bPrev.setAttribute('aria-pressed', String(m === 'preview'));
+    confirmDiscard = false; focusCtx = null;
+    renderAll(); refresh(); moveInd();
+    var after = anchor.getBoundingClientRect().top;
+    if (after !== before) window.scrollBy(0, after - before);
+  }
+  bEdit.addEventListener('click', function () { setMode('edit'); });
+  bPrev.addEventListener('click', function () { setMode('preview'); });
+
+  var rT;
+  addEventListener('resize', function () { clearTimeout(rT); rT = setTimeout(function () { reserveAll(); moveInd(); drawAllWaves(); }, 120); });
+
+  renderAll(); refresh(); moveInd();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { reserveAll(); moveInd(); drawAllWaves(); });
+})();
+</script>

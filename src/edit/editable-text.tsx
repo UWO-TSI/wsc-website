@@ -20,6 +20,13 @@ export interface EditableTextProps {
   as?: TextTag;
   className?: string;
   id?: string;
+  /**
+   * The field's box in edit mode. `fill` takes the box the component gives
+   * the element (a paragraph's measure, a grid cell); `fit` is as wide as
+   * the text, never wider than that box. Paragraphs fill and one-line
+   * values fit unless the component says otherwise.
+   */
+  size?: 'fill' | 'fit';
 }
 
 export default function EditableText(props: EditableTextProps) {

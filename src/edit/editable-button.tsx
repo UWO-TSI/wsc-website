@@ -3,6 +3,7 @@
 import Button, { type ButtonVariant } from '@/components/ui/button';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { externalLinkProps } from '@/lib/link-utils';
+import { safeHref } from '@/lib/normalize';
 import type { SiteContentKey } from '@/lib/site-content-defaults';
 import { EditBranch, useEditBranch } from '@/edit/edit-mode';
 
@@ -15,7 +16,7 @@ import { EditBranch, useEditBranch } from '@/edit/edit-mode';
   `href`, a form submit through `type`), so only the label is edited.
 
   View mode and Preview: the Button primitive, opening external links in a
-  new tab through externalLinkProps. While editing, the engine's
+  new tab through externalLinkProps. The href passes safeHref first. While editing, the engine's
   InlineLabel renders instead in both modes: the label field sits over an
   inert copy of the button, so the field is never inside a real <button>
   and nothing on it can follow a link or submit a form.
@@ -53,7 +54,8 @@ export default function EditableButton(props: EditableButtonProps) {
   if (useEditBranch()) return <EditBranch name="Button" props={props} />;
 
   const own = props.hrefKey === undefined ? props : undefined;
-  const href = own ? own.href : text(props.hrefKey!);
+  /* A value that fails the scheme check renders a plain button, never an href. */
+  const href = safeHref(own ? own.href : text(props.hrefKey!));
 
   return (
     <Button

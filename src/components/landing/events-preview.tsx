@@ -3,29 +3,36 @@
 import { format, parseISO, startOfDay } from 'date-fns';
 
 import type { Event, QueryError } from '@/types/database';
-import Chip from '@/components/ui/chip';
-import CentredHead from '@/components/ui/centred-head';
-import { EditableButton, EditableImage, useEditMode } from '@/edit';
-import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
+import SectionHead from '@/components/ui/section-head';
+import { EditableButton, EditableImage, EditableText } from '@/edit';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import { useReveal } from '@/lib/reveal';
-import { useSiteContent } from '@/providers/site-content-provider';
+import { formatTime, registerHref } from '@/lib/event-display';
 
 /*
-  Events preview: rows, not cards. `events` has no status column, so Open is
-  derived from the date (design-system/adoption.md). Past events drop the
-  chip, take --ink-muted, and lose the hover treatment, because they are
-  reference and should not look pressable.
+  NextEvent: what is coming up, with the soonest event given the space.
 
-  Self-contained: another agent owns the full timeline in
-  src/components/events/, so nothing here imports from that tree.
+  A left-aligned head, then a photo beside a raised panel. The section is
+  scanned, not sold, so the head starts from the same edge as the panel. The panel holds the
+  next upcoming event: date, time and room in .meta, the title, the
+  description, and Register as the section's one primary button when the
+  event has a registration link. Up to two more upcoming events follow as
+  plain rows under it. See all events is the secondary button.
 
-  The four most recent, newest first, which is the order the landing page
-  already queries in (date DESC, created_at DESC). This used to re-sort
-  ascending before slicing, which showed the four OLDEST events ever
-  published once the calendar had more than four.
+  Upcoming means today or later, derived from `date` because `events` has no
+  status column (design-system/adoption.md). Upcoming events are shown
+  soonest first. Past events are not shown here; the Events page lists them.
+
+  With nothing upcoming the panel says so and keeps See all events, so the
+  section still has its photo and a next step.
+
+  Nothing here imports from the full timeline in src/components/events/.
+  What the two must show the same way, the time and whether there is a
+  Register link, is in src/lib/event-display.ts.
+  design-system/components.md, NextEvent.
 */
-const PREVIEW_COUNT = 4;
+
+const MORE_COUNT = 2;
 
 interface EventsPreviewProps {
   events: Event[];
@@ -39,82 +46,88 @@ function isUpcoming(date: string) {
   return parseISO(date) >= startOfDay(new Date());
 }
 
+function whenOf(event: Event) {
+  const parts = [format(parseISO(event.date), 'EEE MMM d'), event.time && formatTime(event.time), event.location];
+  return parts.filter(Boolean).join(' · ');
+}
+
 export default function EventsPreview({ events, loading, error }: EventsPreviewProps) {
   const ref = useReveal<HTMLDivElement>();
 
-  const { text } = useSiteContent();
-  const upcoming = events.filter((event) => event.published).slice(0, PREVIEW_COUNT);
+  const upcoming = events
+    .filter((event) => event.published && isUpcoming(event.date))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const [next, ...rest] = upcoming;
+  const more = rest.slice(0, MORE_COUNT);
+  /* The time and the Register check are the Events page's (src/lib/event-display.ts). */
+  const register = registerHref(next?.register_url);
 
   return (
     <section className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
       <div className="mx-auto flex max-w-[1100px] flex-col gap-12">
-        <CentredHead
+        <SectionHead
           id="events-heading"
-          eyebrowKey="home.events.eyebrow"
           titleKeys={['home.events.title_line1', 'home.events.title_line2']}
         />
 
         {/*
-          Asymmetric on purpose: the ledger carries the information and takes
-          the wider column, the photo is support and takes the narrower one.
-          The ledger is reading content, so it stays left-aligned under the
-          centred head. Below lg the photo drops under the list.
+          The photo takes the narrower column and the event the wider one.
+          Below 900px the photo drops under the panel.
         */}
         <div
           ref={ref}
-          className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-14"
+          className="grid grid-cols-1 items-start gap-6 min-[900px]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
         >
-          <AsyncStateWrapper
-            loading={loading}
-            error={error}
-            data={upcoming}
-            emptyMessage={text('home.events.empty')}
-            skeleton={<RowSkeleton count={4} />}
-          >
-            <div className="arrive flex flex-col gap-1">
-              {upcoming.map((event) => (
-                <EventRow key={event.id} event={event} />
-              ))}
-            </div>
-          </AsyncStateWrapper>
-
-          {/* Clip Reveal, sequence 9. The portrait crop suits the tall column. */}
           <EditableImage
             slot="home.events.image1"
-            sizes="(max-width: 1024px) 100vw, 420px"
-            className="aspect-[3/4] w-full rounded-md lg:sticky lg:top-28"
+            sizes="(max-width: 900px) 100vw, 460px"
+            className="order-2 aspect-[3/4] w-full rounded-lg min-[900px]:order-1"
           />
-        </div>
 
-        <div className="flex justify-center">
-          <EditableButton
-            labelKey="home.events.link_label"
-            hrefKey="home.events.link_href"
-            variant="secondary"
-            arrow
-          />
+          <div className="arrive order-1 flex flex-col gap-2 min-[900px]:order-2">
+            {loading ? (
+              <RowSkeleton count={3} />
+            ) : (
+              <>
+                <article className="flex flex-col gap-4 rounded-lg bg-raised p-[clamp(1.5rem,3vw,2rem)]">
+                  {error ? (
+                    <p className="body m-0">We could not load the calendar. The Events page has the full list.</p>
+                  ) : next ? (
+                    <>
+                      <p className="meta m-0">{whenOf(next)}</p>
+                      <h3 className="title m-0">{next.title}</h3>
+                      {next.description && <p className="body measure m-0 text-ink-muted">{next.description}</p>}
+                    </>
+                  ) : (
+                    <EditableText k="home.events.empty" as="p" className="body m-0" />
+                  )}
+
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {register && <EditableButton labelKey="events.ledger.register_label" href={register} />}
+                    <EditableButton
+                      labelKey="home.events.link_label"
+                      hrefKey="home.events.link_href"
+                      variant="secondary"
+                      arrow
+                    />
+                  </div>
+                </article>
+
+                {more.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-md bg-raised px-5 py-4"
+                  >
+                    <span className="meta w-14 shrink-0">{format(parseISO(event.date), 'MMM d').toUpperCase()}</span>
+                    <span className="title-sm flex-1">{event.title}</span>
+                    {event.location && <span className="body-sm shrink-0">{event.location}</span>}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function EventRow({ event }: { event: Event }) {
-  const open = isUpcoming(event.date);
-  /* Row Expand is off in edit mode, like every self-running motion. */
-  const { editing } = useEditMode();
-  const formatted = format(parseISO(event.date), 'MMM d').toUpperCase();
-
-  return (
-    <div
-      className={`flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-md px-4 py-4 transition-[background-color,box-shadow] duration-[var(--d-move)] ease-move ${
-        open && !editing ? 'hover:bg-raised hover:shadow-2' : ''
-      }`}
-    >
-      <span className="meta w-14 shrink-0">{formatted}</span>
-      <span className={`title-sm flex-1 ${open ? 'text-ink' : 'text-ink-muted'}`}>{event.title}</span>
-      {event.location && <span className="body-sm shrink-0">{event.location}</span>}
-      {open && <Chip status="ok">Open</Chip>}
-    </div>
   );
 }

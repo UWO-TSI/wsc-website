@@ -1,16 +1,20 @@
-import type { Metadata } from "next";
 import ClosingBand from "@/components/layout/closing-band";
+import ClubEmail from "@/components/layout/club-email";
+import PageHead from "@/components/layout/page-head";
+import { pageMetadata } from "@/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
+  path: "/terms-of-service",
   title: "Terms of Service",
-};
+  description: "The terms for using the Western Sales Club website.",
+});
 
 export default function TermsOfServicePage() {
   return (
-    <>
-    <div className="px-[var(--gut)] pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
-      <div className="mx-auto flex max-w-[720px] flex-col gap-10">
-        <h1 className="title">Terms of Service</h1>
+    <div className="stack">
+    <PageHead id="terms-title" titleLines={["Terms of Service"]} />
+    <div className="px-[var(--gut)] py-[var(--pad-section)]">
+      <div className="flex max-w-[720px] flex-col gap-10">
 
         <div className="flex flex-col gap-10">
           <Section index="01" title="Acceptance of Terms">
@@ -87,7 +91,7 @@ export default function TermsOfServicePage() {
             <p className="body measure">
               Western Sales Club reserves the right to modify these Terms of
               Service at any time. We will notify users of any changes by
-              updating the date at the top of this page. Your continued use of
+              updating the date at the bottom of this page. Your continued use of
               the website after any modifications indicates your acceptance of
               the updated terms.
             </p>
@@ -104,11 +108,7 @@ export default function TermsOfServicePage() {
           <Section index="09" title="Contact Information">
             <p className="body measure">
               If you have any questions about these Terms of Service, please
-              contact us at{" "}
-              <a href="mailto:sales.club@westernusc.ca" className="text-accent-ink hover:underline">
-                sales.club@westernusc.ca
-              </a>
-              .
+              contact us at <ClubEmail />.
             </p>
           </Section>
         </div>
@@ -117,7 +117,7 @@ export default function TermsOfServicePage() {
       </div>
     </div>
     <ClosingBand />
-    </>
+    </div>
   );
 }
 

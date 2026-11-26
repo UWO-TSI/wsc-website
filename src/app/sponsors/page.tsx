@@ -18,13 +18,13 @@ export default function SponsorsPage() {
   const { data: sponsors, loading, error, refetch } = useSupabaseQuery<Sponsor>('sponsors', {
     /* Not redundant with RLS: a signed-in admin can read inactive rows. */
     filters: ACTIVE,
+    editList: true,
   });
 
   return (
     <div className="stack">
       <PageHead
         id="partners-title"
-        eyebrowKey="partners.header.eyebrow"
         titleKeys={['partners.header.title']}
       />
 

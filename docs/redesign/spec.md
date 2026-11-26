@@ -25,11 +25,24 @@ before building. `plan.md` is the build plan.
   them are removed; content inside a container keeps the gutter as padding.
 - Rounded shapes stay for photos, fields, buttons and chips.
 - Slab Clip keeps its motion.
+- Containers have a tone of their own only where they mark a change of role. On the inner pages the page head
+  and the closing band are the containers; the content sections between them sit bare on `--page`
+  with room around them. The contact form and the Partners logo wall are the exceptions: a form
+  field group and supplied logos need a ground of their own.
+- The hero carries a background photo (slot `home.hero.image1`) under its centred head.
+- A photo slot with no photo shows a placeholder surface at the slot's frame and aspect ratio and
+  runs the slot's reveal, so the layout and the motion read before photos exist. This holds for
+  visitors too.
+- Section titles (`--t-title`) run 32px to 60px. The footer is taller than before.
 
 ### Alignment
-- Selling sections are centred: hero, section heads, closing bands. The order is eyebrow, bold
-  Archivo title, at most three lines of copy, then the buttons.
-- Reading content stays left-aligned: long paragraphs, the event ledger.
+- Selling moments are centred: the hero, page heads, closing bands, and a home section head whose
+  section is one message and a link. The order is eyebrow, bold Archivo title, at most three lines
+  of copy, then the buttons.
+- A section whose job is reading or scanning content is left-aligned, head included: its eyebrow
+  and title sit on the same left edge as the content below them. This covers the About story, the
+  event ledger, the team roster, the contact form, the legal text and every long paragraph.
+  Centring a head over left-aligned content puts the head and the content on different edges.
 
 ### Signature texture
 The "Production texture: Lit velvet" section of `reference.html` is the approved texture, and
@@ -133,7 +146,15 @@ the only region whose content changes), Settings page. Sizes and behaviour are i
 ### Lists
 - Executives, events, sponsors: every field inline, add through the Add tile, drag to reorder,
   hide with the chip, remove from the tray. A removed item stays in place with Will be removed until
-  Publish.
+  Publish. Events are not dragged: their date sets the order.
+- A new item without its name (an executive's name, an event's title, a partner's name, a
+  figure's label), or a published item whose name was cleared, blocks Publish with the matching
+  Missing name line.
+- Each list keeps the old dashboard's cap: 30 executives, 50 events, 20 partners, 6 figures
+  (items marked Will be removed do not count). At the cap the Add tile stays in place, disabled,
+  and pressing it says why in the tray.
+- Every row ends with Options, which moves focus to the row's Remove and link address in the
+  tray; Escape returns to the row.
 - Executive title is built: role short label, comma, area ("VP, Marketing"); no area shows the role
   alone. Role and area are two selects. Area ends with "Add an area", which turns into a text input
   in place; a name that matches an existing area ignoring case is refused.

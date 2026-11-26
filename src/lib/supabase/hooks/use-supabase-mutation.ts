@@ -66,8 +66,14 @@ export async function deleteContentItem(
   // Step 2: Delete DB row (retry up to 3x if storage already deleted)
   let dbErr: { message: string } | undefined;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { error } = await supabase.from(table).delete().eq('id', row.id as string);
-    if (!error) return;
+    const { data, error } = await supabase.from(table).delete().eq('id', row.id as string).select('id');
+    if (!error) {
+      if (data?.length) return;
+      /* RLS answers a refused DELETE with zero rows, not an error. A
+         refusal is not transient, so it is not retried. The caller checks
+         that the row exists before calling, so zero rows is a refusal. */
+      throw new Error(`${table}.${row.id as string} was not removed: the database refused the delete`);
+    }
     dbErr = error;
     await new Promise((r) => setTimeout(r, 1000));
   }

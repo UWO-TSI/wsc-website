@@ -5,18 +5,40 @@
   8px by 12px padding, the tray heights, the bar layout) and the 9 percent
   fill, which is the skeleton's mix in globals.css.
 
-  Nothing here animates. In edit mode the allowed motion is reorder, a new
-  Add tile, removal on Publish and the Publish label changing in place,
-  and none of those is styled in this file.
+  In edit mode the allowed motion is reorder, a new Add tile, removal on
+  Publish and the Publish label changing in place. Two of those are
+  styled here, in the list section at the end: the Add tile's Clip Reveal
+  (.ed-appear) and a removed row's leave (.ed-leave). Reorder runs from
+  list-parts.tsx on the same tokens. Nothing else here animates.
 */
 
 /* ── Field ── */
+
+/*
+  Every field and Add tile is its ground's text colour mixed over the
+  ground, so it is always a step off whatever it sits on: grey on white, a
+  lighter black on black, a see-through white on velvet. --ed-fill is the
+  mix. The velvet grounds (--inverse and --accent) and the label inside a
+  button take a stronger mix, because 9 percent of a light ink barely
+  shows on a dark purple.
+*/
+.ed,
+.ed-add {
+  --ed-fill: 9%;
+  --ed-fill-hover: 15%;
+}
+
+:is(.slab-inv, .slab-acc) :is(.ed, .ed-add),
+.ed.ed-inbtn {
+  --ed-fill: 16%;
+  --ed-fill-hover: 24%;
+}
 
 .ed {
   position: relative;
   max-width: 100%;
   vertical-align: top;
-  background: color-mix(in srgb, currentColor 9%, transparent);
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
   border-radius: var(--r-sm);
   padding: 8px 12px;
   cursor: text;
@@ -24,6 +46,111 @@
 
 .ed-line {
   display: inline-block;
+}
+
+/* A one-line list field is as wide as its text (.ed-size below), never
+   wider than its cell. */
+.ed-line > .ed-in {
+  max-width: 100%;
+}
+
+/*
+  The width of a field as wide as its text (.ed-fit, and the one-line
+  list fields): a hidden copy of the text, before the control, is the only
+  content of the shell with a width of its own. It holds no height, so the
+  control alone sets the field's height. The control has width 0, so it
+  adds nothing to the shell's size, and min-width 100%, so it then fills
+  the shell. The shell is sized as the text itself would be: one line
+  wide, or the space it has when the line is longer, never more. Spaces
+  count, so a typed trailing space widens the field, and the copy may
+  break anywhere, so a long unbroken value never widens the element. The
+  2px at the end is room for the caret.
+*/
+.ed-size {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  padding-right: 2px;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.ed-size + .ed-in {
+  width: 0;
+  min-width: 100%;
+}
+
+/*
+  Page copy (.ed-out): the field takes no space of its own. The text box is
+  exactly where Preview puts the text, and the fill and focus ring are
+  drawn around it on a layer behind the text (::before, 6px by 12px
+  outside the text box), so a field never moves or resizes its
+  neighbours. List fields keep their padding inside: their rows are laid
+  out for edit mode.
+
+  The box comes from the component: a fill field (.ed-fill) takes the
+  element's width, which the component sets (a measure, a grid cell, a
+  card's column); a fit field (.ed-fit) is as wide as its text (.ed-size)
+  and never wider than that box.
+*/
+.ed.ed-out {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  isolation: isolate;
+}
+
+.ed.ed-out::before {
+  content: '';
+  position: absolute;
+  inset: -6px -12px;
+  z-index: -1;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
+  pointer-events: none;
+}
+
+.ed.ed-out:focus-within {
+  outline: none;
+}
+
+.ed.ed-out:focus-within::before {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.slab-inv .ed.ed-out:focus-within::before {
+  outline-color: var(--on-inverse);
+}
+
+.slab-acc .ed.ed-out:focus-within::before {
+  outline-color: var(--on-accent);
+}
+
+.slab-logo .ed.ed-out:focus-within::before {
+  outline-color: var(--on-logo-ground);
+}
+
+.ed-fill {
+  display: block;
+  width: 100%;
+}
+
+.ed-fit {
+  display: inline-block;
+}
+
+.ed-fit > .ed-in {
+  max-width: 100%;
+}
+
+/* The boxes components give their fields while editing (not in Preview):
+   an element that holds a measure takes all of it, so a paragraph or a
+   title field is its measure wide, capped at the column. */
+html.ed-editing :is(.measure, .measure-title) {
+  width: 100%;
 }
 
 .ed-block {
@@ -46,6 +173,16 @@
 
 .slab-logo .ed:focus-within {
   outline-color: var(--on-logo-ground);
+}
+
+/* On an inverse slab the muted roles write in --on-inverse at 70 percent,
+   which --inverse-veil holds at AA over a white photo with nothing between.
+   The field's fill lightens that ground (4.1:1 for the hero subtitle), so
+   while editing their text takes the full --on-inverse: 6.1:1 over a white
+   photo under the veil and its fill. */
+.slab-inv :is(.label, .subtitle, .meta, .body-sm) .ed,
+.slab-inv .ed:is(.label, .subtitle, .meta, .body-sm) {
+  color: var(--on-inverse);
 }
 
 .ed-in {
@@ -75,10 +212,14 @@
   opacity: 0.45;
 }
 
-/* A heading's lines never wrap inside the field. The block padding is the
-   Line Mask's descender allowance, so tight title line-heights do not clip. */
+/* A heading line wider than the column wraps inside the field and never
+   hides text; the field's reserved height already holds every line at its
+   longest allowed value. A single word wider than the column breaks. The
+   block padding is the Line Mask's descender allowance, so tight title
+   line-heights do not clip. */
 .ed-lines {
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   padding-block: 0.06em;
 }
 
@@ -98,6 +239,7 @@
   position: relative;
   display: inline-grid;
   vertical-align: middle;
+  isolation: isolate;
 }
 
 .ed-btn > * {
@@ -113,7 +255,24 @@
   height: 1em;
 }
 
+/* The keyboard route to the link address: the pill itself, a transparent
+   button after the label field in tab order and under it on screen. It
+   moves focus to the tray's link address, and Escape or Enter there
+   returns to the label field (ui-store.ts). The global ring draws round
+   the pill. It changes nothing on hover but the cursor. */
+.ed-btn-link {
+  align-self: stretch;
+  justify-self: stretch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
 .ed.ed-inbtn {
+  z-index: 1;
   align-self: center;
   justify-self: start;
   padding: 3px 8px;
@@ -129,6 +288,20 @@
 .ed-inbtn:focus-within {
   outline-color: currentColor;
   outline-offset: 1px;
+}
+
+/* ── Link icon: a link with no label (the footer social icons) ──
+   A button in the visitor link's own look (link-icon.tsx); its address is
+   edited in the tray. The global ring draws round it. An empty address
+   is shown at the placeholder's strength, so it can be filled in;
+   visitors and Preview do not show it at all. */
+
+.ed-link-icon {
+  cursor: pointer;
+}
+
+.ed-link-icon.ed-link-empty {
+  opacity: 0.45;
 }
 
 /* ── PhotoSlot ── */
@@ -171,53 +344,272 @@ html.ed-on body {
   padding-bottom: calc(var(--ed-bar-h, 0px) + 24px);
 }
 
+/*
+  Below 900px the bar has three bands: the count with Settings and Sign
+  out under it, beside Edit and Preview; the tray; Discard and Publish.
+  The "Editing" label is hidden there, since the pressed Edit or Preview
+  button shows the mode, and Settings and Sign out take its line. Rows
+  are 2px apart so the count and the two buttons read as one block; the
+  tray's 10px block margins make the space between bands 12px.
+*/
 .ed-bar {
   position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: 8px;
+  right: 8px;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   z-index: var(--layer-nav);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* Phones: Settings, Sign out and the changes button, then Edit and
+     Preview; the tray; Discard and Publish. Publish (190px) spans the
+     last two columns. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    'status seg'
-    'tray tray'
-    'discard publish';
+    'acct status seg'
+    'tray tray tray'
+    'discard publish publish';
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 2px 8px;
+  padding: 12px;
   background: var(--page);
   color: var(--ink);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-3);
 }
 
+/*
+  From 900px to 1439px, two rows: the account controls, the changes button
+  and Edit and Preview; then the tray, with Discard and Publish at its end.
+  In one row the other controls take about 890px, which left the tray 24px
+  at 900 and 337px at 1280, too little for the Discard confirmation, the
+  offline notice or a refused link. Here the tray has the bar's width less
+  Discard and Publish: 532px at 900. The changes button keeps 240px, room
+  for "100 unpublished changes".
+*/
 @media (min-width: 900px) {
   .ed-bar {
-    grid-template-columns: 150px minmax(0, 1fr) auto auto auto;
-    grid-template-areas: 'status tray seg discard publish';
-    padding: 12px 14px 12px 20px;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    grid-template-columns: auto minmax(240px, auto) minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'acct status . seg seg'
+      'tray tray tray discard publish';
+    gap: 10px 12px;
+    padding: 12px 14px;
     border-radius: var(--r-xl);
   }
 }
 
-.ed-status {
-  grid-area: status;
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-  min-width: 0;
-}
-
-@media (min-width: 900px) {
-  .ed-status {
-    flex-direction: column;
-    gap: 2px;
+/* From 1440px, one row, left to right: the account controls, the changes
+   button, the tray (about 500px), then the three actions. */
+@media (min-width: 1440px) {
+  .ed-bar {
+    grid-template-columns: auto minmax(240px, auto) minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'acct status tray seg discard publish';
   }
 }
 
-.ed-status .label {
-  color: var(--accent-ink);
+/* ── Settings and Sign out ──
+   Settings is a gear on a 40px disc, Sign out a tertiary button at the
+   meta size, 24px tall (WCAG 2.5.8). */
+
+.ed-acct {
+  grid-area: acct;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ed-acct .ed-gear {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.ed-acct .ed-link {
+  min-height: 24px;
+  padding: 4px 8px;
+  font-size: var(--t-meta);
+}
+
+/* Below 900px Sign out shows only in Settings, so the count has room;
+   Exit stays. */
+@media (max-width: 899px) {
+  .ed-acct .ed-signout {
+    display: none;
+  }
+}
+
+/* ── The changes button and list ── */
+
+.ed-status {
+  grid-area: status;
+  min-width: 0;
+}
+
+.ed-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--e-enter);
+}
+
+.ed-count:hover:not(:disabled),
+.ed-count[aria-expanded='true'] {
+  background: var(--raised);
+}
+
+.ed-count:disabled {
+  cursor: default;
+}
+
+.ed-count-n {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.ed-count-n > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ed-count-n svg {
+  flex: none;
+}
+
+/*
+  The count's phone form. Below 640px the first row leaves the count about
+  110px at 375, so it reads "2 changes" (COPY.pendingPhone) at --t-body-sm,
+  with 6px sides here and 10px sides on Edit and Preview: room for
+  "100 changes" and the chevron at 375. The full count stays its
+  accessible name.
+*/
+.ed-count-phone {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .ed-count {
+    padding-inline: 6px;
+    font-size: var(--t-body-sm);
+  }
+
+  .ed-count-full {
+    display: none;
+  }
+
+  .ed-count-phone {
+    display: block;
+  }
+}
+
+.ed-count[aria-expanded='true'] .ed-count-n svg {
+  transform: rotate(180deg);
+}
+
+/* The list opens above the bar, at most half the window tall, and
+   scrolls inside itself. */
+.ed-changes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  max-height: min(50vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  background: var(--page);
+  color: var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+}
+
+/* From 900px the list opens straight above the count that opened it, at
+   the bar's left edge. */
+@media (min-width: 900px) {
+  .ed-changes {
+    right: auto;
+    width: min(560px, 100%);
+    border-radius: var(--r-xl);
+  }
+}
+
+.ed-changes-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 10px;
+}
+
+.ed-changes ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ed-change {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--e-enter);
+}
+
+.ed-change:hover {
+  background: var(--sunken);
+}
+
+.ed-change .meta {
+  color: var(--ink-muted);
+}
+
+.ed-change-diff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: var(--t-body-sm);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ed-change-diff del {
+  color: var(--ink-muted);
+  text-decoration-thickness: 1px;
+}
+
+.ed-change-diff ins {
+  text-decoration: none;
+}
+
+.ed-change-empty {
+  font-style: italic;
 }
 
 .ed-seg {
@@ -229,8 +621,9 @@ html.ed-on body {
   border-radius: var(--r-pill);
 }
 
+/* 10px sides below 640px and 12px below 900px give the count its room; 16px from 900px. */
 .ed-seg button {
-  padding: 8px 16px;
+  padding: 8px 12px;
   border: 0;
   border-radius: var(--r-pill);
   background: transparent;
@@ -241,20 +634,58 @@ html.ed-on body {
   cursor: pointer;
 }
 
+@media (min-width: 900px) {
+  .ed-seg button {
+    padding: 8px 16px;
+  }
+}
+
+/* Below 640px, 10px sides, for the count's room (.ed-count-phone). */
+@media (max-width: 639px) {
+  .ed-seg button {
+    padding-inline: 10px;
+  }
+}
+
 .ed-seg button[aria-pressed='true'] {
   background: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
 }
 
+/*
+  The tray: label, body and actions. One fixed height per width, sized for
+  its tallest state. On phones the actions share the label row and the
+  body has the full width for three lines of copy (the first-sign-in and
+  sign-in-expired lines). From 900px the actions end the body row, which
+  holds two lines of copy or one row of inputs and buttons.
+
+  The height is the fixed part (the 9px block padding and the row gap) in
+  px plus the text part in em of the tray's --t-body (16px), so text-only zoom
+  (Safari and Firefox) grows the tray with its text instead of clipping
+  it: 18px + 6px + 5.375em is 110px at 100 percent, and 18px + 3px +
+  3.4375em is 76px. The bar has no height of its own and follows. At a
+  large text size on a phone the copy wraps to more lines than the
+  height grows by (three lines of the first-sign-in copy at 200 percent
+  need about 8px more), so the tray scrolls the rest instead of hiding it.
+*/
 .ed-tray {
   grid-area: tray;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto 1fr;
-  gap: 3px;
-  height: 84px;
+  grid-template-areas:
+    'label actions'
+    'body body';
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 6px;
+  font-size: var(--t-body);
+  height: calc(18px + 6px + 5.375em);
   min-width: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-block: 10px;
   padding: 9px 12px;
   background: var(--raised);
   border-radius: var(--r-md);
@@ -262,23 +693,59 @@ html.ed-on body {
 
 @media (min-width: 900px) {
   .ed-tray {
-    height: 62px;
+    grid-template-areas:
+      'label label'
+      'body actions';
+    row-gap: 3px;
+    height: calc(18px + 3px + 3.4375em);
+    margin-block: 0;
   }
 }
 
+/* Below 900px the label may take two lines: the refused-link head, and a
+   list row's name beside its Remove button. Two lines are as tall as a
+   tray button, so a row with actions keeps its height, and no state with
+   a two-line label has more than two lines of body. A name longer than
+   two lines ends in an ellipsis. From 900px the label row is the tray's
+   full width and stays one line. */
 .ed-tray-label {
+  grid-area: label;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+}
+
+@media (min-width: 900px) {
+  .ed-tray-label {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }
 
 .ed-tray-body {
+  grid-area: body;
+  align-self: start;
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
   font-size: var(--t-body-sm);
   line-height: 1.35;
+}
+
+@media (min-width: 900px) {
+  .ed-tray-body {
+    align-self: center;
+  }
+}
+
+.ed-tray-actions {
+  grid-area: actions;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .ed-tray-body input {
@@ -314,8 +781,10 @@ html.ed-on body {
   color: var(--alert);
 }
 
-/* Buttons inside the tray: the reference's small size, so they fit its row. */
+/* Buttons inside the tray: the reference's small size, so they fit its row.
+   The label never wraps, so a button is one line tall in every state. */
 .ed-tray .ed-small {
+  white-space: nowrap;
   flex: none;
   padding: 7px 14px;
   font-size: var(--t-meta);
@@ -334,4 +803,346 @@ html.ed-on body {
    changing to Publishing and Published never moves the bar. */
 .ed-publish > * {
   min-width: 190px;
+}
+
+/* ── Lists: InlineSelect, InlineNumber, chips, Grip, AddTile ──
+   Sizes from docs/redesign/reference.html (the 36px grip, the select's
+   30px chevron room, the add tile's 28px plus). */
+
+/* InlineSelect: the value centred, the chevron at rest. */
+.ed.ed-sel {
+  display: block;
+  padding: 6px 30px 6px 12px;
+  cursor: pointer;
+}
+
+.ed-sel :is(select, input) {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+}
+
+.ed-sel input {
+  cursor: text;
+}
+
+.ed-sel :is(select, input):focus-visible {
+  outline: none;
+}
+
+.ed-chev {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  color: var(--accent-ink);
+  pointer-events: none;
+}
+
+/* On touch screens selects use 16px so iOS does not zoom (spec section 5). */
+@media (pointer: coarse) {
+  .ed-sel :is(select, input) {
+    font-size: 16px;
+  }
+}
+
+/* A date or a time: the native control in the field's font. */
+.ed-native .ed-in {
+  width: auto;
+  color-scheme: light;
+}
+
+/* Words stacked in one cell, so a chip is the width of its longest word. */
+.ed-words {
+  display: inline-grid;
+}
+
+.ed-words > * {
+  grid-area: 1 / 1;
+}
+
+.ed-off {
+  visibility: hidden;
+}
+
+/* VisibilityChip: a Chip inside a toggle button. */
+.ed-vis {
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* StateChip: shown only when the row changed. It keeps its slot (.ed-off)
+   inside an item of fixed size; in the event ledger it takes no space
+   until then (.ed-gone). */
+.ed-state {
+  display: inline-flex;
+}
+
+.ed-state.ed-gone {
+  display: none;
+}
+
+/* Grip: card 15's grip on a disc, so it reads over a photo. */
+.ed-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-disc);
+  background: var(--page);
+  color: var(--ink-muted);
+  box-shadow: var(--sh-1);
+  cursor: grab;
+  touch-action: none;
+  transition:
+    background-color var(--d-hover) var(--e-enter),
+    color var(--d-hover) var(--e-enter);
+}
+
+/* Under the pointer the disc inverts: the accent fill with its own ink,
+   as a pressed Edit button. Both are opaque, so the disc reads on every
+   ground (the see-through veil it used before turned it dark on a dark
+   section). */
+.ed-grip:hover,
+.ed-grip:active,
+.ed-item.ed-held .ed-grip {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.ed-over-tl,
+.ed-over-tr {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.ed-over-tl {
+  left: 0;
+}
+
+.ed-over-tr {
+  right: 0;
+}
+
+/* A row's photo: Replace or Add as a chip on the frame. */
+.ed-row-photo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 8%;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ed-row-photo .ed-photo-chip {
+  white-space: nowrap;
+}
+
+/* A logo tile is short, so its chip is centred in the tile. */
+.slab-logo .ed-row-photo {
+  align-items: center;
+  padding: 0;
+}
+
+/* An item while it is held, removed or hidden. */
+.ed-item.ed-held {
+  z-index: 2;
+  background: var(--page);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+}
+
+/* The held item keeps its ground, so its text stays readable on it. */
+.slab-sunk .ed-item.ed-held {
+  background: var(--sunken);
+}
+
+.slab-inv .ed-item.ed-held {
+  background: var(--inverse);
+}
+
+.slab-acc .ed-item.ed-held {
+  background: var(--accent);
+}
+
+.slab-logo .ed-item.ed-held {
+  background: var(--logo-ground);
+}
+
+.ed-item.ed-held .ed-grip {
+  cursor: grabbing;
+}
+
+/* The sideways card row does not snap while a card is held, so the drag's
+   small scroll steps are not rounded up to a whole card. It snaps again
+   on drop. */
+:has(> .ed-item.ed-held) {
+  scroll-snap-type: none;
+}
+
+/* Hidden and removed rows fade their own ink, so the step shows on any ground. */
+.ed-item.ed-hid .ed-in {
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.ed-item.ed-removing .ed-in {
+  color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+/* AddTile: the empty photo-slot surface with a tertiary label. */
+.ed-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--sunken);
+  color: var(--accent-ink);
+  font-family: var(--f-text);
+  font-size: var(--t-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--e-enter);
+}
+
+.ed-add:hover {
+  background: var(--accent-veil);
+}
+
+/* On a dark ground the tile takes the ground's ink, as a field does. */
+.slab-inv .ed-add {
+  color: var(--on-inverse);
+}
+
+.slab-acc .ed-add {
+  color: var(--on-accent);
+}
+
+.slab-logo .ed-add {
+  color: var(--on-logo-ground);
+}
+
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add {
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
+}
+
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add:hover {
+  background: color-mix(in srgb, currentColor var(--ed-fill-hover), transparent);
+}
+
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add[aria-disabled='true'],
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add[aria-disabled='true']:hover {
+  color: color-mix(in srgb, currentColor 50%, transparent);
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
+}
+
+/* At the list's cap: the disabled button's ink, no pointer, and hover
+   keeps the resting fill (--sunken, or --page on a sunken slab). */
+.ed-add[aria-disabled='true'] {
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+.ed-add[aria-disabled='true']:hover {
+  background: var(--sunken);
+}
+
+.ed-add-plus {
+  font-family: var(--f-display);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ed-add-disc {
+  aspect-ratio: 1;
+  border-radius: var(--r-disc);
+}
+
+.ed-add-row {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--r-md);
+}
+
+.ed-add-logo {
+  height: 100%;
+  border-radius: var(--r-md);
+}
+
+.ed-add-figure {
+  padding: 24px 12px;
+  border-radius: var(--r-md);
+}
+
+/* A format card's tile: as tall as the cards beside it, with the card's
+   --r-lg corners. In an empty row it takes the card photo's 4:5. */
+.ed-add-card {
+  height: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--r-lg);
+}
+
+/* On a sunken ledger the tile takes the page ground, so it still shows. */
+.slab-sunk .ed-add,
+.slab-sunk .ed-add[aria-disabled='true']:hover {
+  background: var(--page);
+}
+
+/* A new Add tile arrives with Clip Reveal (sequence 9). */
+.ed-appear {
+  animation: wsc-unclip-sm var(--d-arrive) var(--e-enter) both;
+}
+
+/* A removed row leaves on Publish only: --d-move on --e-exit. */
+.ed-leave {
+  animation: ed-leave var(--d-move) var(--e-exit) forwards;
+}
+
+@keyframes ed-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-grip {
+    transition: none;
+  }
+
+  .ed-appear,
+  .ed-leave {
+    animation: none;
+  }
 }

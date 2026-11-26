@@ -1,8 +1,12 @@
 /*
-  Reserved sizes: a field is as large as its longest allowed value at the
-  current width, measured in the field's own font, and never changes while
-  someone types. Fields measure when they mount, when the fonts finish
-  loading, and when the window is resized. Nothing else re-measures.
+  Text measurement for edit-mode fields. A field's width comes from the
+  component's layout (CSS); a field as wide as its text gets that width
+  from a hidden copy of the text in its shell (.ed-size in edit.css), and
+  a button label from textWidth here. Nothing reads the surrounding
+  layout to guess a column.
+  Heights are measured at the width the field was given. Fields measure
+  when they mount, on every change to their text, when the fonts finish
+  loading, and when the window is resized.
 */
 
 let box: HTMLDivElement | null = null;
@@ -19,8 +23,15 @@ function measureBox(): HTMLDivElement {
 
 function copyFont(from: HTMLElement, to: HTMLElement, fontSize?: string) {
   const cs = getComputedStyle(from);
-  to.style.font = cs.font;
-  if (fontSize) to.style.fontSize = fontSize;
+  /* Longhands, not cs.font: Chrome returns an empty font shorthand when a
+     value it cannot express is set (tabular-nums on .meta and the counted
+     figures), which measured those fields in the default font. */
+  to.style.fontFamily = cs.fontFamily;
+  to.style.fontSize = fontSize ?? cs.fontSize;
+  to.style.fontWeight = cs.fontWeight;
+  to.style.fontStyle = cs.fontStyle;
+  to.style.fontStretch = cs.fontStretch;
+  to.style.fontVariantNumeric = cs.fontVariantNumeric;
   to.style.letterSpacing = cs.letterSpacing;
   to.style.wordSpacing = cs.wordSpacing;
   to.style.textTransform = cs.textTransform;
@@ -32,19 +43,6 @@ export function lineHeightOf(el: HTMLElement): number {
   const cs = getComputedStyle(el);
   const lh = parseFloat(cs.lineHeight);
   return Number.isNaN(lh) ? parseFloat(cs.fontSize) * 1.2 : lh;
-}
-
-const FALLBACK_SAMPLE = 'Western Sales Club runs workshops and events';
-
-/**
- * A string of exactly `length` characters made from the published value,
- * so the reserve is measured in realistic words rather than in one glyph.
- */
-export function sample(base: string, length: number): string {
-  const words = base.trim() ? base.replace(/\s+/g, ' ').trim() : FALLBACK_SAMPLE;
-  let s = words;
-  while (s.length < length) s += ` ${words}`;
-  return s.slice(0, length);
 }
 
 /** Width of one line of text in the font of `el`, without wrapping. */
@@ -67,13 +65,40 @@ export function textHeight(el: HTMLElement, text: string, width: number): number
   return Math.max(m.scrollHeight, lineHeightOf(el));
 }
 
-/** Content width of the nearest ancestor that is not inline. */
-export function columnWidth(el: HTMLElement): number {
-  let node: HTMLElement | null = el.parentElement;
-  while (node && getComputedStyle(node).display.startsWith('inline')) node = node.parentElement;
-  if (!node) return window.innerWidth;
-  const cs = getComputedStyle(node);
-  return node.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+let areaBox: HTMLTextAreaElement | null = null;
+
+/**
+ * The height `el`, a field's textarea, needs to show `text` at its current
+ * width without scrolling, padding included. Measured in a hidden textarea
+ * with the same font, padding and wrapping, because a textarea's scroll
+ * height is not a div's: Chrome counts the font's full ascent and descent
+ * there, which on a tight title line-height is taller than the line box,
+ * so a reserve taken from the line-height alone left a heading 2px short.
+ */
+export function fieldHeight(el: HTMLTextAreaElement, text: string): number {
+  if (!areaBox) {
+    areaBox = document.createElement('textarea');
+    areaBox.setAttribute('aria-hidden', 'true');
+    areaBox.tabIndex = -1;
+    areaBox.className = 'ed-measure';
+    document.body.appendChild(areaBox);
+  }
+  const m = areaBox;
+  const cs = getComputedStyle(el);
+  copyFont(el, m);
+  m.style.boxSizing = 'border-box';
+  m.style.border = '0';
+  m.style.padding = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+  m.style.whiteSpace = cs.whiteSpace;
+  m.style.overflowWrap = cs.overflowWrap;
+  m.style.wordBreak = cs.wordBreak;
+  m.style.overflow = 'hidden';
+  m.style.resize = 'none';
+  m.style.minHeight = '0';
+  m.style.width = `${el.getBoundingClientRect().width}px`;
+  m.style.height = '0';
+  m.value = text;
+  return m.scrollHeight;
 }
 
 /*
@@ -103,23 +128,45 @@ export function wrapsOnPhones(el: HTMLElement, line: string): boolean {
   return textWidth(el, line, phoneFontSize(el)) > column;
 }
 
-/* One debounced resize listener and one fonts-ready callback for every field. */
+/* One debounced resize listener and one fonts-ready pass for every field. */
 const measurers = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | undefined;
 
+/** Runs every field's measure once. */
+function runPass(fns: (() => void)[]) {
+  fns.forEach((fn) => fn());
+}
+
 function onResize() {
   clearTimeout(timer);
-  timer = setTimeout(() => measurers.forEach((fn) => fn()), 120);
+  timer = setTimeout(() => runPass([...measurers]), 120);
+}
+
+/* Fields that register in the same task wait for the fonts together and
+   measure again in one pass. */
+const afterFonts = new Set<() => void>();
+let fontsPending = false;
+
+function measureAfterFonts(fn: () => void) {
+  if (!document.fonts) return;
+  afterFonts.add(fn);
+  if (fontsPending) return;
+  fontsPending = true;
+  document.fonts.ready.then(() => {
+    fontsPending = false;
+    const fns = [...afterFonts].filter((f) => measurers.has(f));
+    afterFonts.clear();
+    runPass(fns);
+  });
 }
 
 export function onRemeasure(fn: () => void): () => void {
   if (measurers.size === 0) window.addEventListener('resize', onResize);
   measurers.add(fn);
-  document.fonts?.ready.then(() => {
-    if (measurers.has(fn)) fn();
-  });
+  measureAfterFonts(fn);
   return () => {
     measurers.delete(fn);
+    afterFonts.delete(fn);
     if (measurers.size === 0) window.removeEventListener('resize', onResize);
   };
 }

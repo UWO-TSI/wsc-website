@@ -2,10 +2,15 @@
 
 import RevealImage from '@/components/ui/reveal-image';
 import type { Sponsor } from '@/types/database';
-import { getPublicUrl } from '@/lib/supabase/storage';
+import { externalLinkProps } from '@/lib/link-utils';
 
 interface LogoCardProps {
   sponsor: Sponsor;
+  /**
+   * The mark's URL, or null for the name in the display face. The wall
+   * resolves it: a logo drafted in edit mode first, then the stored object.
+   */
+  logoUrl: string | null;
   /** Position in display_order, zero-based. Carries the tile's scale. */
   rank: number;
   total: number;
@@ -20,7 +25,7 @@ type Scale = 'lead' | 'mid' | 'std';
   the first third of the wall reads large, the next third medium, the rest
   standard. Tile scale carries the hierarchy, not a border.
 */
-function scaleFor(rank: number, total: number): Scale {
+export function scaleFor(rank: number, total: number): Scale {
   if (total <= 3) return rank === 0 ? 'lead' : 'std';
   const third = Math.ceil(total / 3);
   if (rank < third) return 'lead';
@@ -39,8 +44,7 @@ export const TILE_SIZE: Record<Scale, string> = {
   std: 'h-12 w-36 sm:h-16 sm:w-44',
 };
 
-export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProps) {
-  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
+export default function LogoCard({ sponsor, logoUrl, rank, total, onReady }: LogoCardProps) {
   const scale = scaleFor(rank, total);
 
   /*
@@ -60,7 +64,15 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     The mark eases up on --d-move and --e-move, the same pair a row uses when
     it shifts, and only far enough to notice.
   */
-  const markClass = sponsor.link
+  /*
+    The tile is a link only for an http(s) address: rows from before the
+    database check and draft values in Preview are never checked otherwise.
+  */
+  const link = sponsor.link?.trim() ?? '';
+  const linkProps = externalLinkProps(link);
+  const isLink = 'target' in linkProps;
+
+  const markClass = isLink
     ? 'flex h-full w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
     : 'flex h-full w-full items-center justify-center';
 
@@ -83,12 +95,11 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     </span>
   );
 
-  if (sponsor.link) {
+  if (isLink) {
     return (
       <a
-        href={sponsor.link}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={link}
+        {...linkProps}
         className={tileClass}
         aria-label={`${sponsor.name}, opens in a new tab`}
         data-cursor="view"

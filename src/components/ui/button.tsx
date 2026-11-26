@@ -10,7 +10,14 @@ import { useSlabTone } from './slab';
 
   Label is Instrument Sans 15px / 500, sentence case, never wrapping. Padding
   is 14px block and 24px inline, which clears 44px at every size. One primary
-  per section, and no icon-only buttons on the marketing site.
+  per section, and no icon-only buttons on the marketing site. The edit
+  bar is admin chrome and has one: Settings, a gear with an accessible
+  name.
+
+  Destructive (--alert fill) and confirm (--ok fill) are for the edit
+  bar's Discard and Publish only, so the bar reads as a tool and its two
+  outcomes read apart. They keep their fill on every slab, since the bar
+  sits on the page ground.
 
   On an inverse, accent or logo slab the primary takes the page fill (the secondary
   look), because an accent button on a loud ground has nowhere to go. The
@@ -19,7 +26,7 @@ import { useSlabTone } from './slab';
   design-system/components.md → Button.
 */
 
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary';
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'confirm';
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -31,8 +38,8 @@ interface ButtonProps {
   disabled?: boolean;
   target?: string;
   rel?: string;
-  /** A trailing arrow means the action leaves the page. */
-  arrow?: boolean;
+  /** A trailing arrow means the action leaves the page; 'back' is a leading arrow that returns. */
+  arrow?: boolean | 'back';
   /**
    * @deprecated Has no effect. The button reads the enclosing Slab's tone
    * instead. Kept so existing callers compile; remove once none pass it.
@@ -67,6 +74,8 @@ const variants: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-on-accent shadow-2 hover:bg-accent-deep hover:shadow-3',
   secondary: 'bg-page text-ink shadow-1 hover:bg-raised',
   tertiary: 'bg-transparent text-accent-ink hover:bg-accent-veil',
+  destructive: 'bg-alert text-on-accent shadow-2 hover:shadow-3',
+  confirm: 'bg-ok text-on-accent shadow-2 hover:shadow-3',
 };
 
 /* Inside an inverse, accent or logo slab. The secondary and tertiary take the
@@ -75,6 +84,8 @@ const loudVariants: Record<ButtonVariant, string> = {
   primary: variants.secondary,
   secondary: 'bg-transparent text-current shadow-none',
   tertiary: variants.tertiary,
+  destructive: variants.destructive,
+  confirm: variants.confirm,
 };
 
 const disabledStyles = 'bg-sunken text-ink-faint shadow-none cursor-not-allowed';
@@ -112,8 +123,16 @@ export default function Button({
 
   const inner = (
     <>
+      {arrow === 'back' && (
+        <span
+          aria-hidden="true"
+          className="transition-transform duration-[var(--d-hover)] ease-enter group-hover:-translate-x-1"
+        >
+          &larr;
+        </span>
+      )}
       <span>{children}</span>
-      {arrow && (
+      {arrow === true && (
         <span
           aria-hidden="true"
           className="transition-transform duration-[var(--d-hover)] ease-enter group-hover:translate-x-1"

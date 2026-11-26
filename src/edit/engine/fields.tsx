@@ -16,15 +16,12 @@ import type { EditableImageProps } from '@/edit/editable-image';
 import { COPY } from '@/edit/engine/copy';
 import { setDraftPhoto, setDraftText } from '@/edit/engine/draft-store';
 import {
-  columnWidth,
-  lineHeightOf,
+  fieldHeight,
   onRemeasure,
-  sample,
-  textHeight,
   textWidth,
   wrapsOnPhones,
 } from '@/edit/engine/measure';
-import { blurField, edited, focusField, setUi } from '@/edit/engine/ui-store';
+import { blurField, edited, enterTray, focusField, setUi, type TrayContext } from '@/edit/engine/ui-store';
 
 /*
   The edit branches of the four components in src/edit/. Same props as the
@@ -36,13 +33,14 @@ import { blurField, edited, focusField, setUi } from '@/edit/engine/ui-store';
   so the page reads as a form that is already filled in. Hover changes only
   the cursor. The focus ring is drawn on the shell.
 
-  Sizes and labels come from each key's max_length, label and section in
-  src/lib/site-content-defaults.ts, which the site_content seed is
-  generated from, so the field and the database ceiling are one number.
+  A one-line field is the size of the text it holds (its label while
+  empty), never wider than its element, and grows or shrinks as the editor
+  types, so edit mode and Preview show the same box. Limits and labels come from each
+  key's max_length, label and section in src/lib/site-content-defaults.ts,
+  which the site_content seed is generated from, so the field and the
+  database ceiling are one number.
 */
 
-/** The Field shell's inline padding, both sides, from edit.css. */
-const SHELL_X = 24;
 /** Room the inline label leaves for the button's padding and arrow. */
 const BUTTON_CHROME = 96;
 /** The inline label shell's inline padding, one side, from edit.css. */
@@ -75,31 +73,48 @@ function useMeasure(measure: () => void, deps: unknown[]) {
   }, deps);
 }
 
+/*
+  The width of a fit field. A hidden copy of the text is the only thing in
+  the shell with a width of its own; the control after it has width 0 and
+  min-width 100% (.ed-size + .ed-in in edit.css), so it adds nothing to
+  the shell's size and then fills it. The shell is therefore sized as the
+  text itself would be: as wide as the text on one line, or, when that is
+  wider than the space it has, exactly that space, with the text wrapping
+  where it wraps in Preview. No width here is a percentage of a box whose
+  size depends on it, so the sizing is not cyclic. The copy may break
+  anywhere, so a long unbroken value (an email address at its limit)
+  never makes the field wider than its element. The list row fields in
+  list-parts.tsx use the same span.
+*/
+function FitSize({ text }: { text: string }) {
+  return (
+    <span className="ed-size" aria-hidden="true">
+      {text}
+    </span>
+  );
+}
+
 /* ── InlineText and InlineParagraph ── */
 
-export function EditText({ k, as: Tag = 'span', className, id }: EditableTextProps) {
+export function EditText({ k, as: Tag = 'span', className, id, size }: EditableTextProps) {
   const { text, published } = useSiteContent();
   const m = meta(k);
   const value = text(k);
   const pub = published.text(k);
-  const block = m.kind === 'longtext';
+  const fill = (size ?? (m.kind === 'longtext' ? 'fill' : 'fit')) === 'fill';
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  /* One-line values are as wide as their longest allowed value, capped at
-     the column; paragraphs take the column. Either way the height is that
-     longest value wrapped at the field's width. */
+  /* The width comes from the component's layout: a fill field takes the
+     element's box (CSS); a fit field is as wide as its text, through a
+     hidden copy of the text in the shell (FitSize), and never wider than
+     that box. Only the height is measured, at the width the field was
+     given. The fill is drawn outside the text (.ed-out), so the text sits
+     where Preview puts it. */
+  const shown = value || m.label;
   useMeasure(() => {
     const el = ref.current;
-    if (!el) return;
-    const s = sample(pub, m.max);
-    let width = el.clientWidth;
-    if (!block) {
-      const cap = Math.max(40, columnWidth(el) - SHELL_X);
-      width = Math.min(textWidth(el, s) + 2, cap);
-      el.style.width = `${width}px`;
-    }
-    el.style.height = `${textHeight(el, s, width)}px`;
-  }, [pub, m.max, block]);
+    if (el) el.style.height = `${fieldHeight(el, shown)}px`;
+  }, [shown, fill]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     edited();
@@ -108,7 +123,8 @@ export function EditText({ k, as: Tag = 'span', className, id }: EditableTextPro
 
   return (
     <Tag id={id} className={className}>
-      <span className={`ed ${block ? 'ed-block' : 'ed-line'}`} data-ed-field={k}>
+      <span className={`ed ed-out ${fill ? 'ed-fill' : 'ed-fit'}`} data-ed-field={k}>
+        {!fill && <FitSize text={shown} />}
         <textarea
           ref={ref}
           className="ed-in"
@@ -136,7 +152,7 @@ const joinLines = (lines: string[]) => {
   return out.join('\n');
 };
 
-export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLinesProps) {
+export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }: EditableLinesProps) {
   const { text, published } = useSiteContent();
   const metas = keys.map(meta);
   const joined = joinLines(keys.map((k) => text(k)));
@@ -164,14 +180,17 @@ export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLines
     focusField({ type: 'lines', keys, tooWide });
   };
 
-  /* Full column width, one line-height per key. Lines never wrap inside
-     the field (wrap="off"), so a long line cannot push the next one out. */
-  useMeasure(() => {
+  /* A heading field fills the box its component gives the title (the
+     page head's title measure, a card's column), so headings are one size
+     wherever the same component is used and a line wraps where it wraps
+     in Preview. Only the height is measured, on every keystroke, so no
+     text is ever hidden. */
+  const fit = () => {
     const el = ref.current;
     if (!el) return;
-    const pad = parseFloat(getComputedStyle(el).paddingTop) * 2;
-    el.style.height = `${lineHeightOf(el) * keys.length + pad}px`;
-  }, [keys.length]);
+    el.style.height = `${fieldHeight(el, el.value || label)}px`;
+  };
+  useMeasure(fit, [raw, label]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const el = e.target;
@@ -200,14 +219,20 @@ export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLines
     if (e.key === 'Enter' && lines.length >= keys.length) e.preventDefault();
   };
 
+  /* The lines are one field here, so the type role a page sets on each
+     line span (the hero's name lines take .title-hero) goes on the field's
+     element instead, or the lines would show in body type. `ln` is left
+     off: it is the Line Mask, which is off in edit mode, and its clip
+     would cut the focus ring. */
+  const role = lineClassName?.split(/\s+/).filter((c) => c && c !== 'ln').join(' ');
+
   return (
-    <Tag id={id} className={className}>
-      <span className="ed ed-block" data-ed-field={keys.join(' ')}>
+    <Tag id={id} className={[className, role].filter(Boolean).join(' ') || undefined}>
+      <span className="ed ed-out ed-fill" data-ed-field={keys.join(' ')}>
         <textarea
           ref={ref}
           className="ed-in ed-lines"
           rows={keys.length}
-          wrap="off"
           value={raw}
           maxLength={metas.reduce((n, m) => n + m.max, 0) + keys.length - 1}
           placeholder={label}
@@ -229,12 +254,19 @@ export function EditLines({ keys, as: Tag = 'h2', className, id }: EditableLines
   and no click, with an empty spacer where its label goes. The field is
   placed over the spacer in the same grid cell, so it moves with the button
   and with nothing else. It copies the button's font and colour, and the
-  spacer holds the longest allowed label, so the button never resizes.
+  spacer is as wide as the label, so the button is the size it is in
+  Preview and follows the label as it is typed.
 
   A label-only button (no hrefKey: a row's own URL, a form submit) works
   the same way. The face takes no href or type, so it is an inert <button>
   that cannot submit, and the tray shows the label's count instead of a
   link address.
+
+  With a hrefKey the pill itself is the keyboard route to the link address
+  (.ed-btn-link): a transparent button after the label field in tab order,
+  under the field on screen. Pressing it moves focus to the tray's link
+  address, as a list row's Options does; Escape or Enter there returns to
+  the label field.
 */
 export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, className }: EditableButtonProps) {
   const { text, published } = useSiteContent();
@@ -245,6 +277,7 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
   const spacer = useRef<HTMLSpanElement>(null);
   const shell = useRef<HTMLSpanElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  const ctx: TrayContext = hrefKey ? { type: 'button', labelKey, hrefKey } : { type: 'text', key: labelKey };
 
   const measure = () => {
     const button = face.current?.firstElementChild as HTMLElement | null;
@@ -256,14 +289,23 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
     el.style.font = cs.font;
     el.style.letterSpacing = cs.letterSpacing;
     el.style.color = cs.color;
-    const cap = Math.max(40, columnWidth(face.current!) - BUTTON_CHROME);
-    const width = Math.min(textWidth(el, sample(pub, m.max)) + 2, cap);
+    /* The cap is the width of the region the button is placed in (a list
+       item, a card, a section). A button row is often a flex item sized to
+       its content, which would make the cap depend on the label it limits,
+       so the row itself is not used. */
+    const region = face.current!.closest<HTMLElement>('li, article, section, nav, footer, form');
+    const regionWidth = region
+      ? region.clientWidth - parseFloat(getComputedStyle(region).paddingLeft) - parseFloat(getComputedStyle(region).paddingRight)
+      : document.documentElement.clientWidth;
+    const cap = Math.max(40, regionWidth - BUTTON_CHROME);
+    const shown = value || m.label;
+    const width = Math.min(textWidth(el, shown) + 2, cap);
     sp.style.width = `${width}px`;
     el.style.width = `${width}px`;
-    el.style.height = `${lineHeightOf(el)}px`;
+    el.style.height = `${fieldHeight(el, shown)}px`;
     sh.style.marginLeft = `${sp.offsetLeft - INBTN_X}px`;
   };
-  useMeasure(measure, [pub, m.max, variant, arrow, onAccent]);
+  useMeasure(measure, [value, m.label, variant, arrow, onAccent]);
 
   return (
     <span className={`ed-btn ${className ?? ''}`.trim()}>
@@ -287,12 +329,20 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
             setDraftText(labelKey, oneLine(e.target.value).slice(0, m.max), pub);
           }}
           onKeyDown={refuseEnter}
-          onFocus={() =>
-            focusField(hrefKey ? { type: 'button', labelKey, hrefKey } : { type: 'text', key: labelKey })
-          }
+          onFocus={() => focusField(ctx)}
           onBlur={blurField}
         />
       </span>
+      {hrefKey && (
+        <button
+          type="button"
+          className="ed-btn-link"
+          aria-label={COPY.linkAddress(fieldName(m.section, m.label))}
+          onFocus={() => focusField(ctx)}
+          onBlur={blurField}
+          onClick={() => input.current && enterTray(ctx, input.current)}
+        />
+      )}
     </span>
   );
 }
@@ -318,8 +368,7 @@ function readWidth(file: File): Promise<number> {
 /**
  * Today's uploader rules: type and size first, then resolution. Below the
  * slot's minWidth the photo is accepted with a warning; below half of it
- * the photo is refused. Exported so the lab can run a generated file
- * through the same path.
+ * the photo is refused.
  */
 export async function choosePhoto(slot: ImageSlotKey, file: File) {
   const def = IMAGE_SLOTS[slot];

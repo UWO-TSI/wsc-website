@@ -67,8 +67,16 @@ export function LenisProvider({ children }: { children: ReactNode }) {
 
     const listeners = listenersRef.current;
 
+    /*
+      lerp is the share of the remaining distance covered each frame: higher
+      reaches the target sooner and trails the wheel less. wheelMultiplier
+      scales the distance each wheel tick asks for. 0.14 and 1.25 make the
+      page travel further per tick and settle faster than Lenis's defaults
+      (0.1 and 1).
+    */
     const instance = new Lenis({
-      lerp: 0.1,
+      lerp: 0.14,
+      wheelMultiplier: 1.25,
       smoothWheel: true,
     });
     lenisRef.current = instance;

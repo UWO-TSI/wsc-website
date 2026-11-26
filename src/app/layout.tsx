@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Archivo, Instrument_Sans, Geist_Mono } from "next/font/google";
+import { Archivo, Instrument_Sans } from "next/font/google";
 import ClientLayout from "@/components/layout/client-layout";
+import { SHARED_OPEN_GRAPH } from "@/lib/page-metadata";
 import "./globals.css";
 
 /* Three families, each with one job. Mixing the jobs is how this stops
@@ -18,36 +19,27 @@ const instrumentSans = Instrument_Sans({
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://westernsalesclub.ca"),
   title: {
     default: "Western Sales Club",
     template: "%s | Western Sales Club",
   },
+  /*
+    The description, canonical and og:url here are the home page's: the home
+    page is a client component and cannot export metadata, so it takes the
+    root's. Every other route sets its own through pageMetadata or
+    UNLISTED_METADATA (src/lib/page-metadata.ts).
+
+    The share image is src/app/opengraph-image.png, a Next file convention:
+    Next serves it at /opengraph-image.png. SHARED_OPEN_GRAPH names that
+    route explicitly, because a route that sets its own openGraph replaces
+    this one whole and would otherwise drop the image.
+  */
   description:
     "Western University's student-run sales organization. Workshops, competitions and industry mentorship for students who want to sell.",
-  /*
-    No explicit `images` here. The share image is src/app/opengraph-image.png,
-    which is a Next file convention: it is served, sized and injected into both
-    the OpenGraph and Twitter tags automatically, with its alt text taken from
-    opengraph-image.alt.txt.
-
-    It used to be named og-image.png and pointed at by hand as "/og-image.png".
-    That is not a convention filename and the file was not in public/, so the
-    URL 404d and every social preview of the site came up blank.
-  */
-  openGraph: {
-    type: "website",
-    locale: "en_CA",
-    url: "https://westernsalesclub.ca",
-    siteName: "Western Sales Club",
-  },
+  alternates: { canonical: "/" },
+  openGraph: { ...SHARED_OPEN_GRAPH, url: "/" },
   twitter: {
     card: "summary_large_image",
   },
@@ -66,7 +58,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${archivo.variable} ${instrumentSans.variable} ${geistMono.variable}`}
+      className={`${archivo.variable} ${instrumentSans.variable}`}
     >
       <body>
         <ClientLayout>{children}</ClientLayout>

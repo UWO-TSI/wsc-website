@@ -1,16 +1,21 @@
-import type { Metadata } from "next";
 import ClosingBand from "@/components/layout/closing-band";
+import ClubEmail from "@/components/layout/club-email";
+import PageHead from "@/components/layout/page-head";
+import { pageMetadata } from "@/lib/page-metadata";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
+  path: "/privacy-policy",
   title: "Privacy Policy",
-};
+  description:
+    "What personal information Western Sales Club collects, how the club uses it, and the rights you have over it.",
+});
 
 export default function PrivacyPolicyPage() {
   return (
-    <>
-    <div className="px-[var(--gut)] pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
-      <div className="mx-auto flex max-w-[720px] flex-col gap-10">
-        <h1 className="title">Privacy Policy</h1>
+    <div className="stack">
+    <PageHead id="privacy-title" titleLines={["Privacy Policy"]} />
+    <div className="px-[var(--gut)] py-[var(--pad-section)]">
+      <div className="flex max-w-[720px] flex-col gap-10">
 
         <div className="flex flex-col gap-10">
           <Section index="01" title="Introduction">
@@ -144,11 +149,7 @@ export default function PrivacyPolicyPage() {
           <Section index="10" title="Contact Us">
             <p className="body measure">
               If you have questions or concerns about this Privacy Policy, please
-              contact us at{" "}
-              <a href="mailto:sales.club@westernusc.ca" className="text-accent-ink hover:underline">
-                sales.club@westernusc.ca
-              </a>
-              .
+              contact us at <ClubEmail />.
             </p>
           </Section>
         </div>
@@ -157,7 +158,7 @@ export default function PrivacyPolicyPage() {
       </div>
     </div>
     <ClosingBand />
-    </>
+    </div>
   );
 }
 

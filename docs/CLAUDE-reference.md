@@ -26,6 +26,6 @@ WSC Floor. The full rules are in `design-system/README.md`; this is the enforcea
 | ---- | ---- | --- |
 | `--f-display` | Archivo 800 to 900 | Every title, always uppercase |
 | `--f-text` | Instrument Sans | Running copy and UI labels |
-| `--f-data` | Geist Mono | Dates, counts, field labels, eyebrows |
+| `--f-text` as data | Instrument Sans 500 to 600 | Dates, counts, field labels, chips: `.label` and `.meta`. No eyebrows |
 
 ---

@@ -10,9 +10,9 @@ Open `floor.html` in a browser first. Nothing in here substitutes for that.
 | Concern | Where | Notes |
 | --- | --- | --- |
 | Tokens | `src/app/globals.css` | Every runtime var, the `@theme inline` map, the four type roles, `.slab`, `.stack`, the reveal keyframes, the texture styles. |
-| Fonts | `src/app/layout.tsx` | `next/font` → `--font-archivo`, `--font-instrument`, `--font-geist-mono`, consumed by `--f-display` / `--f-text` / `--f-data`. |
+| Fonts | `src/app/layout.tsx` | `next/font` → `--font-archivo`, `--font-instrument`, consumed by `--f-display` / `--f-text`. No monospace face is loaded. |
 | One theme | `src/app/globals.css` | Showroom only. `color-scheme: light` on `:root`. There is no theme stamp, provider or toggle. |
-| Texture | `src/components/ui/texture.tsx` | Lit velvet, drawn by `Slab` when `texture` is set. Check it at `/texture-lab` in development. |
+| Texture | `src/components/ui/texture.tsx` | Lit velvet, drawn by `Slab` when `texture` is set. Check it on card 17 in `floor.html`. |
 | Reveals | `src/lib/reveal.tsx` | `useReveal()`: one shared IntersectionObserver per threshold. |
 | Framer variants | `src/lib/motion.ts` | `E`, `D`, `STAGGER`, and the variants CSS cannot express. |
 
@@ -23,7 +23,7 @@ Spend these. Never a hex, never a raw number, never a new curve.
 Tailwind utilities resolve through `@theme inline`:
 
 - Surfaces: `bg-page`, `bg-raised`, `bg-sunken`, `bg-inverse`, `bg-accent`, `bg-accent-veil`, and
-  `bg-inverse-tile` for a tile inside an inverse slab
+  `bg-inverse-tile` for a tile inside an inverse slab, and `bg-inverse-veil` over a photo with text on it
 - Ink: `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-on-inverse`, `text-on-accent`, `text-accent-ink`
 - Fixed marks: `text-velvet`, `text-gold`, `bg-gold`: the Western lockup and sponsor tiers only
 - Logo ground: `bg-logo-ground` with `text-on-logo-ground`, the third fixed mark. Every supplied
@@ -42,7 +42,7 @@ Tailwind utilities resolve through `@theme inline`:
 - Corners: `rounded-xs|sm|md|lg|xl|pill`, `rounded-full` for a disc
 - Elevation: `shadow-1`, `shadow-2`, `shadow-3`
 - Easing: `ease-enter`, `ease-exit`, `ease-move`, `ease-snap`
-- Families: `font-display`, `font-text`, `font-data`
+- Families: `font-display`, `font-text`. Data text (labels, dates, counts) is `font-text` in the `.label` or `.meta` treatment, not a third family.
 
 Durations and layers have no Tailwind alias on purpose, so write them as the var:
 `duration-[var(--d-hover)]`, `z-[var(--layer-nav)]`.
@@ -58,13 +58,16 @@ All in `src/components/`. Compose from these; do not rebuild them.
 | Import | Props worth knowing |
 | --- | --- |
 | `ui/button` | `variant: 'primary' \| 'secondary' \| 'tertiary'`, `href`, `arrow`, `disabled`. Magnetic Pull is built in. One primary per section. Inside an inverse, accent or logo `Slab` the primary takes the page fill on its own; `onAccent` is deprecated and does nothing. |
-| `ui/eyebrow` | `index` renders the section numeral in `--accent-ink`. |
 | `ui/slab` | `tone: 'page' \| 'raised' \| 'sunken' \| 'inverse' \| 'accent' \| 'logo'`, `texture` (inverse and accent only: `sweep`, `rise`, `arc`, `waist`, `pair`), `clip` for Slab Clip, `overflowHidden`, `as`. Provides its tone to `useSlabTone()`. |
-| `ui/section-head` | `title` is an **array, one entry per visual line**. Owns its own Line Mask Reveal. |
+| `ui/section-head` | The left-aligned head. `titleKeys` (editable) or `title`, each an **array, one entry per visual line**. Owns its own Line Mask Reveal. |
 | `ui/chip` | `status: 'ok' \| 'warn' \| 'alert' \| 'neutral'`. The word is the signal. |
-| `ui/stat-figure` | `value: number`, `label`, `suffix`. Counter Roll at 70% visible. Real numbers only, three in a row at most. |
+| `ui/stat-figure` | `value: number`, `label`, `suffix`. Counter Roll at 70% visible. Real numbers only, four in a row at most. `size: 'default' \| 'hero'`. |
 | `ui/avatar` | `name`, `src`, `size`. Missing headshot renders initials on `--sunken`, by design. |
 | `shared/async-state-wrapper` | Loading, error with retry, empty. Empty copy names what is missing. |
+
+## No eyebrows
+
+The site uses no eyebrow (the small label line over a title). A head is its title, then its copy, then its buttons. `CentredHead`, `SectionHead`, `PageHead` and `ClosingBand` have no eyebrow prop, and there is no `Eyebrow` component. The one `.label` line on a public page is the brand strip's "Events and competitions with", which is that section's heading.
 
 ## Layout and alignment
 
@@ -72,9 +75,18 @@ A section is a full-width container: it spans the viewport with no side gap, tak
 puts `--gut` inside itself as inline padding. `.slab` does all three. Containers that meet are 2px
 apart: wrap them in `.stack`. Do not add `mx-[var(--gut)]` or any side margin to a slab.
 
-- **Selling sections are centred:** the hero, section heads and closing bands. Eyebrow, then the
-  Archivo title, then at most three lines of copy, then the buttons.
-- **Reading content is left-aligned:** long paragraphs and the event ledger.
+On an inner page the page head and the closing band are the only containers. A content section
+between them is a bare `<section>` with `px-[var(--gut)] py-[var(--pad-section)]`, no tone. The
+contact form (`sunken`), the Partners logo wall (`logo`) and the raised and sunken facts of the About story grid keep their slabs. Home keeps its slabs.
+
+- **Selling moments are centred:** the hero, page heads, closing bands, and a home section head
+  whose section is one message and a link. The Archivo title, then at most three
+  lines of copy, then the buttons. `CentredHead`.
+- **Reading or scanning content is left-aligned, head included:** the About
+  story grid, the event ledger, the team roster, the legal text, every long paragraph. The title sits
+  on the content's left edge. `SectionHead`. The contact form is the exception: its 640px column
+  is centred in the sunken slab under the centred page head, with labels and inputs left-aligned
+  inside it and the submit button, failure message and confirmation centred.
 
 On an inverse, accent or logo slab the focus ring and the primary button adapt on their own (see
 `Slab` and `Button` in `components.md`). A loud slab that sells takes `texture`; see the shape
@@ -91,7 +103,6 @@ Title Join, one or two sentences for both audiences, then two buttons side by si
 | Prop | Default | Use |
 | --- | --- | --- |
 | `titleKeys` | `['home.cta.title_line1']` (Join) | One `site_content` key per visual line. |
-| `eyebrowKey` | none | Optional. Off by default, because an eyebrow over the title Join repeats it. |
 | `bodyKey` | `home.cta.subtitle` | One or two sentences. `null` for none. |
 | `businessAction` | `EditableButton` on `home.cta.business_label` / `home.cta.business_href`, secondary (Get in touch, `/contact-us`) | Replaces the business button only. Apply to join on `home.cta.button_*` always stays. |
 | `id` | `closing-heading` | The heading id the section is labelled by. |
@@ -113,21 +124,20 @@ It is the page's one loud slab, except for the page head: a page other than home
 
 **Page head.** `src/components/layout/page-head.tsx`, `PageHead`, the first child of every public
 page other than home: an `inverse` slab with the `waist` ribbon and a `CentredHead` as the `h1`. It owns
-the padding (the hero's, `clamp(7.5rem,14vw,11rem)` top and `clamp(3rem,7vw,5.5rem)` bottom), so pages
+the padding (the hero's, `clamp(7.5rem,14vw,11rem)` top and `--pad-section` bottom), so pages
 never set one.
 
 | Prop | Default | Use |
 | --- | --- | --- |
 | `titleKeys` | required | One `site_content` key per visual line. |
-| `eyebrowKey` | none | The eyebrow over the title. |
 | `bodyKey` | none | At most three lines of copy under the title. |
 | `id` | required | The `h1` id the slab is labelled by. Unique per page. |
 
 ```tsx
-<PageHead id="about-title" eyebrowKey="about.header.eyebrow" titleKeys={['about.header.title']} />
+<PageHead id="about-title" titleKeys={['about.header.title']} />
 ```
 
-**Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for every section head on a selling page. `SectionHead` stays for left-aligned heads whose title is not editable copy.
+**Centred section head.** `src/components/ui/centred-head.tsx`, `CentredHead`: `titleKeys`, `bodyKey`, `bodyRole`, `id`, `as`, and the buttons as children. Use it for a selling moment only. A section whose job is reading or scanning takes `SectionHead`, `src/components/ui/section-head.tsx`, which takes the same `titleKeys`, `bodyKey`, `id`, `as` and children, left-aligned.
 
 **The one action.** Apply to join is always `<EditableButton labelKey="home.cta.button_label" hrefKey="home.cta.button_href" arrow />`. The nav already carries it at every width. Never give a page its own Apply to join key.
 
@@ -187,8 +197,18 @@ Both follow from hard rule 1, never touch `supabase/`. Revisit them only with a 
 - **Event status.** `events` has no status column, so the Open / Closed chip derives from
   `date`. Future or today is `ok` "Open". Past events drop the chip, take `--ink-muted` and
   lose the hover expand, because they are reference and should not look pressable.
-- **Stat figures.** The three on the landing page (150 members, 10 annual events, 5 industry
-  partners) are the club's own existing claims. Do not add a fourth, and do not invent one.
+- **Stat figures.** The landing proof band shows up to four rows from `site_stats`, which are the
+  club's own claims: members, annual events, industry partners, and Instagram followers. Never
+  invent one.
+- **Format cards.** Taken with a migration (`20261125000001_event_formats.sql`). The home page's
+  "What we run" cards are rows of `event_formats` (title, body, meta, `image_path`, `visible`,
+  `display_order`), edited in edit mode only, like every other list. They used to be compiled
+  `home.formats.*` strings and the `home.about.image1` to `image4` slots; the migration seeded the
+  four cards with that copy and pointed each one at its old slot's photo. Card photos stay in the
+  `site-images` bucket as root-level object names, the same naming `uploadFile` gives every
+  other column, so a seeded card and a new upload look alike. Removing a card deletes its photo
+  first, then the row (`deleteContentItem`). The photo has `alt=""`: the title under it names the
+  format.
 
 ## Loading
 
@@ -208,7 +228,8 @@ Three things follow from it, and all three were wrong before:
    holds its aspect ratio from the first paint, skeletons behind the picture, and gates the reveal
    on `useReveal`'s `ready` flag so the sequence waits for the bytes rather than just the viewport.
    `sequence="clip"` is Clip Reveal and is right for photography; `sequence="fade"` is for a
-   supplied logo, which has no meaningful moment of arrival.
+   supplied logo, which has no meaningful moment of arrival. An empty slot is never blank: the
+   still skeleton surface runs the same reveal at the frame's size, for visitors too.
 
 A component that already has a designed fallback does not need a skeleton on top of it. `Avatar`
 layers the headshot over its initials disc rather than swapping between them, so the fallback is
@@ -283,7 +304,7 @@ Complete. Every component on the public site and in `/admin` is on Floor, the pr
 1. Look at it rendered, on every tone it can be placed on.
 2. Keyboard only. Every row, chip and control reachable, focus ring never removed.
 3. No borders. Not on a section, a row, an input or an image.
-4. One primary button per section, adjacent slabs never the same tone, one loud slab per page. The one exception is the page head: an inverse page head with the waist ribbon may open a page that ends with the closing band.
+4. One primary button per section, adjacent slabs never the same tone, one loud slab per page. The one exception is the page's single inverse slab: an inverse page head with the waist ribbon may open a page that ends with the closing band, and Home, which has no page head, spends that inverse slab on the proof band instead. On an inner page nothing between the page head and the closing band is a slab, apart from the contact form, the logo wall and the About story grid's fact cells. The AudienceSplit has one primary per tile, because each tile is a different audience.
 5. Reduced motion on. Nothing is invisible, nothing loops, and the grain is still.
 6. `npx tsc --noEmit` and `npm run lint` clean, `npm run build` passing.
 7. Its card exists in `floor.html`. If it is not in `floor.html`, it does not exist.

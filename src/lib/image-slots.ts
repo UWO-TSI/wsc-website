@@ -38,30 +38,22 @@ export interface ImageSlot {
 }
 
 export const IMAGE_SLOTS = {
-  'home.about.image1': {
-    page: 'Home', section: 'About', label: 'Strip, left',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,
+  /*
+    Slot keys are stable ids: renaming one would orphan the photo already
+    uploaded to it. When a layout moves a photo, the key stays and the
+    section and label change to say where it shows now. The format cards on Home are not slots:
+    each card's photo is in event_formats.image_path, in the same bucket.
+  */
+  'home.hero.image1': {
+    page: 'Home', section: 'Hero', label: 'Background',
+    aspect: 16 / 9, aspectClass: 'aspect-[16/9]', minWidth: 1920,
     alt: 'Western Sales Club members at a sales competition',
-  },
-  'home.about.image2': {
-    page: 'Home', section: 'About', label: 'Strip, middle',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,
-    alt: 'Western Sales Club members at a club event',
-  },
-  'home.about.image3': {
-    page: 'Home', section: 'About', label: 'Strip, right',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,
-    alt: 'Western Sales Club members presenting',
+    note: 'Fills the hero behind the headline and is cropped to the hero at each width.',
   },
   'home.events.image1': {
-    page: 'Home', section: 'Events', label: 'Portrait beside the list',
-    aspect: 3 / 4, aspectClass: 'aspect-[3/4]', minWidth: 840,
+    page: 'Home', section: 'Coming up', label: 'Beside the next event',
+    aspect: 3 / 4, aspectClass: 'aspect-[3/4]', minWidth: 920,
     alt: 'Western Sales Club members at a club event',
-  },
-  'home.cta.image1': {
-    page: 'Home', section: 'Join', label: 'Join band',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 1040,
-    alt: 'Western Sales Club members together at a club event',
   },
   'about.story.image1': {
     page: 'About', section: 'Story', label: 'Top right',

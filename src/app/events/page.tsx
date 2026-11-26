@@ -3,11 +3,10 @@
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import PageHead from '@/components/layout/page-head';
-import Slab from '@/components/ui/slab';
 import Timeline from '@/components/events/timeline';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import ClosingBand from '@/components/layout/closing-band';
-import { EditableImage } from '@/edit';
+import { EditableImage, useEditMode } from '@/edit';
 import type { Event } from '@/types/database';
 import { useSiteContent } from '@/providers/site-content-provider';
 import type { ImageSlotKey } from '@/lib/image-slots';
@@ -24,9 +23,11 @@ import type { ImageSlotKey } from '@/lib/image-slots';
   Newest first: the calendar is read for what is coming and what just
   happened, not from the club's first event forward.
 
-  Order: the page head (inverse, waist ribbon), the photo strip bare on the
-  page, the ledger on a sunken slab, then the closing band. The head sells,
-  so it is centred; the ledger is reading content and stays left-aligned.
+  Order: the page head (inverse, waist ribbon), the photo strip and the
+  ledger bare on the page ground, then the closing band. The page head and
+  the band are the page's containers; the strip and the ledger between them
+  carry no tint and are separated by room (--pad-section). The head sells,
+  so it is centred; the ledger is scanned, so it starts from the gutter.
 */
 const PHOTO_SLOTS: ImageSlotKey[] = [
   'events.strip.image1',
@@ -45,19 +46,21 @@ export default function EventsPage() {
       thenBy: 'created_at',
       /* Not redundant with RLS: a signed-in admin can read drafts. */
       filters: [{ column: 'published', operator: 'eq', value: true }],
+      editList: true,
     }
   );
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   return (
     <div className="stack">
       <PageHead
         id="events-heading"
-        eyebrowKey="events.header.eyebrow"
+        texture="arc"
         titleKeys={['events.header.title_line1']}
       />
 
-      <section aria-label="Event photos" className="px-[var(--gut)] py-[clamp(1.5rem,4vw,2.75rem)]">
+      <section aria-label="Event photos" className="px-[var(--gut)] pt-[var(--pad-section)]">
         <ul className="m-0 grid list-none grid-cols-3 gap-2 p-0 min-[850px]:grid-cols-5 sm:gap-3">
           {PHOTO_SLOTS.map((slot, i) => (
             <li
@@ -76,22 +79,23 @@ export default function EventsPage() {
       </section>
 
       {/*
-        The slab is outside the async wrapper on purpose. The band, its tone
-        and its corner are known before the query resolves, so they paint
-        immediately and only the ledger inside fills in.
+        The section is outside the async wrapper on purpose. Its room is
+        known before the query resolves, so it holds its place and only the
+        ledger inside fills in.
       */}
-      <Slab tone="sunken">
+      <section aria-label="Events" className="px-[var(--gut)] py-[var(--pad-section)]">
         <AsyncStateWrapper
           loading={loading}
           error={error}
-          data={events}
+          /* An empty ledger still shows the editor, so its Add tile is there. */
+          data={editing ? [editing] : events}
           onRetry={refetch}
           emptyMessage={text('events.header.empty')}
           skeleton={<RowSkeleton count={6} />}
         >
           <Timeline events={events} />
         </AsyncStateWrapper>
-      </Slab>
+      </section>
 
       <ClosingBand />
     </div>

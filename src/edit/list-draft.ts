@@ -1,23 +1,30 @@
+import { createElement } from 'react';
+import type { ComponentType } from 'react';
+import { useEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
+
 /*
-  The list draft interface: types only, so importing it costs the anonymous
-  bundle nothing. The implementation is in src/edit/engine/draft-store.ts
-  and is reached through useEditSnapshot().engine?.list(table) while edit
-  mode is on.
+  The list draft interface. Types, two constants, the branch and the
+  drafted file reader below, so importing it costs the anonymous bundle
+  almost nothing. The
+  implementation is in src/edit/engine/draft-store.ts and is reached
+  through useEditSnapshot().engine?.list(table) while edit mode is on.
 
   A list draft records what the editor changed, never a copy of the list:
   rows added, field patches on published rows, the full draft order, and
   the published rows marked for removal. A removed row stays in the list
   with Will be removed until Publish, and Preview leaves it out.
 
-  Publishing lists (Grip, AddTile, the publish order for rows and their
-  files) is built on this by the edit-lists work in phase 3.
+  The list editors (Grip, AddTile, the chips, the inline fields) are in
+  src/edit/engine/list-editors.tsx, and Publish writes their changes in
+  src/edit/engine/publish.ts.
 
-  Publish refuses while an added executive has no name, and moves focus to
-  the field inside `[data-ed-field="executives.<id>.name"]`, so the list
-  editor puts that attribute on the name field's shell.
+  Publish refuses while any list's name field (NAME_FIELD in publish.ts)
+  is empty on an added row, or cleared on a published one, and moves focus
+  to the field inside `[data-ed-field="<table>.<id>.<name field>"]`, so the
+  list editor puts that attribute on the name field's shell.
 */
 
-export type ListTable = 'executives' | 'events' | 'sponsors' | 'site_stats';
+export type ListTable = 'executives' | 'events' | 'sponsors' | 'site_stats' | 'event_formats';
 
 /** The column that hides a row from visitors, per table. */
 export const LIST_VISIBILITY_COLUMN: Record<ListTable, string> = {
@@ -25,6 +32,7 @@ export const LIST_VISIBILITY_COLUMN: Record<ListTable, string> = {
   events: 'published',
   sponsors: 'active',
   site_stats: 'visible',
+  event_formats: 'visible',
 };
 
 /** Ids of rows added in the draft start with this, so they never match a uuid. */
@@ -50,6 +58,12 @@ export interface ListDraftApi<Row extends { id: string } = { id: string }> {
   update: (id: string, patch: Partial<Row>) => void;
   /** Moves one row to `index` in the current draft order. */
   move: (id: string, index: number) => void;
+  /**
+   * Moves one row to just before or after another, in the full draft
+   * order. Lists that show a sorted view (the roster sorts by role) move
+   * with this, so the index is never taken from the sorted view.
+   */
+  moveNextTo: (id: string, targetId: string, after: boolean) => void;
   /** Sets the table's visibility column. */
   hide: (id: string, hidden: boolean) => void;
   /** An added row is dropped at once; a published row is marked Will be removed. */
@@ -61,4 +75,59 @@ export interface ListDraftApi<Row extends { id: string } = { id: string }> {
   setFile: (id: string, column: string, file: File) => Promise<void>;
   /** Object URL of a drafted file, or null. */
   fileUrl: (id: string, column: string) => string | null;
+}
+
+/*
+  The edit branch of a whole list.
+
+  A list component renders its visitor version until the engine is loaded
+  and the page is in edit mode, then the engine's editor for that list with
+  the same props. The engine registers its editors on the API object it
+  publishes (`listEditors`), so this file names no engine module and a
+  visitor downloads none of it. Preview reads `editing: false` and gets the
+  visitor version with the draft rows in it.
+*/
+
+export type ListEditorName = 'executives' | 'events' | 'sponsors' | 'stats' | 'formats';
+
+export interface ListEngineApi extends EditEngineApi {
+  listEditors: Record<ListEditorName, ComponentType<never>>;
+  /** Areas typed in with Add an area and not yet published. */
+  draftAreas: () => Array<{ id: string; name: string }>;
+}
+
+/** True while the page is in edit mode with the engine loaded. */
+export function useListEditBranch(): boolean {
+  const { status, engine } = useEditSnapshot();
+  return status === 'editing' && engine !== null && 'listEditors' in engine;
+}
+
+/**
+ * Reads the drafted files of one list: the object URL of a file chosen for
+ * a row's column and not yet published, or null. Visitor components put it
+ * before the stored object name, so Preview shows a new headshot, logo or
+ * card photo as visitors will see it after Publish. Always null while the
+ * engine is not loaded, so a visitor's page reads the stored files only.
+ */
+export function useDraftFile(table: ListTable): (id: string, column: string) => string | null {
+  /* The snapshot changes on every draft change, so a chosen file re-renders the caller. */
+  const { engine } = useEditSnapshot();
+  const list = engine?.list(table);
+  return (id, column) => list?.fileUrl(id, column) ?? null;
+}
+
+/**
+ * Areas added in the draft (Add an area), so the visitor roster in Preview
+ * can build "VP, <new area>" before the area is published. Empty for
+ * visitors.
+ */
+export function useDraftAreas(): Array<{ id: string; name: string }> {
+  const { engine } = useEditSnapshot();
+  return (engine as ListEngineApi | null)?.draftAreas?.() ?? [];
+}
+
+export function ListEditBranch<P extends object>({ name, props }: { name: ListEditorName; props: P }) {
+  const { engine } = useEditSnapshot();
+  const editor = (engine as ListEngineApi | null)?.listEditors?.[name] as ComponentType<P> | undefined;
+  return editor ? createElement(editor, props) : null;
 }

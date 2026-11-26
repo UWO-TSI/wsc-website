@@ -28,7 +28,6 @@ export default function ContactPage() {
     <div className="stack">
       <PageHead
         id="contact-title"
-        eyebrowKey="contact.header.eyebrow"
         titleKeys={['contact.header.title']}
         bodyKey="contact.header.body"
       />

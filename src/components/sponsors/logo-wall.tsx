@@ -9,7 +9,8 @@ import LogoCard, { TILE_SIZE } from '@/components/sponsors/logo-card';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
 import { useSiteContent } from '@/providers/site-content-provider';
-import { EditableText } from '@/edit';
+import { EditableText, useDraftFile, useEditMode } from '@/edit';
+import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 
 interface LogoWallProps {
   sponsors: Sponsor[];
@@ -50,7 +51,7 @@ function WallSkeleton() {
 
   The whole wall sits on the constant --logo-ground slab and the marks sit
   directly on it, the same treatment as the landing marquee. A dark plate
-  per logo on a light bed read as a grid of stickers
+  per logo on a light bed read as a grid of separate dark patches
   (design-system/components.md, LogoWall).
 
   The slab and the tier bar are outside the async wrapper: both are known
@@ -64,10 +65,19 @@ function WallSkeleton() {
   it once, so the marks arrive together instead of each one popping in as
   its response lands.
 */
-function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
-  const ids = sponsors.flatMap((sponsor) =>
-    getPublicUrl('sponsor-logos', sponsor.logo_path ?? null) ? [sponsor.id] : []
-  );
+function LogoGrid(props: { sponsors: Sponsor[] }) {
+  /* While editing, the engine's wall editor renders instead (src/edit/list-draft.ts). */
+  if (useListEditBranch()) return <ListEditBranch name="sponsors" props={props} />;
+  return <LogoGridView {...props} />;
+}
+
+function LogoGridView({ sponsors }: { sponsors: Sponsor[] }) {
+  /* A logo chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('sponsors');
+  const logoOf = (sponsor: Sponsor) =>
+    draftFile(sponsor.id, 'logo_path') ?? getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
+
+  const ids = sponsors.flatMap((sponsor) => (logoOf(sponsor) ? [sponsor.id] : []));
   const pending = useRef(new Set(ids));
   const [ready, setReady] = useState(ids.length === 0);
   const ref = useReveal<HTMLDivElement>({ ready });
@@ -83,6 +93,7 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
         <LogoCard
           key={sponsor.id}
           sponsor={sponsor}
+          logoUrl={logoOf(sponsor)}
           rank={index}
           total={sponsors.length}
           onReady={() => settle(sponsor.id)}
@@ -94,6 +105,7 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
 
 export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWallProps) {
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   return (
     <Slab tone="logo" aria-labelledby="partners-wall-label">
@@ -106,7 +118,8 @@ export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWall
       <AsyncStateWrapper
         loading={loading}
         error={error}
-        data={sponsors}
+        /* An empty wall still shows the editor, so its Add tile is there. */
+        data={editing ? [editing] : sponsors}
         onRetry={onRetry}
         emptyMessage={text('partners.wall.empty')}
         skeleton={<WallSkeleton />}

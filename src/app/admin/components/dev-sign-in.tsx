@@ -9,7 +9,7 @@ import Button from '@/components/ui/button';
   Email and password sign-in for LOCAL DEVELOPMENT ONLY.
 
   The local stack (`supabase start`) has no Google OAuth client, so the
-  dashboard could not be reached on localhost at all. This renders only when
+  admin sign-in could not be reached on localhost at all. This renders only when
   both are true:
 
     - NODE_ENV is development, which Next inlines at build time, so a

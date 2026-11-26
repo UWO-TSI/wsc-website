@@ -46,9 +46,9 @@ One component, two modes, never two menus.
 
 **Desktop, 1024 and up.** A floating pill: glyph, wordmark, links inline, and a `--r-pill` `--accent` indicator that slides between items on `layoutId`. No hamburger.
 
-**The one action.** Apply to join sits in the pill as a primary `Button` at every width, phones included, after the links on desktop and before the hamburger on mobile. It reads `home.cta.button_label` and `home.cta.button_href` through `EditableButton`, the same keys as the hero, About and the closing band. Below 640 the wordmark gives way to it and the shark alone marks the home link (the link keeps its accessible name).
+**The one action.** Apply to join is a primary `Button`: in the pill from 640 up, after the links on desktop and before the hamburger between 640 and 1024; below 640 it is the first item of the mobile panel, full width, so a label of any allowed length never pushes the hamburger out of the pill. Both copies read `home.cta.button_label` and `home.cta.button_href` through `EditableButton`, the same keys as the hero, About and the closing band. Below 640 the pill holds the shark and the hamburger only; the shark alone marks the home link (the link keeps its accessible name).
 
-**Mobile.** The same pill with the hamburger on the right. It expands downward into a panel: see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, and on a click outside. There is no drawer and no scrim.
+**Mobile.** The same pill with the hamburger on the right. It expands downward into a panel: see Nav Expand in `motion.md`. Collapses on the X, on selecting an item, on Escape, on a click outside, and when focus moves out of the nav. There is no drawer and no scrim, so the panel is a disclosure, not a modal: it does not trap Tab, it closes when Tab leaves it. The closed panel is `inert`. Closing it with focus inside returns focus to the hamburger. The edit bar counts as inside the nav, so moving from the panel's Apply field to its link address in the tray keeps the panel open.
 
 ## Button
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import Button from '@/components/ui/button';
 import { useSiteContent } from '@/providers/site-content-provider';
@@ -29,11 +29,19 @@ import {
 import { holdIosFocusZoom } from '@/edit/engine/ios-zoom';
 import { LinkField } from '@/edit/engine/link-field';
 import { signOutAndReload } from '@/edit/sign-out';
+import ChangesList from '@/edit/engine/changes-list';
 
 /*
-  The edit bar: change count, Edit and Preview, Discard, Publish, the tray
-  between them, and Settings and Sign out (under the count on phones,
-  under Edit and Preview from 900px).
+  The edit bar, left to right from 900px: Settings (a gear) and Sign out,
+  the change count, the tray, Edit and Preview, Discard and Publish. On
+  phones the gear, the count and Edit and Preview share the first row
+  (Sign out is on the Settings page there), the tray is the second, and
+  Discard and Publish the third. The bar is the page ground with the
+  status colours on Discard (--alert) and Publish (--ok), so it reads as a
+  tool laid over the site; Edit and Preview keep the accent.
+
+  The count is a button: it opens the list of unpublished changes above
+  the bar (changes-list.tsx).
 
   The bar has one fixed size at each width. The tray is the only region
   whose content changes, and it never grows: it holds whatever has focus
@@ -145,6 +153,13 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   const n = changeCount();
   const preview = status === 'preview';
   const busy = ui.phase !== 'idle';
+  const listId = useId();
+  const countRef = useRef<HTMLButtonElement>(null);
+  const [listOpen, setListOpen] = useState(false);
+  const closeList = (refocus: boolean) => {
+    setListOpen(false);
+    if (refocus) countRef.current?.focus();
+  };
 
   useEffect(() => holdIosFocusZoom(), []);
 
@@ -252,18 +267,34 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
 
   return (
     <div ref={bar} className="ed-bar" role="region" aria-label={COPY.firstLabel}>
-      <div className="ed-status">
-        <span className="label">{preview ? COPY.previewing : COPY.editing}</span>
-        <span className="meta">{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
-      </div>
+      {listOpen && n > 0 && <ChangesList id={listId} onClose={closeList} />}
 
       <div className="ed-acct" role="group" aria-label={COPY.accountGroup}>
-        <Button variant="tertiary" className="ed-link" href="/admin/settings">
-          {COPY.settings}
+        <Button variant="tertiary" className="ed-gear" href="/admin/settings" aria-label={COPY.settings}>
+          <GearIcon />
         </Button>
         <Button variant="tertiary" className="ed-link" disabled={ui.phase === 'publishing'} onClick={() => signOutAndReload()}>
           {COPY.signOut}
         </Button>
+      </div>
+
+      <div className="ed-status">
+        <button
+          ref={countRef}
+          type="button"
+          className="ed-count"
+          disabled={!n}
+          aria-expanded={listOpen && n > 0}
+          aria-controls={listId}
+          aria-label={n ? `${COPY.changesShow}, ${COPY.pendingShort(n)}` : COPY.noChanges}
+          onClick={() => setListOpen((o) => !o)}
+        >
+          <span className="label">{preview ? COPY.previewing : COPY.editing}</span>
+          <span className="meta ed-count-n">
+            <span>{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
+            {n > 0 && <ChevronUp />}
+          </span>
+        </button>
       </div>
 
       <div className="ed-seg" role="group" aria-label={COPY.modeGroup}>
@@ -285,7 +316,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
 
       <div className="ed-discard">
         <Button
-          variant="secondary"
+          variant="destructive"
           disabled={!n || busy}
           onClick={() => setUi({ confirmDiscard: true, flash: null })}
         >
@@ -293,7 +324,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         </Button>
       </div>
       <div className="ed-publish">
-        <Button disabled={!n || busy || !ui.online || ui.expired} onClick={publish}>
+        <Button variant="confirm" disabled={!n || busy || !ui.online || ui.expired} onClick={publish}>
           {publishLabel}
         </Button>
       </div>
@@ -305,6 +336,32 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         {announced && announced.tone === 'alert' ? announced.text : ''}
       </p>
     </div>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronUp() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

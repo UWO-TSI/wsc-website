@@ -240,16 +240,16 @@ html.ed-on body {
   bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   z-index: var(--layer-nav);
   display: grid;
-  /* Three columns, so only Edit and Preview (134px, last column) limits
-     the count. Publish (190px) spans the last two columns. */
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  /* Phones: Settings, Sign out and the changes button, then Edit and
+     Preview; the tray; Discard and Publish. Publish (190px) spans the
+     last two columns. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    'status status seg'
-    'acct acct seg'
+    'acct status seg'
     'tray tray tray'
     'discard publish publish';
   align-items: center;
-  gap: 2px 12px;
+  gap: 2px 8px;
   padding: 12px;
   background: var(--page);
   color: var(--ink);
@@ -262,77 +262,192 @@ html.ed-on body {
     left: 12px;
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    grid-template-columns: 150px minmax(0, 1fr) auto auto auto;
-    /* Settings and Sign out sit under Edit and Preview. Every other cell
-       spans both rows, so the bar's height is set by that one column and
-       does not change when the count wraps to two lines. */
-    grid-template-areas:
-      'status tray seg discard publish'
-      'status tray acct discard publish';
-    row-gap: 2px;
-    padding: 12px 14px 12px 20px;
+    /* One row, left to right: the account controls, the changes button,
+       the tray, then the three actions. */
+    grid-template-columns: auto 180px minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'acct status tray seg discard publish';
+    column-gap: 12px;
+    padding: 12px 14px;
     border-radius: var(--r-xl);
   }
 }
 
-/* Below 900px the count is one line. The 8px bar margins, the 12px
-   padding and the narrower Edit and Preview buttons leave it about 190px,
-   and "12 unpublished changes" needs 178px at the meta size. The ellipsis
-   only applies while a fallback font is showing. */
-.ed-status {
-  grid-area: status;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.ed-status > * {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.ed-status .label {
-  display: none;
-  color: var(--accent-ink);
-}
-
-/* From 900px the label shows and the count may wrap: the bar is taller
-   than three lines there. */
-@media (min-width: 900px) {
-  .ed-status > * {
-    white-space: normal;
-  }
-
-  .ed-status .label {
-    display: block;
-  }
-}
-
 /* ── Settings and Sign out ──
-   Tertiary buttons at the meta size, 24px tall (WCAG 2.5.8). Below 900px
-   they sit under the count, beside Edit and Preview, with the text lined
-   up with the count; from 900px they sit under Edit and Preview. */
+   Settings is a gear on a 40px disc, Sign out a tertiary button at the
+   meta size, 24px tall (WCAG 2.5.8). */
 
 .ed-acct {
   grid-area: acct;
   display: flex;
-  gap: 4px;
-  margin-inline-start: -8px;
+  align-items: center;
+  gap: 2px;
 }
 
-@media (min-width: 900px) {
-  .ed-acct {
-    justify-self: end;
-    margin-inline: 0 -8px;
-  }
+.ed-acct .ed-gear {
+  width: 40px;
+  height: 40px;
+  padding: 0;
 }
 
 .ed-acct .ed-link {
   min-height: 24px;
   padding: 4px 8px;
   font-size: var(--t-meta);
+}
+
+/* Below 900px Sign out shows only in Settings, so the count has room. */
+@media (max-width: 899px) {
+  .ed-acct .ed-link {
+    display: none;
+  }
+}
+
+/* ── The changes button and list ── */
+
+.ed-status {
+  grid-area: status;
+  min-width: 0;
+}
+
+.ed-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--e-enter);
+}
+
+.ed-count:hover:not(:disabled),
+.ed-count[aria-expanded='true'] {
+  background: var(--raised);
+}
+
+.ed-count:disabled {
+  cursor: default;
+}
+
+.ed-count .label {
+  color: var(--accent-ink);
+}
+
+.ed-count-n {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.ed-count-n > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ed-count-n svg {
+  flex: none;
+}
+
+.ed-count[aria-expanded='true'] .ed-count-n svg {
+  transform: rotate(180deg);
+}
+
+/* The list opens above the bar, at most half the window tall, and
+   scrolls inside itself. */
+.ed-changes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  max-height: min(50vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  background: var(--page);
+  color: var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+}
+
+@media (min-width: 900px) {
+  .ed-changes {
+    left: auto;
+    width: min(560px, 100%);
+    border-radius: var(--r-xl);
+  }
+}
+
+.ed-changes-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 10px;
+}
+
+.ed-changes ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ed-change {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-hover) var(--e-enter);
+}
+
+.ed-change:hover {
+  background: var(--sunken);
+}
+
+.ed-change .meta {
+  color: var(--ink-muted);
+}
+
+.ed-change-diff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: var(--t-body-sm);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.ed-change-diff del {
+  color: var(--ink-muted);
+  text-decoration-thickness: 1px;
+}
+
+.ed-change-diff ins {
+  text-decoration: none;
+}
+
+.ed-change-empty {
+  font-style: italic;
 }
 
 .ed-seg {

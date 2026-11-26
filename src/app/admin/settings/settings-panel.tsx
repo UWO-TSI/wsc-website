@@ -26,6 +26,19 @@ export default function SettingsPanel() {
   return (
     <div className="min-h-screen bg-page px-[var(--gut)] pb-20 pt-[clamp(2.5rem,6vw,4.5rem)]">
       <div className="mx-auto flex max-w-[1180px] flex-col gap-10">
+        {/* Back to editing is the first control, at the top left. */}
+        <div className="-ml-6 -mt-4">
+          <Button
+            variant="tertiary"
+            arrow="back"
+            onClick={() => {
+              enterEditMode();
+              router.push('/');
+            }}
+          >
+            {C.backToEditing}
+          </Button>
+        </div>
         <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
           <div className="flex min-w-0 flex-col gap-3">
             <p className="label text-accent-ink">{C.eyebrow}</p>
@@ -33,15 +46,7 @@ export default function SettingsPanel() {
             <p className="body-sm text-ink-muted measure">{C.intro}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => {
-                enterEditMode();
-                router.push('/');
-              }}
-            >
-              {C.backToEditing}
-            </Button>
-            <Button variant="tertiary" onClick={() => signOutAndReload('/')}>
+            <Button variant="secondary" onClick={() => signOutAndReload('/')}>
               {C.signOut}
             </Button>
           </div>

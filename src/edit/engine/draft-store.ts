@@ -523,6 +523,62 @@ function pruneAreas() {
 
 /* ── Publishing lists ── */
 
+/* ── The changes list on the bar ── */
+
+/** One column of a published row that the draft changes. */
+export interface FieldChange {
+  column: string;
+  from: unknown;
+  to: unknown;
+}
+
+/** One entry of the bar's changes list, newest first. */
+export type Change =
+  | { kind: 'text'; key: string; to: string; at: number }
+  | { kind: 'photo'; slot: string; at: number }
+  | { kind: 'area'; name: string; at: number }
+  | { kind: 'added'; table: ListTable; id: string; row: Record<string, unknown>; at: number }
+  | { kind: 'changed'; table: ListTable; id: string; row: Record<string, unknown>; fields: FieldChange[]; at: number }
+  | { kind: 'removed'; table: ListTable; id: string; row: Record<string, unknown>; at: number }
+  | { kind: 'order'; table: ListTable; at: number }
+  | { kind: 'file'; table: ListTable; id: string; column: string; row: Record<string, unknown>; at: number };
+
+/**
+ * Every unpublished change, for the bar's list. Text entries carry the
+ * draft value only; the bar reads the published value from the site
+ * content provider. A row's changed columns carry the published value
+ * and the draft value. display_order is left out: a move is one Order
+ * changed entry per list.
+ */
+export function changeList(): Change[] {
+  const out: Change[] = [];
+  texts.forEach((t, key) => out.push({ kind: 'text', key, to: t.value, at: t.at }));
+  photos.forEach((p, slot) => out.push({ kind: 'photo', slot, at: p.at }));
+  areas.forEach((a) => out.push({ kind: 'area', name: a.name, at: a.at }));
+  lists.forEach((d, table) => {
+    const seen = seenRows.get(table);
+    Object.entries(d.added).forEach(([id, row]) => out.push({ kind: 'added', table, id, row, at: d.updatedAt }));
+    Object.entries(d.updates).forEach(([id, patch]) => {
+      if (d.removed.includes(id)) return;
+      const published = seen?.get(id) ?? {};
+      const fields = Object.entries(patch)
+        .filter(([column]) => column !== 'display_order')
+        .map(([column, to]) => ({ column, from: published[column], to }));
+      if (fields.length) {
+        out.push({ kind: 'changed', table, id, row: { ...published, ...patch }, fields, at: d.updatedAt });
+      }
+    });
+    d.removed.forEach((id) => out.push({ kind: 'removed', table, id, row: seen?.get(id) ?? {}, at: d.updatedAt }));
+    if (d.order) out.push({ kind: 'order', table, at: d.updatedAt });
+  });
+  files.forEach((f, k) => {
+    const [table, id, column] = k.split(':') as [ListTable, string, string];
+    if (id.startsWith(DRAFT_ID_PREFIX)) return;
+    out.push({ kind: 'file', table, id, column, row: currentRow(table, id) ?? {}, at: f.at });
+  });
+  return out.sort((a, b) => b.at - a.at);
+}
+
 export function pendingAreas(): Array<{ id: string; name: string }> {
   return draftAreas();
 }

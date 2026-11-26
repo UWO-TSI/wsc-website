@@ -50,8 +50,9 @@ import { blurField, edited, focusField, setUi } from '@/edit/engine/ui-store';
   logo wall, the counted figures and the format cards. Each takes the same props as the
   visitor component it replaces, gets its rows from the page's
   useSupabaseQuery (drafts already laid over them), and writes through the
-  list draft. Every field is inline, the Add tile is the last cell, the
-  Grip reorders, the chips hide and show the state, and Remove is in the
+  list draft. Every field is inline, the Add tile is the last cell (the
+  first row of the event ledger, which runs newest first), the Grip
+  reorders, the chips hide and show the state, and Remove is in the
   tray.
 
   Column limits are the database's CHECK constraints (migrations 7, 9, the
@@ -447,6 +448,16 @@ export function EventsEditor({ events }: { events: Event[] }) {
 
   return (
     <ul ref={listRef} className="flex list-none flex-col gap-1 p-0">
+      {/* The ledger runs newest first, so Add event is its first row. */}
+      <li key={`add-${adds}`} className="flex">
+        <AddTile
+          label={copy.add}
+          shape="row"
+          appear={adds > 0}
+          full={fullAt(api, rows, LIMITS.MAX_EVENTS, copy.full)}
+          onAdd={add}
+        />
+      </li>
       {items.map(({ row: e, leaving }, index) => {
         const state = api.state(e.id);
         const isPast = isBefore(startOfDay(parseISO(e.date)), startOfDay(new Date()));
@@ -558,15 +569,6 @@ export function EventsEditor({ events }: { events: Event[] }) {
           </li>
         );
       })}
-      <li key={`add-${adds}`} className="flex">
-        <AddTile
-          label={copy.add}
-          shape="row"
-          appear={adds > 0}
-          full={fullAt(api, rows, LIMITS.MAX_EVENTS, copy.full)}
-          onAdd={add}
-        />
-      </li>
     </ul>
   );
 }

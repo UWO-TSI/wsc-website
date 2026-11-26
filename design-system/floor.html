@@ -630,17 +630,34 @@
   .e16-ph .chip-s { white-space: nowrap; }
   .e16-bars { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
   /* Below 900px: the count with Settings and Sign out under it, beside Edit and Preview; the tray; Discard and Publish. The Editing label is hidden there (the pressed Edit or Preview button shows the mode). Rows are 2px apart and the tray's 10px block margins make the space between bands 12px. */
-  .e16-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'status status seg' 'acct acct seg' 'tray tray tray' 'discard publish publish'; align-items: center; gap: 2px 12px; padding: 12px; background: var(--page); color: var(--ink); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
+  /* Below 900px: the gear, the count and Edit and Preview; the tray; Discard and Publish. From 900px one row: the gear and Sign out, the count, the tray, Edit and Preview, Discard, Publish. */
+  .e16-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'acct status seg' 'tray tray tray' 'discard publish publish'; align-items: center; gap: 2px 8px; padding: 12px; background: var(--page); color: var(--ink); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
   @media (min-width: 900px) {
-    .e16-bar { grid-template-columns: 150px minmax(0, 1fr) auto auto auto; grid-template-areas: 'status tray seg discard publish' 'status tray acct discard publish'; padding: 12px 14px 12px 20px; border-radius: var(--r-xl); }
+    .e16-bar { grid-template-columns: auto 180px minmax(0, 1fr) auto auto auto; grid-template-areas: 'acct status tray seg discard publish'; column-gap: 12px; padding: 12px 14px; border-radius: var(--r-xl); }
   }
-  .e16-status { grid-area: status; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .e16-status > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .e16-status .label { display: none; }
-  @media (min-width: 900px) { .e16-status > * { white-space: normal; } .e16-status .label { display: block; } }
-  .e16-acct { grid-area: acct; display: flex; gap: 4px; margin-inline-start: -8px; }
-  @media (min-width: 900px) { .e16-acct { justify-self: end; margin-inline: 0 -8px; } }
+  .e16-status { grid-area: status; min-width: 0; }
+  .e16-count { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; min-width: 0; padding: 6px 10px; border: 0; border-radius: var(--r-md); background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .e16-count:hover:not(:disabled), .e16-count[aria-expanded='true'] { background: var(--raised); }
+  .e16-count:disabled { cursor: default; }
+  .e16-count .meta { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .e16-count[aria-expanded='true'] svg { transform: rotate(180deg); }
+  .e16-acct { grid-area: acct; display: flex; align-items: center; gap: 2px; }
   .e16-acct .btn { min-height: 24px; padding: 4px 8px; font-size: var(--t-meta); }
+  .e16-acct .btn.gear { width: 40px; height: 40px; padding: 0; justify-content: center; }
+  @media (max-width: 899px) { .e16-acct .btn:not(.gear) { display: none; } }
+  .bd { background: var(--alert); color: var(--on-accent); box-shadow: var(--sh-2); }
+  .bc { background: var(--ok); color: var(--on-accent); box-shadow: var(--sh-2); }
+  .bd:hover, .bc:hover { box-shadow: var(--sh-3); }
+  .e16-changes { margin-bottom: 8px; max-height: 320px; overflow-y: auto; padding: 14px; background: var(--page); border-radius: var(--r-xl); box-shadow: var(--sh-3); }
+  @media (min-width: 900px) { .e16-changes { width: min(560px, 100%); } }
+  .e16-changes .hd { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 4px 10px; }
+  .e16-changes ul { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .e16-chg { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 10px 12px; border: 0; border-radius: var(--r-md); background: var(--raised); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .e16-chg:hover { background: var(--sunken); }
+  .e16-chg .meta { color: var(--ink-muted); }
+  .e16-chg .df { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: var(--t-body-sm); line-height: 1.4; }
+  .e16-chg del { color: var(--ink-muted); }
+  .e16-chg ins { text-decoration: none; }
   /* Settings page: card 15's list rows, as the reference draws them. */
   .e16-set { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 14px; }
   @media (min-width: 860px) { .e16-set { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -1455,9 +1472,29 @@ Sales Team</span></span>
     <div class="e16-bars">
       <span class="label">Edit bar and tray</span>
 
+      <div>
+        <div class="e16-changes" role="region" aria-label="Unpublished changes">
+          <div class="hd"><span class="label">Unpublished changes</span><span class="meta">Select one to go to it.</span></div>
+          <ul>
+            <li><button class="e16-chg" type="button"><span class="meta">Home &middot; Hero, Subtitle</span><span class="df"><del>Western's student sales club.</del><span aria-hidden="true">&rarr;</span><ins>Western's student-run sales club.</ins></span></button></li>
+            <li><button class="e16-chg" type="button"><span class="meta">Team &middot; Executive, Mei Chen</span><span class="df"><span class="meta">Title</span><del>VP, Events</del><span aria-hidden="true">&rarr;</span><ins>VP, Partnerships</ins></span></button></li>
+            <li><button class="e16-chg" type="button"><span class="meta">Events &middot; Event, Cold Call Workshop</span><span class="df"><span>Added</span></span></button></li>
+          </ul>
+        </div>
+        <div class="e16-bar">
+          <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
+          <div class="e16-status"><button class="e16-count" type="button" aria-expanded="true"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+          <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
+          <div class="e16-tray"><span class="label tl">Edit mode</span><div class="tb"><span class="grow">Every text and photo on the page is a field. Change it where it is. Nothing goes live until you press Publish.</span></div></div>
+          <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+          <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
+        </div>
+        <p class="body-sm">The count opens the list of unpublished changes above the bar. Each entry names the page and the field or row, with the published value struck through beside the draft value; pressing it goes to the field. Discard is the destructive button and Publish the confirm button.</p>
+      </div>
+
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">No changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" disabled><span class="label">Editing</span><span class="meta">No changes</span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Edit mode</span><div class="tb"><span class="grow">Every text and photo on the page is a field. Change it where it is. Nothing goes live until you press Publish.</span></div></div>
         <div class="e16-discard"><button class="btn off" type="button" disabled>Discard</button></div>
@@ -1465,26 +1502,26 @@ Sales Team</span></span>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Home &middot; Button text</span><div class="tb"><span class="meta none">13 of 28</span><input type="text" value="/apply" readonly aria-label="Link address for Home, button text"></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Preview</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Preview</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="false">Edit</button><button type="button" aria-pressed="true">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Preview</span><div class="tb"><span class="grow">Preview shows the page as visitors will see it after you publish.</span></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Discard</span><div class="tb"><span class="grow">Discard 3 unpublished changes? This cannot be undone.</span></div><div class="ta"><button class="btn b2 small" type="button">Keep editing</button><button class="btn b1 small" type="button">Discard 3</button></div></div>
         <div class="e16-discard"><button class="btn off" type="button" disabled>Discard</button></div>
@@ -1492,48 +1529,48 @@ Sales Team</span></span>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Executive &middot; Mei Chen</span><div class="tb"><span class="grow">Shows on the site as VP, Partnerships.</span></div><div class="ta"><button class="btn b2 small" type="button">Remove from team</button></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Event &middot; Cold Call Workshop</span><div class="tb"><input type="text" value="https://example.com/register" readonly aria-label="Register link for Cold Call Workshop"></div><div class="ta"><button class="btn b2 small" type="button">Remove event</button></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">New area</span><div class="tb"><span class="grow">Type the area name and press Enter. Escape cancels.</span></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">3 unpublished changes</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">3 unpublished changes <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">New area</span><div class="tb"><span class="grow t-al">Marketing already exists. Pick it from the list.</span></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 3 changes</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 3 changes</button></div>
       </div>
 
       <div class="e16-bar">
-        <div class="e16-status"><span class="label">Editing</span><span class="meta">1 unpublished change</span></div>
-        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3" type="button">Settings</button><button class="btn b3" type="button">Sign out</button></div>
+        <div class="e16-status"><button class="e16-count" type="button" aria-expanded="false"><span class="label">Editing</span><span class="meta">1 unpublished change <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button></div>
+        <div class="e16-acct" role="group" aria-label="Settings and sign out"><button class="btn b3 gear" type="button" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="btn b3" type="button">Sign out</button></div>
         <div class="e16-seg" role="group" aria-label="Edit or preview"><button type="button" aria-pressed="true">Edit</button><button type="button" aria-pressed="false">Preview</button></div>
         <div class="e16-tray"><span class="label tl">Cannot publish yet</span><div class="tb"><span class="grow t-al">Add a title for the new event before publishing.</span></div></div>
-        <div class="e16-discard"><button class="btn b2" type="button">Discard</button></div>
-        <div class="e16-publish"><button class="btn b1" type="button">Publish 1 change</button></div>
+        <div class="e16-discard"><button class="btn bd" type="button">Discard</button></div>
+        <div class="e16-publish"><button class="btn bc" type="button">Publish 1 change</button></div>
       </div>
     </div>
 

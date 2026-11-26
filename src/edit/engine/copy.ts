@@ -209,6 +209,45 @@ export const COPY = {
   signOut: 'Sign out',
   accountGroup: 'Settings and sign out',
 
+  // Bar: the changes list, opened from the count. Not in the spec table.
+  changesShow: 'Show unpublished changes',
+  changesHead: 'Unpublished changes',
+  changesHint: 'Select one to go to it.',
+  changeWhere: (page: string, what: string) => `${page} · ${what}`,
+  changedTo: 'changed to',
+  changeEmptyValue: 'empty',
+  changePhoto: 'New photo',
+  changeArea: (name: string) => `New area: ${name}`,
+  changeAdded: 'Added',
+  changeRemoved: 'Will be removed',
+  changeOrder: 'Order changed',
+  changeList: {
+    executives: 'Team order',
+    events: 'Event order',
+    sponsors: 'Partner order',
+    site_stats: 'Figure order',
+    event_formats: 'Format order',
+  } as Record<string, string>,
+  /** Row columns as the changes list names them. */
+  changeColumn: {
+    name: 'Name',
+    title: 'Title',
+    date: 'Date',
+    time: 'Time',
+    location: 'Location',
+    description: 'Description',
+    register_url: 'Register link',
+    link: 'Site',
+    value: 'Number',
+    suffix: 'Suffix',
+    label: 'Label',
+    body: 'What happens there',
+    meta: 'Companies involved',
+    visible: 'Visibility',
+    published: 'Visibility',
+    active: 'Visibility',
+  } as Record<string, string>,
+
   /* A link address the site cannot use (the database accepts https://,
      http://, /, # and mailto: only). Shown in the tray when the field is
      left; the address goes back to what it was. Not in the spec table. */

@@ -1,7 +1,26 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { HTMLAttributes, KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+  type UniqueIdentifier,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  rectSortingStrategy,
+  useSortable,
+  type SortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Button from '@/components/ui/button';
 import Chip from '@/components/ui/chip';
 import { LIMITS } from '@/lib/admin-config';
@@ -615,12 +634,45 @@ function rectsOf(list: HTMLElement): Rects {
   return out;
 }
 
+/** How the other items make room while one is dragged: a grid, or the sideways card row. */
+export type ReorderLayout = 'grid' | 'row';
+
+const STRATEGY: Record<ReorderLayout, SortingStrategy> = {
+  grid: rectSortingStrategy,
+  row: horizontalListSortingStrategy,
+};
+
+/* dnd-kit's own live region and instructions stay silent: the list's
+   status line says where the item went, in the same words the arrow keys
+   use. */
+const SILENT = {
+  announcements: {
+    onDragStart: () => undefined,
+    onDragOver: () => undefined,
+    onDragEnd: () => undefined,
+    onDragCancel: () => undefined,
+  },
+  screenReaderInstructions: { draggable: '' },
+};
+
 /**
- * Card 15's move row for a list in edit mode. `capture()` records where
- * every item is; after the next commit each item that moved slides from
- * there to its new place on --d-move, --e-move. The held item follows the
- * pointer instead, lifted to --sh-3 by .ed-held, and settles into its
- * place on the same timing when it is let go.
+ * Card 15's move row for every list in edit mode, one implementation.
+ *
+ * Dragging is dnd-kit: it measures every item once when the drag starts,
+ * so the place an item lands is decided against still rectangles, never
+ * against items that are moving. The other items slide aside while the
+ * held one follows the pointer (lifted to --sh-3 by .ed-held), and the
+ * draft order changes once, on drop. A drag stays inside the rows
+ * `canSwap` allows (an executive stays in their role). The page scrolls
+ * when the held item nears an edge.
+ *
+ * The arrow keys on a focused grip move the row one place at once.
+ * `capture()` records where every item is; after the next commit each item
+ * that moved slides from there to its new place. Adds, removals and a
+ * held order's release use the same capture.
+ *
+ * Every move is on --d-move, --e-move. Under reduced motion each one is
+ * shown in its final state at once.
  */
 export function useReorder<R extends { id: string }>({
   api,
@@ -638,18 +690,7 @@ export function useReorder<R extends { id: string }>({
   canSwap?: (a: R, b: R) => boolean;
 }) {
   const first = useRef<Rects | null>(null);
-  const drag = useRef<{
-    id: string;
-    el: HTMLElement;
-    ox: number;
-    oy: number;
-    x: number;
-    y: number;
-    start: string;
-    last: string | null;
-  } | null>(null);
   const refocus = useRef<string | null>(null);
-  const latest = useRef(rows);
   const [held, setHeld] = useState<string | null>(null);
   const [announce, setAnnounce] = useState('');
 
@@ -657,16 +698,7 @@ export function useReorder<R extends { id: string }>({
     if (listRef.current) first.current = rectsOf(listRef.current);
   };
 
-  const place = () => {
-    const d = drag.current;
-    if (!d) return;
-    d.el.style.transform = '';
-    const r = d.el.getBoundingClientRect();
-    d.el.style.transform = `translate(${d.x - d.ox - r.left}px, ${d.y - d.oy - r.top}px)`;
-  };
-
   useLayoutEffect(() => {
-    latest.current = rows;
     const list = listRef.current;
     const before = first.current;
     first.current = null;
@@ -674,7 +706,7 @@ export function useReorder<R extends { id: string }>({
       items(list).forEach((el) => {
         const key = el.dataset.key!;
         const f = before.get(key);
-        if (!f || key === drag.current?.id) return;
+        if (!f) return;
         const l = el.getBoundingClientRect();
         const dx = f.left - l.left;
         const dy = f.top - l.top;
@@ -686,7 +718,6 @@ export function useReorder<R extends { id: string }>({
         }
       });
     }
-    place();
     if (refocus.current && list) {
       list.querySelector<HTMLElement>(`:scope > [data-key="${refocus.current}"] .ed-grip`)?.focus();
       refocus.current = null;
@@ -695,28 +726,35 @@ export function useReorder<R extends { id: string }>({
 
   const say = (row: R, i: number, n: number) => setAnnounce(COPY.moved(nameOf(row), i + 1, n));
 
-  const endDrag = () => {
-    const d = drag.current;
-    if (!d) return;
-    drag.current = null;
-    const from = d.el.style.transform;
-    const finish = () => {
-      d.el.style.transform = '';
-      setHeld(null);
-      const now = latest.current;
-      if (now.map((r) => r.id).join() !== d.start) {
-        const i = now.findIndex((r) => r.id === d.id);
-        if (i !== -1) say(now[i], i, now.length);
-      }
-    };
-    if (from && !reducedMotion()) {
-      d.el.style.transform = '';
-      d.el
-        .animate([{ transform: from }, { transform: 'none' }], { duration: ms('--d-move'), easing: token('--e-move') })
-        .finished.then(finish, finish);
-    } else {
-      finish();
-    }
+  /* A 4px move before the drag starts, so a press on the grip that does
+     not move is still a click (and focuses the grip for the arrow keys). */
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const byId = (id: UniqueIdentifier) => rows.find((r) => r.id === id);
+
+  const collision: CollisionDetection = (args) => {
+    const self = byId(args.active.id);
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter((c) => {
+        const other = byId(c.id);
+        return c.id === args.active.id || (self && other ? canSwap(self, other) : false);
+      }),
+    });
+  };
+
+  const onDragStart = ({ active }: DragStartEvent) => setHeld(String(active.id));
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    setHeld(null);
+    if (!over || over.id === active.id) return;
+    const ids = rows.map((r) => r.id);
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    const row = rows[from];
+    if (from === -1 || to === -1 || !canSwap(row, rows[to])) return;
+    api.moveNextTo(row.id, rows[to].id, from < to);
+    say(row, to, rows.length);
   };
 
   const gripProps = (row: R, index: number) => ({
@@ -736,58 +774,118 @@ export function useReorder<R extends { id: string }>({
       api.moveNextTo(row.id, target.id, dir > 0);
       say(row, index + dir, rows.length);
     },
-    onPointerDown: (e: PointerEvent<HTMLButtonElement>) => {
-      if (e.button !== 0) return;
-      const el = e.currentTarget.closest<HTMLElement>('[data-key]');
-      if (!el) return;
-      e.preventDefault();
-      e.currentTarget.focus();
-      const r = el.getBoundingClientRect();
-      drag.current = {
-        id: row.id,
-        el,
-        ox: e.clientX - r.left,
-        oy: e.clientY - r.top,
-        x: e.clientX,
-        y: e.clientY,
-        start: rows.map((x) => x.id).join(),
-        last: null,
-      };
-      e.currentTarget.setPointerCapture(e.pointerId);
-      setHeld(row.id);
-    },
-    onPointerMove: (e: PointerEvent<HTMLButtonElement>) => {
-      const d = drag.current;
-      const list = listRef.current;
-      if (!d || !list) return;
-      d.x = e.clientX;
-      d.y = e.clientY;
-      let hitKey: string | null = null;
-      items(list).forEach((c) => {
-        if (c === d.el || c.dataset.leaving !== undefined) return;
-        const r = c.getBoundingClientRect();
-        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-          hitKey = c.dataset.key!;
-        }
-      });
-      const now = latest.current;
-      const target = hitKey ? now.find((x) => x.id === hitKey) : undefined;
-      const self = now.find((x) => x.id === d.id);
-      if (target && self && hitKey !== d.last && canSwap(self, target)) {
-        d.last = hitKey;
-        const ids = now.map((x) => x.id);
-        capture();
-        api.moveNextTo(d.id, target.id, ids.indexOf(d.id) < ids.indexOf(target.id));
-      } else if (!hitKey) {
-        d.last = null;
-      }
-      place();
-    },
-    onPointerUp: endDrag,
-    onPointerCancel: endDrag,
   });
 
-  return { gripProps, held, announce, capture };
+  /** Spread on <ReorderList> around the list element. Lists without a grip (the event ledger) leave it out. */
+  const listProps = {
+    sensors,
+    collision,
+    ids: rows.map((r) => r.id),
+    onDragStart,
+    onDragEnd,
+    onDragCancel: () => setHeld(null),
+  };
+
+  return { gripProps, held, announce, capture, listProps };
+}
+
+/** The drag context around one list's element, from useReorder's `listProps`. */
+export function ReorderList({
+  layout,
+  sensors,
+  collision,
+  ids,
+  onDragStart,
+  onDragEnd,
+  onDragCancel,
+  children,
+}: ReturnType<typeof useReorder>['listProps'] & { layout: ReorderLayout; children: ReactNode }) {
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collision}
+      accessibility={SILENT}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragCancel={onDragCancel}
+    >
+      <SortableContext items={ids} strategy={STRATEGY[layout]}>
+        {children}
+      </SortableContext>
+    </DndContext>
+  );
+}
+
+interface ItemDrag {
+  setActivatorNodeRef: (el: HTMLElement | null) => void;
+  listeners: ReturnType<typeof useSortable>['listeners'];
+}
+
+const ItemDragContext = createContext<ItemDrag | null>(null);
+
+type ItemTag = 'li' | 'div';
+
+/**
+ * One draggable item. Renders the list's own element (`as`), carries the
+ * `data-key` the move row and the removal leave measure, and gives its
+ * Grip the drag start. A leaving item cannot be dragged.
+ */
+export function ReorderItem({
+  id,
+  as: Tag = 'li',
+  disabled,
+  style,
+  children,
+  ...rest
+}: {
+  id: string;
+  as?: ItemTag;
+  disabled?: boolean;
+  children: ReactNode;
+} & Omit<HTMLAttributes<HTMLElement>, 'id' | 'children'> & { inert?: boolean; 'data-leaving'?: string }) {
+  /* Read from the stylesheet once. The engine only renders in the browser,
+     so the window is there; null (no slide) under reduced motion. */
+  const [motion] = useState(() =>
+    reducedMotion() ? null : { duration: ms('--d-move'), easing: token('--e-move') }
+  );
+  const { setNodeRef, setActivatorNodeRef, listeners, transform, transition } = useSortable({
+    id,
+    disabled,
+    transition: motion,
+  });
+
+  return (
+    <ItemDragContext.Provider value={{ setActivatorNodeRef, listeners }}>
+      <Tag
+        ref={setNodeRef}
+        data-key={id}
+        style={{ ...style, transform: CSS.Translate.toString(transform), transition }}
+        {...rest}
+      >
+        {children}
+      </Tag>
+    </ItemDragContext.Provider>
+  );
+}
+
+/** The grip button: `gripProps` plus the drag start of the item it sits in. */
+export function Grip({ className, ...props }: ReturnType<ReturnType<typeof useReorder>['gripProps']> & { className?: string }) {
+  const drag = useContext(ItemDragContext);
+  const onPointerDown = drag?.listeners?.onPointerDown as ((e: PointerEvent<HTMLButtonElement>) => void) | undefined;
+  return (
+    <button
+      {...props}
+      ref={drag?.setActivatorNodeRef}
+      className={className ?? 'ed-grip'}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        e.currentTarget.focus();
+        onPointerDown?.(e);
+      }}
+    >
+      <GripIcon />
+    </button>
+  );
 }
 
 /* ── Removal on Publish ── */

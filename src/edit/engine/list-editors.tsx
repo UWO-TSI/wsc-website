@@ -24,10 +24,12 @@ import { COPY } from '@/edit/engine/copy';
 import { addDraftArea, draftAreas, useDraftVersion } from '@/edit/engine/draft-store';
 import {
   AddTile,
-  GripIcon,
+  Grip,
   InlineNumber,
   InlineSelect,
   RemoveButton,
+  ReorderItem,
+  ReorderList,
   RowField,
   RowInput,
   RowOptions,
@@ -198,7 +200,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
   };
 
   return (
-    <>
+    <ReorderList layout="grid" {...reorder.listProps}>
       <ul ref={listRef} className={`m-0 list-none p-0 ${GRID}`}>
         {items.map(({ row: e, leaving }, index) => {
           const state = api.state(e.id);
@@ -206,9 +208,11 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
           const who = nameOf(e);
           const head = COPY.rowHead(copy.kind, who);
           return (
-            <li
+            <ReorderItem
               key={e.id}
-              data-key={e.id}
+              id={e.id}
+              as="li"
+              disabled={leaving}
               data-leaving={leaving ? '' : undefined}
               inert={leaving}
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(e.id)}
@@ -235,9 +239,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
                 onToggle={() => api.hide(e.id, e.visible)}
                 className="ed-over-tl"
               />
-              <button {...reorder.gripProps(e, index)} className="ed-grip ed-over-tr">
-                <GripIcon />
-              </button>
+              <Grip {...reorder.gripProps(e, index)} className="ed-grip ed-over-tr" />
 
               <div className="flex w-full flex-col gap-2">
                 <RowField
@@ -303,7 +305,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
               </div>
               <RowOptions table={table} id={e.id} who={who} />
               <StateChip state={state} />
-            </li>
+            </ReorderItem>
           );
         })}
         <li key={`add-${adds}`} className="flex flex-col items-center">
@@ -321,7 +323,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
       <p className="sr-only" role="status">
         {reorder.announce}
       </p>
-    </>
+    </ReorderList>
   );
 }
 
@@ -610,7 +612,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
   };
 
   return (
-    <>
+    <ReorderList layout="grid" {...reorder.listProps}>
       <div
         ref={listRef}
         className="flex flex-wrap items-start justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8 py-[clamp(1rem,4vw,2.5rem)]"
@@ -621,9 +623,11 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
           const scale = scaleFor(index, items.length);
           const who = nameOf(s);
           return (
-            <div
+            <ReorderItem
               key={s.id}
-              data-key={s.id}
+              id={s.id}
+              as="div"
+              disabled={leaving}
               data-leaving={leaving ? '' : undefined}
               inert={leaving}
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
@@ -647,9 +651,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
                   replaceLabel={COPY.replaceLogo}
                   addLabel={COPY.addLogo}
                 />
-                <button {...reorder.gripProps(s, index)} className="ed-grip ed-over-tr">
-                  <GripIcon />
-                </button>
+                <Grip {...reorder.gripProps(s, index)} className="ed-grip ed-over-tr" />
               </span>
               <RowField
                 table={table}
@@ -667,7 +669,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
                 <RowOptions table={table} id={s.id} who={who} />
                 <StateChip state={state} />
               </span>
-            </div>
+            </ReorderItem>
           );
         })}
         <div key={`add-${adds}`} className={`flex-none ${TILE_SIZE.std}`}>
@@ -683,7 +685,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
       <p className="sr-only" role="status">
         {reorder.announce}
       </p>
-    </>
+    </ReorderList>
   );
 }
 
@@ -719,7 +721,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
   };
 
   return (
-    <>
+    <ReorderList layout="grid" {...reorder.listProps}>
       {/* Wider than the visitor row: each field reserves the largest
           number (99999) and a two-character suffix in the figure's font.
           One centred row that wraps, with the Add tile as its last cell:
@@ -730,9 +732,11 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
           const state = api.state(s.id);
           const who = nameOf(s);
           return (
-            <div
+            <ReorderItem
               key={s.id}
-              data-key={s.id}
+              id={s.id}
+              as="div"
+              disabled={leaving}
               data-leaving={leaving ? '' : undefined}
               inert={leaving}
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
@@ -774,13 +778,11 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
               />
               <span className="flex items-center gap-2">
                 <VisibilityChip table={table} id={s.id} who={who} visible={s.visible} onToggle={() => api.hide(s.id, s.visible)} />
-                <button {...reorder.gripProps(s, index)}>
-                  <GripIcon />
-                </button>
+                <Grip {...reorder.gripProps(s, index)} />
                 <RowOptions table={table} id={s.id} who={who} />
               </span>
               <StateChip state={state} />
-            </div>
+            </ReorderItem>
           );
         })}
         {/* As wide as a figure's number row, in the figure's font: seven
@@ -805,7 +807,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
       <p className="sr-only" role="status">
         {reorder.announce}
       </p>
-    </>
+    </ReorderList>
   );
 }
 
@@ -852,16 +854,18 @@ export function FormatsEditor({ formats }: { formats: EventFormat[] }) {
   };
 
   return (
-    <>
+    <ReorderList layout="row" {...reorder.listProps}>
       <CardRow label="Event formats" count={items.length + 1} listRef={listRef}>
         {items.map(({ row: f, leaving }, index) => {
           const state = api.state(f.id);
           const src = api.fileUrl(f.id, 'image_path') ?? getPublicUrl(SITE_IMAGES_BUCKET, f.image_path);
           const who = nameOf(f);
           return (
-            <li
+            <ReorderItem
               key={f.id}
-              data-key={f.id}
+              id={f.id}
+              as="li"
+              disabled={leaving}
               data-leaving={leaving ? '' : undefined}
               inert={leaving}
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(f.id)}
@@ -888,9 +892,7 @@ export function FormatsEditor({ formats }: { formats: EventFormat[] }) {
                     onToggle={() => api.hide(f.id, f.visible)}
                     className="ed-over-tl"
                   />
-                  <button {...reorder.gripProps(f, index)} className="ed-grip ed-over-tr">
-                    <GripIcon />
-                  </button>
+                  <Grip {...reorder.gripProps(f, index)} className="ed-grip ed-over-tr" />
                 </span>
                 <div className="flex flex-col gap-2 px-3 pb-3">
                   <RowField
@@ -935,7 +937,7 @@ export function FormatsEditor({ formats }: { formats: EventFormat[] }) {
                   </span>
                 </div>
               </article>
-            </li>
+            </ReorderItem>
           );
         })}
         <li key={`add-${adds}`} className={CARD_ROW_ITEM}>
@@ -951,7 +953,7 @@ export function FormatsEditor({ formats }: { formats: EventFormat[] }) {
       <p className="sr-only" role="status">
         {reorder.announce}
       </p>
-    </>
+    </ReorderList>
   );
 }
 

@@ -229,7 +229,7 @@ Three columns, the repo's existing span pattern: large 2x2, tall 1x2, wide 2x1, 
 
 ## Cursor
 
-Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover 46, view 62, text 12. The ring is one of only two strokes in the system, alongside the focus ring, because a ring is its shape. Pointer devices only.
+Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover 46, view 62, text 12. The ring is one of only two strokes in the system, alongside the focus ring, because a ring is its shape. Pointer devices only, and off while editing (Preview shows it again).
 
 ## Editor (admin)
 
@@ -241,7 +241,7 @@ The dashboard worked like this: every content manager tab is a Save bar over a l
 
 Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in the edit chunk, and every line of copy is `src/edit/engine/copy.ts`. Every value in the card is a token or a size the spec gives in pixels.
 
-**Field.** The shell every editable value is drawn in: a fill of the text colour at 9 percent, `--r-sm`, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the shell. Each field is sized to its longest allowed value (`site_content.max_length`), so typing changes the text and never the size. Built in `fields.tsx` as the shell shared by the four components below.
+**Field.** The shell every editable value is drawn in: a fill of the text colour at 9 percent (16 percent on the inverse and accent grounds and inside a button, where 9 percent of a light ink does not show), so it is always one step off its ground, `--r-sm`, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the shell. Each field is sized to its longest allowed value (`site_content.max_length`), so typing changes the text and never the size. Built in `fields.tsx` as the shell shared by the four components below.
 
 **InlineText and InlineParagraph.** A one-line field is as wide as its longest allowed value, capped at the column. A paragraph takes the column and refuses Enter.
 

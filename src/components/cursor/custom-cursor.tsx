@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useCursor } from "@/hooks/use-cursor";
 import { D, E } from "@/lib/motion";
+import { useEditMode } from "@/edit";
 
 /*
   Cursor: sequence 6, Magnetic Pull's companion. Dot tracks exactly, ring
@@ -12,7 +13,9 @@ import { D, E } from "@/lib/motion";
   focus ring, so it is an inset box-shadow rather than a border.
 
   Pointer devices only: gated on (hover: hover) and (pointer: fine), and off
-  under reduced motion.
+  under reduced motion. Off while editing too, where the pointer is
+  placing a caret or dragging a grip and a lagging ring gets in the way;
+  Preview shows it again, as a visitor sees it.
 
   design-system/components.md → Cursor.
 */
@@ -30,6 +33,7 @@ const sizeTransition = { duration: D.hover, ease: E.enter };
 
 export function CustomCursor() {
   const { cursorState } = useCursor();
+  const { editing } = useEditMode();
   const [enabled, setEnabled] = useState(false);
 
   const mouseX = useMotionValue(0);
@@ -60,7 +64,7 @@ export function CustomCursor() {
     return () => window.removeEventListener("mousemove", handleMove);
   }, [enabled, mouseX, mouseY]);
 
-  if (!enabled) return null;
+  if (!enabled || editing) return null;
 
   const dotHidden = cursorState === "hover" || cursorState === "view";
   const ringSize = RING_SIZE[cursorState] ?? RING_SIZE.default;

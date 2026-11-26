@@ -14,11 +14,31 @@
 
 /* ── Field ── */
 
+/*
+  Every field and Add tile is its ground's text colour mixed over the
+  ground, so it is always a step off whatever it sits on: grey on white, a
+  lighter black on black, a see-through white on velvet. --ed-fill is the
+  mix. The velvet grounds (--inverse and --accent) and the label inside a
+  button take a stronger mix, because 9 percent of a light ink barely
+  shows on a dark purple.
+*/
+.ed,
+.ed-add {
+  --ed-fill: 9%;
+  --ed-fill-hover: 15%;
+}
+
+:is(.slab-inv, .slab-acc) :is(.ed, .ed-add),
+.ed.ed-inbtn {
+  --ed-fill: 16%;
+  --ed-fill-hover: 24%;
+}
+
 .ed {
   position: relative;
   max-width: 100%;
   vertical-align: top;
-  background: color-mix(in srgb, currentColor 9%, transparent);
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
   border-radius: var(--r-sm);
   padding: 8px 12px;
   cursor: text;
@@ -660,20 +680,34 @@ html.ed-on body {
   box-shadow: var(--sh-3);
 }
 
+/* The held item keeps its ground, so its text stays readable on it. */
+.slab-sunk .ed-item.ed-held {
+  background: var(--sunken);
+}
+
+.slab-inv .ed-item.ed-held {
+  background: var(--inverse);
+}
+
+.slab-acc .ed-item.ed-held {
+  background: var(--accent);
+}
+
+.slab-logo .ed-item.ed-held {
+  background: var(--logo-ground);
+}
+
 .ed-item.ed-held .ed-grip {
   cursor: grabbing;
 }
 
+/* Hidden and removed rows fade their own ink, so the step shows on any ground. */
 .ed-item.ed-hid .ed-in {
-  color: var(--ink-muted);
+  color: color-mix(in srgb, currentColor 65%, transparent);
 }
 
 .ed-item.ed-removing .ed-in {
-  color: var(--ink-faint);
-}
-
-.slab-logo .ed-item :is(.ed-hid, .ed-removing) .ed-in {
-  color: inherit;
+  color: color-mix(in srgb, currentColor 45%, transparent);
 }
 
 /* AddTile: the empty photo-slot surface with a tertiary label. */
@@ -699,6 +733,33 @@ html.ed-on body {
 
 .ed-add:hover {
   background: var(--accent-veil);
+}
+
+/* On a dark ground the tile takes the ground's ink, as a field does. */
+.slab-inv .ed-add {
+  color: var(--on-inverse);
+}
+
+.slab-acc .ed-add {
+  color: var(--on-accent);
+}
+
+.slab-logo .ed-add {
+  color: var(--on-logo-ground);
+}
+
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add {
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
+}
+
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add:hover {
+  background: color-mix(in srgb, currentColor var(--ed-fill-hover), transparent);
+}
+
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add[aria-disabled='true'],
+:is(.slab-inv, .slab-acc, .slab-logo) .ed-add[aria-disabled='true']:hover {
+  color: color-mix(in srgb, currentColor 50%, transparent);
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
 }
 
 /* At the list's cap: the disabled button's ink, no pointer, and hover

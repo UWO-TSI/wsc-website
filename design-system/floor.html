@@ -608,13 +608,15 @@
   .e16-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .e16-stack > .e16-cell { flex: 1; }
   .e16-pair { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-  .e16-f { position: relative; max-width: 100%; vertical-align: top; background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-sm); padding: 8px 12px; cursor: text; }
+  .e16-f, .e16-add { --ed-fill: 9%; --ed-fill-hover: 15%; }
+  .e16-gd.inv .e16-f, .e16-gd.acc .e16-f, .e16-gd.inv .e16-add, .e16-gd.acc .e16-add, .e16-lbl { --ed-fill: 16%; --ed-fill-hover: 24%; }
+  .e16-f { position: relative; max-width: 100%; vertical-align: top; background: color-mix(in srgb, currentColor var(--ed-fill), transparent); border-radius: var(--r-sm); padding: 8px 12px; cursor: text; }
   .e16-f.block { display: block; align-self: stretch; }
   .e16-f.on { outline: 2px solid var(--focus); outline-offset: 3px; }
   .e16-f.para { min-height: calc(1.6em * 4); }
   .e16-f.lines { display: block; align-self: flex-start; white-space: pre-wrap; overflow-wrap: break-word; padding-block: 0.06em; padding-inline: 12px; }
   .e16-f.lines .title { margin: 0; display: block; }
-  .e16-lbl { background: color-mix(in srgb, currentColor 9%, transparent); border-radius: var(--r-xs); padding: 3px 8px; cursor: text; }
+  .e16-lbl { background: color-mix(in srgb, currentColor var(--ed-fill), transparent); border-radius: var(--r-xs); padding: 3px 8px; cursor: text; }
   .e16-lbl.on { outline: 2px solid currentColor; outline-offset: 1px; }
   /* The button itself focused: the route to its link address (.ed-btn-link). */
   .e16-ring { outline: 2px solid var(--focus); outline-offset: 3px; }
@@ -677,8 +679,8 @@
   @media (min-width: 700px) { .e16-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   .e16-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; min-width: 0; padding-top: 4px; }
   .e16-item.held { z-index: 2; background: var(--page); border-radius: var(--r-lg); box-shadow: var(--sh-3); }
-  .e16-item.hid .e16-f { color: var(--ink-muted); }
-  .e16-item.removing .e16-f { color: var(--ink-faint); }
+  .e16-item.hid .e16-f { color: color-mix(in srgb, currentColor 65%, transparent); }
+  .e16-item.removing .e16-f { color: color-mix(in srgb, currentColor 45%, transparent); }
   .e16-disc { position: relative; width: 104px; aspect-ratio: 1; border-radius: var(--r-disc); background: var(--sunken); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.4rem; color: var(--ink-faint); }
   .e16-disc .chip-s { position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); color: var(--accent-ink); white-space: nowrap; }
   .e16-disc .chip-s .d { background: var(--ink-faint); }
@@ -694,6 +696,14 @@
   .e16-num { font-family: var(--f-text); font-weight: 500; font-size: clamp(2.4rem, 7vw, 56px); line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   .e16-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 104px; aspect-ratio: 1; border: 0; border-radius: var(--r-disc); background: var(--sunken); color: var(--accent-ink); font-family: var(--f-text); font-weight: 600; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background-color var(--d-hover) var(--e-enter); }
   .e16-add:hover { background: var(--accent-veil); }
+  .e16-grounds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .e16-gd { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 12px; border-radius: var(--r-md); background: var(--page); color: var(--ink); }
+  .e16-gd.inv { background: var(--inverse); color: var(--on-inverse); }
+  .e16-gd.acc { background: var(--accent); color: var(--on-accent); }
+  .e16-gd.logo { background: var(--logo-ground); color: var(--on-logo-ground); }
+  .e16-gd:not(.page) .e16-add { width: 72px; color: inherit; background: color-mix(in srgb, currentColor var(--ed-fill), transparent); font-size: 9px; }
+  .e16-gd:not(.page) .e16-add:hover { background: color-mix(in srgb, currentColor var(--ed-fill-hover), transparent); }
+  .e16-gd.page .e16-add { width: 72px; font-size: 9px; }
   .e16-add .plus { font-family: var(--f-display); font-size: 28px; font-weight: 800; line-height: 1; }
   .e16-add.appear { animation: e16-unclip var(--d-arrive) var(--e-enter) both; }
   @keyframes e16-unclip { from { clip-path: inset(0 0 100% 0 round var(--r-sm)); } to { clip-path: inset(0 0 0 0 round var(--r-sm)); } }
@@ -1406,7 +1416,18 @@ Sales Team</span></span>
           <span class="meta">Focused</span>
           <span class="e16-f block para on body">Western Sales Club is a student-run sales organization at Western University. Members train on live calls and pitch to real partners.</span>
         </div>
-        <p class="body-sm">A fill of the text colour at 9 percent, <b>--r-sm</b>, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the field's shell. Each field is sized to its longest allowed value, so typing never resizes it.</p>
+        <p class="body-sm">A fill of the text colour at 9 percent (16 on velvet), <b>--r-sm</b>, 8px by 12px padding, visible at rest. Hover changes only the cursor. The focus ring is drawn on the field's shell. Each field is sized to its longest allowed value, so typing never resizes it.</p>
+      </div>
+
+      <div class="e16-cell">
+        <span class="label">Field and Add tile on each ground</span>
+        <div class="e16-grounds">
+          <div class="e16-gd page"><span class="meta">Page</span><span class="e16-f">Who we are</span><button class="e16-add" type="button"><span class="plus" aria-hidden="true">+</span><span>Add</span></button></div>
+          <div class="e16-gd inv"><span class="meta">Inverse</span><span class="e16-f">The record</span><button class="e16-add" type="button"><span class="plus" aria-hidden="true">+</span><span>Add</span></button></div>
+          <div class="e16-gd acc"><span class="meta">Accent</span><span class="e16-f">Join the club</span><button class="e16-add" type="button"><span class="plus" aria-hidden="true">+</span><span>Add</span></button></div>
+          <div class="e16-gd logo"><span class="meta">Logo ground</span><span class="e16-f">Partner name</span><button class="e16-add" type="button"><span class="plus" aria-hidden="true">+</span><span>Add</span></button></div>
+        </div>
+        <p class="body-sm">A field and an Add tile are the ground's own ink mixed over the ground, so each is one step off what it sits on: grey on the page, a lighter black on black, a see-through white on velvet. The mix is 9 percent, and 16 percent on the two velvet grounds and inside a button, where 9 percent of a light ink does not show. Hover on a tile raises the mix. A held item keeps its ground's fill, and a hidden or removed row fades its own ink, so both read on any ground.</p>
       </div>
 
       <div class="e16-stack">

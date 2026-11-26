@@ -77,10 +77,25 @@ export function installBoxes(): void {
     return sticky ? 'sticky' : 'flow';
   };
 
+  /* A box inside a scrolling row (the format cards) is measured in that
+     row's content, so the row scrolling a focused card into view is not
+     a move. */
+  const innerScroll = (el: Element) => {
+    let x = 0;
+    let y = 0;
+    for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (/(auto|scroll)/.test(cs.overflowX)) x += e.scrollLeft;
+      if (/(auto|scroll)/.test(cs.overflowY)) y += e.scrollTop;
+    }
+    return { x, y };
+  };
+
   const boxOf = (el: Element, mode: Rec['mode']): Box => {
     const r = el.getBoundingClientRect();
-    const sx = mode === 'flow' ? window.scrollX : 0;
-    const sy = mode === 'flow' ? window.scrollY : 0;
+    const inner = innerScroll(el);
+    const sx = (mode === 'flow' ? window.scrollX : 0) + inner.x;
+    const sy = (mode === 'flow' ? window.scrollY : 0) + inner.y;
     return { x: r.left + sx, y: r.top + sy, w: r.width, h: r.height };
   };
 

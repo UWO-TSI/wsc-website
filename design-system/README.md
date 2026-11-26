@@ -36,7 +36,7 @@ Load from Google Fonts:
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Instrument+Sans:wght@400..700&display=swap">
 ```
 
-Running copy holds a 62 character measure. `.meta` and any figure set `tabular-nums`.
+Running copy holds a 62 character measure (`.measure`). A title holds about 31 characters, the width of "Real partners, real experiences" in the title face (`.measure-title`, 34ch of the title font), so a title is never wrapped at a body-text width. `.meta` and any figure set `tabular-nums`.
 
 ## Colour
 

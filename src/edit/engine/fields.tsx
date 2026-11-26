@@ -43,8 +43,6 @@ import { blurField, edited, enterTray, focusField, setUi, type TrayContext } fro
   database ceiling are one number.
 */
 
-/** The Field shell's inline padding, both sides, from edit.css. */
-const SHELL_X = 24;
 /** Room the inline label leaves for the button's padding and arrow. */
 const BUTTON_CHROME = 96;
 /** The inline label shell's inline padding, one side, from edit.css. */
@@ -88,18 +86,17 @@ export function EditText({ k, as: Tag = 'span', className, id }: EditableTextPro
   const ref = useRef<HTMLTextAreaElement>(null);
 
   /* One-line values are as wide as their text, capped at the column;
-     paragraphs take the column. Either way the height is the text wrapped
-     at the field's width. */
+     paragraphs take the column, as the paragraph does in Preview. Either
+     way the height is the text wrapped at the field's width. The shell's
+     fill reaches outward (.ed-out), so the text sits where Preview puts
+     it. */
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
     const s = value || m.label;
-    let width = el.clientWidth;
-    if (!block) {
-      const cap = Math.max(40, columnWidth(el) - SHELL_X);
-      width = Math.min(textWidth(el, s) + 2, cap);
-      el.style.width = `${width}px`;
-    }
+    const cap = Math.max(40, columnWidth(el));
+    const width = block ? cap : Math.min(textWidth(el, s) + 2, cap);
+    el.style.width = `${width}px`;
     el.style.height = `${textHeight(el, s, width)}px`;
   }, [value, m.label, block]);
 
@@ -110,7 +107,7 @@ export function EditText({ k, as: Tag = 'span', className, id }: EditableTextPro
 
   return (
     <Tag id={id} className={className}>
-      <span className={`ed ${block ? 'ed-block' : 'ed-line'}`} data-ed-field={k}>
+      <span className={`ed ed-out ${block ? 'ed-block' : 'ed-line'}`} data-ed-field={k}>
         <textarea
           ref={ref}
           className="ed-in"
@@ -166,17 +163,15 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
     focusField({ type: 'lines', keys, tooWide });
   };
 
-  /* As wide as the longest line (the label while empty), capped at the
-     column, and as tall as the lines need. A line wider than the column
-     wraps inside the field, so no text is ever hidden. Measured on every
-     keystroke, so the field follows the text. */
+  /* Every heading field is the full width its title may take: the title
+     measure (.measure-title, about 31 characters) or the column, whichever
+     is narrower, so headings on every page are one size and a line wraps
+     where it wraps in Preview. As tall as the lines need, so no text is
+     ever hidden, measured on every keystroke. */
   const fit = () => {
     const el = ref.current;
     if (!el) return;
-    const shown = raw.split('\n').some(Boolean) ? raw.split('\n') : [label];
-    const cap = Math.max(40, columnWidth(el) - SHELL_X);
-    const widest = Math.max(...shown.map((l) => textWidth(el, l || ' ')));
-    el.style.width = `${Math.min(widest + 2, cap)}px`;
+    el.style.width = `${Math.max(40, columnWidth(el))}px`;
     el.style.height = `${fieldHeight(el, el.value || label)}px`;
   };
   useMeasure(fit, [raw, label]);
@@ -217,7 +212,7 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
 
   return (
     <Tag id={id} className={[className, role].filter(Boolean).join(' ') || undefined}>
-      <span className="ed ed-line" data-ed-field={keys.join(' ')}>
+      <span className="ed ed-out ed-line" data-ed-field={keys.join(' ')}>
         <textarea
           ref={ref}
           className="ed-in ed-lines"

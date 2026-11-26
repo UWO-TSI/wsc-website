@@ -14,7 +14,9 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
   same head is a filled-in form in edit mode.
 
   The title is one key per visual line, as SectionHead's array is, and it
-  owns its own Line Mask Reveal. Use it for section heads and closing
+  owns its own Line Mask Reveal. The title holds the title measure (about
+  31 characters) and the copy the running measure (62), each in its own
+  face. Use it for section heads and closing
   bands; long reading copy and the event ledger stay left-aligned below it.
 
   design-system/components.md, CentredHead.
@@ -54,10 +56,10 @@ export default function CentredHead({
   return (
     <div
       ref={ref}
-      className={`mx-auto flex max-w-[62ch] flex-col items-center gap-4 text-center ${className}`.trim()}
+      className={`mx-auto flex w-full flex-col items-center gap-4 text-center ${className}`.trim()}
     >
       {titleLines ? (
-        <Title id={id} className="title">
+        <Title id={id} className="title measure-title">
           {titleLines.map((line) => (
             <span key={line} className="ln">
               <i>{line}</i>
@@ -65,7 +67,7 @@ export default function CentredHead({
           ))}
         </Title>
       ) : (
-        <EditableLines keys={titleKeys} as={as} id={id} className="title" />
+        <EditableLines keys={titleKeys} as={as} id={id} className="title measure-title" />
       )}
 
       {bodyKey && <EditableText k={bodyKey} as="p" className={`${bodyRole} measure`} />}

@@ -347,6 +347,14 @@ img {
   max-width: 62ch;
 }
 
+/* A title line holds about 31 characters, as wide as "Real partners, real
+   experiences" in the title face (ch is the title font's own). Titles
+   take this measure and never the running copy's, so a line set in the
+   title face is not wrapped at a body-text width. */
+.measure-title {
+  max-width: 34ch;
+}
+
 /*
   ── Slab: the only divider. ──
 

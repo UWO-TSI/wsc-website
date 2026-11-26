@@ -76,8 +76,6 @@ const LIMIT = {
   formatMeta: 60,
 };
 
-/** The characters a figure's number row reserves: the number's digits and its suffix. */
-const FIGURE_CHARS = String(LIMIT.statValue).length + LIMIT.statSuffix;
 
 const ADD_AREA = '__add';
 
@@ -724,11 +722,14 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
 
   return (
     <ReorderList layout="grid" {...reorder.listProps}>
-      {/* Each field is as wide as its text, as in the visitor row.
-          One centred row that wraps, with the Add tile as its last cell:
-          three figures and the tile fit one row at 1280, and on phones
-          each takes its own centred row. */}
-      <div ref={listRef} className="flex flex-wrap justify-center gap-x-4 gap-y-8">
+      {/* The visitor grid (proof-band.tsx): two columns on a phone, one
+          row from 700px, with the Add tile as the last cell, so each
+          figure sits in the column it has in Preview and a longer number
+          does not move its neighbours. */}
+      <div
+        ref={listRef}
+        className={`grid grid-cols-2 gap-x-4 gap-y-10 ${items.length + 1 >= 4 ? 'min-[700px]:grid-cols-4' : 'min-[700px]:grid-cols-3'}`}
+      >
         {items.map(({ row: s, leaving }, index) => {
           const state = api.state(s.id);
           const who = nameOf(s);
@@ -743,7 +744,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
               className={`${itemClass(state, !s.visible, reorder.held === s.id, leaving)} flex flex-col items-center gap-2 text-center`}
             >
-              <span className="flex items-baseline gap-1 font-text text-[clamp(2.4rem,7vw,56px)] font-semibold leading-none tracking-[-0.03em] tabular-nums">
+              <span className="flex items-center gap-2 font-text text-[clamp(2.4rem,7vw,56px)] font-semibold leading-none tracking-[-0.03em] tabular-nums">
                 <InlineNumber
                   table={table}
                   id={s.id}
@@ -786,16 +787,8 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
             </ReorderItem>
           );
         })}
-        {/* As wide as a figure's number row, in the figure's font: seven
-            characters (five digits and the suffix) at -0.02em tracking,
-            plus two fields' 26px (24px shell padding and the 2px measure
-            allowance) and the 4px gap between them. The tile sets its own
-            type, so only the width uses this font. */}
-        <div
-          key={`add-${adds}`}
-          className="flex max-w-full font-text font-semibold text-[clamp(2.4rem,7vw,56px)]"
-          style={{ width: `calc(${FIGURE_CHARS}ch - ${FIGURE_CHARS * 0.02}em + 56px)` }}
-        >
+        {/* The tile fills its grid cell, as tall as the figures' row. */}
+        <div key={`add-${adds}`} className="flex">
           <AddTile
             label={copy.add}
             shape="figure"

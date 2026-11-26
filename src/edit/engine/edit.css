@@ -48,6 +48,14 @@
   display: inline-block;
 }
 
+/* A page-copy field's fill reaches out by its padding, so the text inside
+   sits exactly where Preview puts it and neighbouring fields keep
+   Preview's left edges. List fields keep their padding inside: their
+   rows are laid out for edit mode. */
+.ed.ed-out {
+  margin: -8px -12px;
+}
+
 .ed-block {
   display: block;
 }

@@ -47,6 +47,8 @@ export function useAdminAuth(): AdminAuthContextValue {
  *     aal1, because someone who has not enrolled a second factor yet
  *     still needs to be recognised in order to reach the enrollment
  *     screen.
+ *     A clear "no" calls discard_uninvited_account(), which deletes the
+ *     account the sign-in created, then signs out.
  *  3. AAL check: everything that writes is gated on aal2 in RLS, so a
  *     session that has not passed a TOTP challenge gets the MFA gate
  *     instead of the children. This is a UX shortcut, not the
@@ -88,6 +90,13 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
 
       // 2. Allowlist.
       const { data: isAdmin, error } = await supabase.rpc('is_admin');
+      if (!error && isAdmin === false) {
+        // Not an admin and no invite: delete the account the sign-in just
+        // created, so uninvited sign-ins leave nothing behind. Only a clear
+        // "no" does this; an error signs out and keeps the account.
+        const { error: discardError } = await supabase.rpc('discard_uninvited_account');
+        if (discardError) console.warn('Account cleanup skipped:', discardError.message);
+      }
       if (error || !isAdmin) {
         await supabase.auth.signOut();
         setState('denied');

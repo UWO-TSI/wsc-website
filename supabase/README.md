@@ -90,6 +90,7 @@ Migrations in `supabase/migrations/` are applied in order:
 22. `20261125000001_event_formats.sql`: The `event_formats` table, seeded with the four home page cards and their existing photos
 23. `20261126220541_admin_remove_account.sql`: `remove_admin()` deletes a non-owner admin's whole account; the DELETE policy and grant on `admins` are dropped; `admin_last_sign_ins()` also returns `has_two_factor`
 24. `20261126220900_site_content_home_seed.sql`: Seeds the 19 `site_content` keys the Home rebuild added (audiences, formats heading, results, brands label, hero partner button)
+25. `20261126221724_discard_uninvited_account.sql`: `discard_uninvited_account()` deletes the caller's own account when it is not an admin and has no live invite, so uninvited sign-ins leave no account behind
 
 ---
 
@@ -199,6 +200,12 @@ Two functions, deliberately separate.
 - Raises `42501` unless `is_admin_mfa()` is true, `P0002` if the id is not on the allowlist, and `42501` for the owner. It can only delete an account that is on the allowlist.
 - Deletes the `auth.users` row. The delete cascades to `public.admins`, `auth.mfa_factors`, `auth.sessions` and `auth.identities`; the `admins_audit_del` trigger records `removed` with the caller as actor.
 - SECURITY DEFINER so it can delete from `auth.users`, with `SET search_path = ''`. Owned by `postgres`; `REVOKE EXECUTE FROM PUBLIC, anon`; `GRANT EXECUTE TO authenticated`.
+
+**`discard_uninvited_account()`**: cleanup after an uninvited sign-in:
+
+- Takes no arguments and acts only on `auth.uid()`, so it cannot delete another account. Does nothing if the caller is on the allowlist or has a live invite for their email.
+- Otherwise deletes the caller's `auth.users` row (cascading to identities, sessions and factors) and returns `true`. The sign-in flow calls it when `is_admin()` answers false, then signs out.
+- SECURITY DEFINER with `SET search_path = ''`. Owned by `postgres`; `REVOKE EXECUTE FROM PUBLIC, anon`; `GRANT EXECUTE TO authenticated`.
 
 ### Storage
 

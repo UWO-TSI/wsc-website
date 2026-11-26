@@ -63,7 +63,8 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
       );
       for (const f of stale) {
         const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: f.id });
-        if (unenrollError) throw unenrollError;
+        // 404: the factor is already gone, which is the result this loop wants.
+        if (unenrollError && unenrollError.status !== 404) throw unenrollError;
       }
 
       const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({

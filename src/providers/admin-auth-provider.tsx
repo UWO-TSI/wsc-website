@@ -114,15 +114,31 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
     }
   }, []);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      evaluate(session);
-    });
+  /*
+    The checks run once per signed-in user. The listener reports the current
+    session when it subscribes (INITIAL_SESSION), so no separate getSession()
+    call is needed. A second call ran the checks twice in parallel: the second
+    run replaced the two-factor screen with the spinner and mounted a new one,
+    and the two setups then deleted the same factor (404, "Factor not found").
 
+    Events for the same user (a token refresh every hour, a passed two-factor
+    challenge) do not run the checks again. Running them would replace the
+    page with the spinner and discard whatever the admin was doing.
+
+    `undefined` means nothing has been evaluated yet; `null` means signed out.
+  */
+  const evaluatedFor = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      evaluate(session);
+      const userId = session?.user?.id ?? null;
+      if (userId === evaluatedFor.current) return;
+      evaluatedFor.current = userId;
+      // Deferred, because Supabase holds its auth lock while this listener
+      // runs, and the checks call Supabase again.
+      setTimeout(() => evaluate(session), 0);
     });
 
     return () => subscription.unsubscribe();

@@ -89,6 +89,7 @@ Migrations in `supabase/migrations/` are applied in order:
 21. `20261124000010_site_content_phase2_seed.sql`: Seed the Phase 2 `site_content` keys
 22. `20261125000001_event_formats.sql`: The `event_formats` table, seeded with the four home page cards and their existing photos
 23. `20261126220541_admin_remove_account.sql`: `remove_admin()` deletes a non-owner admin's whole account; the DELETE policy and grant on `admins` are dropped; `admin_last_sign_ins()` also returns `has_two_factor`
+24. `20261126220900_site_content_home_seed.sql`: Seeds the 19 `site_content` keys the Home rebuild added (audiences, formats heading, results, brands label, hero partner button)
 
 ---
 

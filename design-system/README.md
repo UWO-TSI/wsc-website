@@ -71,7 +71,7 @@ Four levels. Shadows create the layers for things placed on a surface; the surfa
 
 ## Layout
 
-A page is a stack of containers on `--page`. A section is a container that spans the full viewport width with no side gap and takes `--r-xl` corners. Containers that meet are 2px apart, and that 2px of page ground plus the tone change is the divider. There is no gutter around a container; the page gutter (`--gut`) is the container's inline padding, so its content keeps the inset.
+A page is a stack of containers on `--page`. A section is a container that spans the full viewport width with no side gap and takes `--r-xl` corners. Containers that meet are 2px apart, and that 2px of page ground plus the tone change is the divider. The one exception is joined slabs: a dark section that continues straight into the next one (the home hero into the brand strip) reads as one surface with no join (`components.md`, Slab). There is no gutter around a container; the page gutter (`--gut`) is the container's inline padding, so its content keeps the inset.
 
 Rounded shapes stay for the things inside a container: photos, fields, buttons and chips.
 

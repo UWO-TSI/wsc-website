@@ -8,6 +8,7 @@ import { EditableButton, EditableImage, EditableText } from '@/edit';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import { useReveal } from '@/lib/reveal';
 import { formatTime, registerHref } from '@/lib/event-display';
+import Chip from '@/components/ui/chip';
 
 /*
   NextEvent: what is coming up, with the soonest event given the space.
@@ -21,10 +22,13 @@ import { formatTime, registerHref } from '@/lib/event-display';
 
   Upcoming means today or later, derived from `date` because `events` has no
   status column (design-system/adoption.md). Upcoming events are shown
-  soonest first. Past events are not shown here; the Events page lists them.
+  soonest first.
 
-  With nothing upcoming the panel says so and keeps See all events, so the
-  section still has its photo and a next step.
+  With nothing upcoming, the three most recent past events take the same
+  places, newest first: the panel carries a neutral Past chip and the year
+  in its date, never Register, and the rows are muted, as past rows are on
+  the Events page. Only with no published events at all does the panel show
+  the empty message. Either way See all events stays.
 
   Nothing here imports from the full timeline in src/components/events/.
   What the two must show the same way, the time and whether there is a
@@ -46,21 +50,29 @@ function isUpcoming(date: string) {
   return parseISO(date) >= startOfDay(new Date());
 }
 
-function whenOf(event: Event) {
-  const parts = [format(parseISO(event.date), 'EEE MMM d'), event.time && formatTime(event.time), event.location];
+function whenOf(event: Event, past = false) {
+  const day = format(parseISO(event.date), past ? 'EEE MMM d, yyyy' : 'EEE MMM d');
+  const parts = [day, event.time && formatTime(event.time), event.location];
   return parts.filter(Boolean).join(' · ');
 }
 
 export default function EventsPreview({ events, loading, error }: EventsPreviewProps) {
   const ref = useReveal<HTMLDivElement>();
 
-  const upcoming = events
-    .filter((event) => event.published && isUpcoming(event.date))
+  const published = events.filter((event) => event.published);
+  const upcoming = published
+    .filter((event) => isUpcoming(event.date))
     .sort((a, b) => a.date.localeCompare(b.date));
-  const [next, ...rest] = upcoming;
+  const recent = published
+    .filter((event) => !isUpcoming(event.date))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  /* Past events stand in only when nothing is upcoming. */
+  const past = upcoming.length === 0 && recent.length > 0;
+  const [next, ...rest] = past ? recent : upcoming;
   const more = rest.slice(0, MORE_COUNT);
-  /* The time and the Register check are the Events page's (src/lib/event-display.ts). */
-  const register = registerHref(next?.register_url);
+  /* The time and the Register check are the Events page's (src/lib/event-display.ts).
+     A past event never offers Register. */
+  const register = past ? null : registerHref(next?.register_url);
 
   return (
     <section className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
@@ -94,7 +106,14 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
                     <p className="body m-0">We could not load the calendar. The Events page has the full list.</p>
                   ) : next ? (
                     <>
-                      <p className="meta m-0">{whenOf(next)}</p>
+                      {past ? (
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Chip>Past</Chip>
+                          <p className="meta m-0">{whenOf(next, true)}</p>
+                        </div>
+                      ) : (
+                        <p className="meta m-0">{whenOf(next)}</p>
+                      )}
                       <h3 className="title m-0">{next.title}</h3>
                       {next.description && <p className="body measure m-0 text-ink-muted">{next.description}</p>}
                     </>
@@ -119,7 +138,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
                     className="flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-md bg-raised px-5 py-4"
                   >
                     <span className="meta w-14 shrink-0">{format(parseISO(event.date), 'MMM d').toUpperCase()}</span>
-                    <span className="title-sm flex-1">{event.title}</span>
+                    <span className={`title-sm flex-1 ${past ? 'text-ink-muted' : ''}`.trim()}>{event.title}</span>
                     {event.location && <span className="body-sm shrink-0">{event.location}</span>}
                   </div>
                 ))}

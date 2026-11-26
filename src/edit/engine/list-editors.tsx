@@ -620,15 +620,6 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
   const reorder = useReorder({ api, table, rows: sponsors, listRef, nameOf });
   const { items, done } = useLeaving(sponsors, api, reorder.capture, listRef);
 
-  /* Tile sizes as Preview gives them: ranked among the partners a visitor
-     sees, so hidden and removed ones do not count. A hidden or removed tile
-     takes the size of the place it would have if it were shown. */
-  const shownBefore: number[] = [];
-  let shownCount = 0;
-  for (const { row: s, leaving } of items) {
-    shownBefore.push(shownCount);
-    if (s.active && !leaving && api.state(s.id) !== 'removing') shownCount++;
-  }
 
   useRowTray(table, (id, field, row): RowTrayView => {
     const s = row as unknown as Sponsor;
@@ -660,12 +651,13 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
     <ReorderList layout="grid" {...reorder.listProps}>
       <div
         ref={listRef}
-        className="flex flex-wrap items-start justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8 py-[clamp(1rem,4vw,2.5rem)]"
+        className="mx-auto flex max-w-[1300px] flex-wrap items-start justify-center gap-x-[clamp(2rem,5vw,4.5rem)] gap-y-[clamp(3rem,6vw,5rem)] py-[clamp(2.5rem,6vw,4.5rem)]"
       >
         {items.map(({ row: s, leaving }, index) => {
           const state = api.state(s.id);
           const src = api.fileUrl(s.id, 'logo_path') ?? getPublicUrl('sponsor-logos', s.logo_path ?? null);
-          const scale = scaleFor(shownBefore[index], shownCount);
+          /* Every partner has the board's one tile size, as in Preview. */
+          const scale = scaleFor();
           const width = tileWidth(scale);
           const who = nameOf(s);
           return (

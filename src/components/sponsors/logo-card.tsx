@@ -11,9 +11,6 @@ interface LogoCardProps {
    * resolves it: a logo drafted in edit mode first, then the stored object.
    */
   logoUrl: string | null;
-  /** Position in display_order, zero-based. Carries the tile's scale. */
-  rank: number;
-  total: number;
   /** The wall calls this when the mark has decoded or failed. */
   onReady?: () => void;
 }
@@ -21,16 +18,13 @@ interface LogoCardProps {
 type Scale = 'lead' | 'mid' | 'std';
 
 /*
-  There is no tier column to key off, so scale is taken from display_order:
-  the first third of the wall reads large, the next third medium, the rest
-  standard. Tile scale carries the hierarchy, not a border.
+  The wall is a board: every partner gets the same large tile, and
+  display_order is the only rank. Mixed tile sizes in one wrapping row read
+  as a scatter rather than a board. The wall and its editor both take the
+  size from here, so edit mode matches Preview.
 */
-export function scaleFor(rank: number, total: number): Scale {
-  if (total <= 3) return rank === 0 ? 'lead' : 'std';
-  const third = Math.ceil(total / 3);
-  if (rank < third) return 'lead';
-  if (rank < third * 2) return 'mid';
-  return 'std';
+export function scaleFor(): Scale {
+  return 'lead';
 }
 
 /*
@@ -39,13 +33,13 @@ export function scaleFor(rank: number, total: number): Scale {
   skeleton uses the same boxes.
 */
 export const TILE_SIZE: Record<Scale, string> = {
-  lead: 'h-20 w-56 sm:h-24 sm:w-72',
-  mid: 'h-16 w-44 sm:h-20 sm:w-56',
-  std: 'h-12 w-36 sm:h-16 sm:w-44',
+  lead: 'h-24 w-64 sm:h-28 sm:w-80 xl:h-32 xl:w-96',
+  mid: 'h-20 w-52 sm:h-24 sm:w-72',
+  std: 'h-16 w-44 sm:h-20 sm:w-56',
 };
 
-export default function LogoCard({ sponsor, logoUrl, rank, total, onReady }: LogoCardProps) {
-  const scale = scaleFor(rank, total);
+export default function LogoCard({ sponsor, logoUrl, onReady }: LogoCardProps) {
+  const scale = scaleFor();
 
   /*
     No plate behind the mark: the wall itself is the --logo-ground slab, so a
@@ -82,7 +76,7 @@ export default function LogoCard({ sponsor, logoUrl, rank, total, onReady }: Log
     <RevealImage
       src={logoUrl}
       alt={`${sponsor.name} logo`}
-      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
+      sizes="(max-width: 640px) 70vw, 384px"
       className="h-full w-full"
       fit="contain"
       sequence="fade"

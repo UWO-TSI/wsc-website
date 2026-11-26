@@ -6,10 +6,9 @@ import type { AdminInvite, AdminLastSignIn, AdminRow, ExecArea, ExecGroup } from
   Every read and write the Settings page makes. Each one goes through the
   anon key and the signed-in user's session, so RLS decides what happens:
 
-    admins         SELECT and DELETE at aal2; DELETE also needs
-                   is_owner = false (20260929000005_admin_mfa_aal2.sql,
-                   "Admins can remove a non-owner admin"). No INSERT or
-                   UPDATE grant exists, so nobody is added here directly.
+    admins         SELECT at aal2. No INSERT, UPDATE or DELETE grant
+                   exists: a person joins by claiming an invite and leaves
+                   through remove_admin() below.
     admin_invites  SELECT, INSERT, DELETE at aal2; INSERT refuses the
                    caller's own email, and a trigger lowercases the email,
                    checks its shape and sets the 14-day expiry.
@@ -17,8 +16,9 @@ import type { AdminInvite, AdminLastSignIn, AdminRow, ExecArea, ExecGroup } from
     exec_areas     full access at aal2 (is_admin_mfa()).
     executives     read here only, to count who uses each role and area.
 
-  Plus admin_last_sign_ins(), which raises unless the caller is an admin
-  at aal2.
+  Plus two functions that raise unless the caller is an admin at aal2:
+  admin_last_sign_ins(), and remove_admin(), which deletes a non-owner
+  admin's whole account (20261126220541_admin_remove_account.sql).
 */
 
 export type Failure = 'expired' | 'conflict' | 'in-use' | 'refused' | 'network';
@@ -49,6 +49,8 @@ export interface Accounts {
   admins: AdminRow[];
   /** user_id to last sign-in. Null when the function failed. */
   lastSignIn: Record<string, string | null> | null;
+  /** user_id to whether two-factor setup is finished. Null when the function failed. */
+  twoFactor: Record<string, boolean> | null;
   invites: AdminInvite[];
 }
 
@@ -75,15 +77,23 @@ export async function loadAccounts(): Promise<Accounts> {
       : Object.fromEntries(
           ((signIns.data ?? []) as AdminLastSignIn[]).map((r) => [r.user_id, r.last_sign_in_at])
         ),
+    twoFactor: signIns.error
+      ? null
+      : Object.fromEntries(
+          ((signIns.data ?? []) as AdminLastSignIn[]).map((r) => [r.user_id, r.has_two_factor])
+        ),
     invites: (invites.data ?? []) as AdminInvite[],
   };
 }
 
-/** Removes one admin. The is_owner filter repeats the database rule. */
+/**
+ * Removes one admin by deleting their account, which also deletes their
+ * two-factor setup and ends their sessions. A new invite starts them from
+ * the QR code. The function refuses the owner.
+ */
 export async function removeAdmin(userId: string): Promise<void> {
-  oneRow(
-    await supabase.from('admins').delete().eq('user_id', userId).eq('is_owner', false).select('user_id')
-  );
+  const { error } = await supabase.rpc('remove_admin', { p_user_id: userId });
+  if (error) fail(error);
 }
 
 /** The email must already be validated and lowercased. */

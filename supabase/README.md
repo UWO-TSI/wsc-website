@@ -88,6 +88,7 @@ Migrations in `supabase/migrations/` are applied in order:
 20. `20261124000005_events_register_url.sql`: Optional `events.register_url`
 21. `20261124000010_site_content_phase2_seed.sql`: Seed the Phase 2 `site_content` keys
 22. `20261125000001_event_formats.sql`: The `event_formats` table, seeded with the four home page cards and their existing photos
+23. `20261126220541_admin_remove_account.sql`: `remove_admin()` deletes a non-owner admin's whole account; the DELETE policy and grant on `admins` are dropped; `admin_last_sign_ins()` also returns `has_two_factor`
 
 ---
 
@@ -100,7 +101,7 @@ Security is designed in **three layers**. Even if one layer is misconfigured, th
 - **Server-side enforcement**: Grants and RLS define what each role can do. The client cannot bypass them.
 - **Least privilege**: Anonymous users can only read rows that are explicitly visible (`published` / `active` / `visible`). They have no INSERT/UPDATE/DELETE on __ANY__ table.
 - **Second factor required to write**: Every admin write policy is gated on `is_admin_mfa()`, which requires the session to have reached `aal2` by passing a TOTP challenge. An OAuth-only session can read the public site and nothing else.
-- **Access until removed**: Admin access does not expire. It ends when another admin removes the person from the Admins tab. Unclaimed invites still expire after 14 days.
+- **Access until removed**: Admin access does not expire. It ends when another admin removes the person from the Admins tab, which deletes their account, two-factor setup and sessions. A new invite starts them from the QR code. Unclaimed invites still expire after 14 days.
 - **No admin data in the client**: Admin status is not stored in localStorage or cookies. The app calls the `is_admin()` RPC and reacts to the boolean.
 
 **Changed in September 2026.** The allowlist used to be completely invisible to the API (`REVOKE ALL` plus RLS with no policies). Self-service user management requires admins to read and modify the roster, so `public.admins` is now readable by any admin at `aal2`, and every admin can see every other admin's email. This was a deliberate trade for letting the club manage its own turnover without a developer. The compensating controls are: no `INSERT` or `UPDATE` grant on the table at all, a protected owner row, mandatory 2FA, and an append-only audit log.
@@ -128,7 +129,7 @@ At the SQL level, unauthenticated clients cannot write anything. Authenticated c
 - **Content tables**: RLS is enabled. Each has:
   - A **public SELECT** policy filtered by the visibility column (`published`, `active`, or `visible`). `site_content` and `exec_areas` use `USING (true)` instead: the first holds the page copy itself, and the second has no visibility column.
   - An **admin FOR ALL** policy gated by `public.is_admin_mfa()` (both `USING` and `WITH CHECK`).
-- **Allowlist**: SELECT and DELETE policies, both gated by `is_admin_mfa()`. The DELETE policy additionally requires `is_owner = false`, so the owner row cannot be removed through the API by anyone, including the owner. Removing it takes the SQL editor and the service role.
+- **Allowlist**: a SELECT policy gated by `is_admin_mfa()`, and no DELETE grant. Removal goes through `remove_admin()`, which refuses the owner, so the owner row cannot be removed through the API by anyone, including the owner. Removing it takes the SQL editor and the service role.
 - **Invites**: SELECT, INSERT and DELETE gated by `is_admin_mfa()`. The INSERT policy also requires `lower(email) <> lower(auth.email())`: **self-invitation is blocked**. It dates from the ten-month limit and is kept because an admin has no reason to invite their own address.
 - **Audit log**: SELECT only. Writes happen inside SECURITY DEFINER functions owned by `postgres`, which bypass RLS.
 
@@ -150,7 +151,7 @@ Google OAuth already means Google performs the authentication, so an admin with 
 - **TOTP, RFC 6238.** Supabase generates a random per-user secret, stored in `auth.mfa_factors`, and returns it as an `otpauth://` QR code. The authenticator app derives a 6-digit code from that secret plus the current 30-second window, entirely offline.
 - **No third-party service, no SMS, no email.** Any standard app works: Google Authenticator, Microsoft Authenticator, 1Password, Apple Passwords. TOTP is included in Supabase Auth at no extra cost; phone MFA is the paid add-on and is not used.
 - **Enforced in the database, not the UI.** Passing a challenge raises the session to `aal2`, which lands in the JWT as the `aal` claim. Every admin policy calls `is_admin_mfa()`, which checks that claim. A stolen `aal1` token cannot write anything.
-- **Recovery.** Supabase's TOTP has no built-in backup codes. If someone loses their phone, the owner removes the factor from the Supabase dashboard (Authentication → Users → the user → remove their MFA factor) and they enrol again on next sign-in.
+- **Recovery.** Supabase's TOTP has no built-in backup codes. If someone loses their phone, any admin removes them from the Admins tab and invites them again; they set up a new factor on their next sign-in. The owner's own factor can only be removed from the Supabase dashboard (Authentication → Users → the user → remove their MFA factor).
 
 **To turn enforcement off** if enrollment proves too much friction, redefine one function. No policy churn, no migration rewrite:
 
@@ -187,10 +188,16 @@ Two functions, deliberately separate.
 
 **`admin_last_sign_ins()`**: when each admin last signed in, for the Admins tab:
 
-- Returns `user_id`, `email` and `auth.users.last_sign_in_at` for every row in `public.admins`. Read-only.
+- Returns `user_id`, `email`, `auth.users.last_sign_in_at` and `has_two_factor` (a verified TOTP factor exists) for every row in `public.admins`. Read-only.
 - Raises `42501` unless `is_admin_mfa()` is true. That is the same bar as reading the roster, since the result carries every admin's email.
 - SECURITY DEFINER so it can read `auth.users`, with `SET search_path = ''` and every name schema-qualified.
 - Owned by `postgres`; `REVOKE EXECUTE FROM PUBLIC, anon`; `GRANT EXECUTE TO authenticated`.
+
+**`remove_admin(p_user_id)`**: removes an admin from the Admins tab:
+
+- Raises `42501` unless `is_admin_mfa()` is true, `P0002` if the id is not on the allowlist, and `42501` for the owner. It can only delete an account that is on the allowlist.
+- Deletes the `auth.users` row. The delete cascades to `public.admins`, `auth.mfa_factors`, `auth.sessions` and `auth.identities`; the `admins_audit_del` trigger records `removed` with the caller as actor.
+- SECURITY DEFINER so it can delete from `auth.users`, with `SET search_path = ''`. Owned by `postgres`; `REVOKE EXECUTE FROM PUBLIC, anon`; `GRANT EXECUTE TO authenticated`.
 
 ### Storage
 

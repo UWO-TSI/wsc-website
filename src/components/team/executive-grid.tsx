@@ -164,7 +164,9 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
                     />
                   </span>
 
-                  <div className="flex flex-col gap-1">
+                  {/* A word longer than the cell breaks inside the cell
+                      instead of running over the next name. */}
+                  <div className="flex flex-col gap-1 [overflow-wrap:anywhere]">
                     <span className="title-sm">{executive.name}</span>
                     <span className="meta">{titleOf(executive, groups, areas)}</span>
                   </div>

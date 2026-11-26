@@ -9,7 +9,7 @@ import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecArea, ExecGroup, Executive } from '@/types/database';
 import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 import { useDraftAreas, useDraftFile } from '@/edit';
-import { MIN_PER_ROW, rowSizes } from '@/lib/exec-tiers';
+import { rowSizes } from '@/lib/exec-tiers';
 
 /*
   The roster, as one centred row group per role, in role order.
@@ -18,10 +18,10 @@ import { MIN_PER_ROW, rowSizes } from '@/lib/exec-tiers';
   rows shows rank: presidents first, then each role in turn. No heading names
   the tiers: the title under each name already says the role.
 
-  Each tier is split into centred rows of at least three people, unless the
-  whole role has fewer (rowSizes in src/lib/exec-tiers.ts), so no row ends
-  with one person on their own. The gap between tiers is larger than the gap
-  between rows inside a tier.
+  Each tier is split into centred, evenly filled rows of as many full-size
+  cells as fit (rowSizes in src/lib/exec-tiers.ts), so a wide screen never
+  ends a row with one person on their own. The gap between tiers is larger
+  than the gap between rows inside a tier.
 
   No cell has a fill, shadow, border or hover. These are people, not controls.
 
@@ -148,12 +148,10 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
   const [measureRef, perRow] = usePerRow();
 
   /*
-    Each tier is split into explicit rows by rowSizes (src/lib/exec-tiers.ts),
-    so no row holds fewer than three people unless the whole role does. A
-    wrapping flex row cannot promise that: eight people at seven per row wrap
-    as seven and one. Each row is centred and does not wrap; when a row holds
-    more cells than fit (a role of four on a phone), the cells and portraits
-    shrink together.
+    Each tier is split into explicit, evenly filled rows by rowSizes
+    (src/lib/exec-tiers.ts). A wrapping flex row cannot do that: eight people
+    at seven per row wrap as seven and one. Each row is centred, does not
+    wrap, and never holds more cells than fit at full size.
   */
   return (
     <div ref={measureRef}>
@@ -216,9 +214,8 @@ const GAP_X = 24;
 
 /*
   How many full-size cells fit across the roster, measured from its real
-  width. Never under MIN_PER_ROW: below that the cells shrink instead, so a
-  phone still shows three people to a row. Starts at 5 for the first frame,
-  before the roster has a width.
+  width, and at least one. Starts at 5 for the first frame, before the
+  roster has a width.
 */
 function usePerRow() {
   const ref = useRef<HTMLDivElement>(null);
@@ -231,7 +228,7 @@ function usePerRow() {
       const width = entry.contentRect.width;
       if (!width) return;
       const cell = Math.min(CELL_MAX.max, Math.max(CELL_MAX.min, window.innerWidth * CELL_MAX.vw));
-      setPerRow(Math.max(MIN_PER_ROW, Math.floor((width + GAP_X) / (cell + GAP_X))));
+      setPerRow(Math.max(1, Math.floor((width + GAP_X) / (cell + GAP_X))));
     });
     observer.observe(element);
     return () => observer.disconnect();

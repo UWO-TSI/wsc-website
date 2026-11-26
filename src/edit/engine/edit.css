@@ -48,12 +48,81 @@
   display: inline-block;
 }
 
-/* A page-copy field's fill reaches out by its padding, so the text inside
-   sits exactly where Preview puts it and neighbouring fields keep
-   Preview's left edges. List fields keep their padding inside: their
-   rows are laid out for edit mode. */
+/* A one-line list field is as wide as its text (measured), never wider
+   than its cell. */
+.ed-line > .ed-in {
+  max-width: 100%;
+}
+
+/*
+  Page copy (.ed-out): the field takes no space of its own. The text box is
+  exactly where Preview puts the text, and the fill and focus ring are
+  drawn around it on a layer behind the text (::before, 6px by 12px
+  outside the text box), so a field never moves or resizes its
+  neighbours. List fields keep their padding inside: their rows are laid
+  out for edit mode.
+
+  The box comes from the component: a fill field (.ed-fill) takes the
+  element's width, which the component sets (a measure, a grid cell, a
+  card's column); a fit field (.ed-fit) is as wide as its text and never
+  wider than that box.
+*/
 .ed.ed-out {
-  margin: -8px -12px;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  isolation: isolate;
+}
+
+.ed.ed-out::before {
+  content: '';
+  position: absolute;
+  inset: -6px -12px;
+  z-index: -1;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, currentColor var(--ed-fill), transparent);
+  pointer-events: none;
+}
+
+.ed.ed-out:focus-within {
+  outline: none;
+}
+
+.ed.ed-out:focus-within::before {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.slab-inv .ed.ed-out:focus-within::before {
+  outline-color: var(--on-inverse);
+}
+
+.slab-acc .ed.ed-out:focus-within::before {
+  outline-color: var(--on-accent);
+}
+
+.slab-logo .ed.ed-out:focus-within::before {
+  outline-color: var(--on-logo-ground);
+}
+
+.ed-fill {
+  display: block;
+  width: 100%;
+}
+
+.ed-fit {
+  display: inline-block;
+}
+
+.ed-fit > .ed-in {
+  max-width: 100%;
+}
+
+/* The boxes components give their fields while editing (not in Preview):
+   an element that holds a measure takes all of it, so a paragraph or a
+   title field is its measure wide, capped at the column. */
+html.ed-editing :is(.measure, .measure-title) {
+  width: 100%;
 }
 
 .ed-block {
@@ -272,7 +341,7 @@ html.ed-on body {
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     /* One row, left to right: the account controls, the changes button,
        the tray, then the three actions. */
-    grid-template-columns: auto 180px minmax(0, 1fr) auto auto auto;
+    grid-template-columns: auto minmax(240px, auto) minmax(0, 1fr) auto auto auto;
     grid-template-areas: 'acct status tray seg discard publish';
     column-gap: 12px;
     padding: 12px 14px;
@@ -344,10 +413,6 @@ html.ed-on body {
   cursor: default;
 }
 
-.ed-count .label {
-  color: var(--accent-ink);
-}
-
 .ed-count-n {
   display: flex;
   align-items: center;
@@ -386,9 +451,11 @@ html.ed-on body {
   box-shadow: var(--sh-3);
 }
 
+/* From 900px the list opens straight above the count that opened it, at
+   the bar's left edge. */
 @media (min-width: 900px) {
   .ed-changes {
-    left: auto;
+    right: auto;
     width: min(560px, 100%);
     border-radius: var(--r-xl);
   }

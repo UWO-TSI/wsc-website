@@ -1,8 +1,10 @@
 /*
-  Field sizes: a field is the size of the text it holds (its label while
-  empty) at the current width, measured in the field's own font. Fields
-  measure when they mount, on every change to their text, when the fonts
-  finish loading, and when the window is resized.
+  Text measurement for edit-mode fields. A field's width comes from the
+  component's layout (CSS) or, for a field as wide as its text, from
+  textWidth here; nothing reads the surrounding layout to guess a column.
+  Heights are measured at the width the field was given. Fields measure
+  when they mount, on every change to their text, when the fonts finish
+  loading, and when the window is resized.
 */
 
 let box: HTMLDivElement | null = null;
@@ -97,81 +99,6 @@ export function fieldHeight(el: HTMLTextAreaElement, text: string): number {
   return m.scrollHeight;
 }
 
-const px = (v: string) => parseFloat(v) || 0;
-const sidesX = (cs: CSSStyleDeclaration) =>
-  px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
-
-/**
- * The width `field` may take. The column is the nearest block ancestor
- * whose width stays the same when the field is collapsed to zero width;
- * the result is its content width less the padding, borders and margins of
- * the boxes between them (the field's own `.ed` shell excepted: callers
- * take SHELL_X off). An ancestor sized by its content, such as a centred
- * flex item, is as wide as the field inside it, so it cannot be the
- * column: measured against it, the hero greeting kept its 487px desktop
- * width after the window went to 375px and the page scrolled sideways.
- * A skipped ancestor's max-width still caps the result.
- *
- * Collapsing a field and reading its ancestors costs two forced layouts.
- * Inside a measure pass (runPass: a resize, or the fonts arriving) every
- * field measured before is collapsed, read and restored together, once,
- * and each field's call returns its width from that batch. A field
- * measured outside a pass (on mount) is measured alone, and joins the
- * batch from then on.
- */
-export function columnWidth(field: HTMLElement): number {
-  columnFields.add(field);
-  const hit = batch?.get(field);
-  if (hit !== undefined) return hit;
-  return columnWidths([field]).get(field)!;
-}
-
-/** Every field columnWidth has measured, so a pass can batch them. */
-const columnFields = new Set<HTMLElement>();
-/** The widths of the current pass, or null outside one. */
-let batch: Map<HTMLElement, number> | null = null;
-
-function columnWidths(fields: HTMLElement[]): Map<HTMLElement, number> {
-  const chains = fields.map((field) => {
-    const chain: HTMLElement[] = [];
-    for (let node = field.parentElement; node && node !== document.body; node = node.parentElement) chain.push(node);
-    return chain;
-  });
-  /* Read every width, collapse every field, read again, then restore every
-     field: two layouts for the whole batch. */
-  const before = chains.map((chain) => chain.map((n) => n.getBoundingClientRect().width));
-  const widths = fields.map((field) => field.style.width);
-  fields.forEach((field) => (field.style.width = '0px'));
-  const after = chains.map((chain) => chain.map((n) => n.getBoundingClientRect().width));
-  fields.forEach((field, i) => (field.style.width = widths[i]));
-
-  const result = new Map<HTMLElement, number>();
-  fields.forEach((field, f) => result.set(field, columnOf(chains[f], before[f], after[f])));
-  return result;
-}
-
-function columnOf(chain: HTMLElement[], before: number[], after: number[]): number {
-  let between = 0;
-  let cap = Infinity;
-  for (let i = 0; i < chain.length; i++) {
-    const node = chain[i];
-    const cs = getComputedStyle(node);
-    if (cs.display === 'contents' || (i === 0 && node.classList.contains('ed'))) continue;
-    const inline = cs.display.startsWith('inline');
-    if (!inline && Math.abs(after[i] - before[i]) < 0.5) {
-      return Math.min(node.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight) - between, cap);
-    }
-    /* Only a length: a percentage max-width is relative to the parent,
-       which the walk reaches next anyway. */
-    if (!inline && cs.maxWidth.endsWith('px')) {
-      const inner = px(cs.maxWidth) - (cs.boxSizing === 'border-box' ? sidesX(cs) : 0);
-      cap = Math.min(cap, inner - between);
-    }
-    between += sidesX(cs) + px(cs.marginLeft) + px(cs.marginRight);
-  }
-  return Math.min(document.documentElement.clientWidth - between, cap);
-}
-
 /*
   "This line wraps on phones." The check sets the line in the heading's own
   type role as it resolves on a 375px screen, against that screen's column:
@@ -203,16 +130,9 @@ export function wrapsOnPhones(el: HTMLElement, line: string): boolean {
 const measurers = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | undefined;
 
-/** Runs `fns` as one measure pass, every field's column read in one batch. */
+/** Runs every field's measure once. */
 function runPass(fns: (() => void)[]) {
-  if (fns.length === 0) return;
-  for (const field of columnFields) if (!field.isConnected) columnFields.delete(field);
-  batch = columnWidths([...columnFields]);
-  try {
-    fns.forEach((fn) => fn());
-  } finally {
-    batch = null;
-  }
+  fns.forEach((fn) => fn());
 }
 
 function onResize() {

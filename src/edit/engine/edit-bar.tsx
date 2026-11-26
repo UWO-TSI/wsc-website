@@ -137,7 +137,7 @@ function focusView(ctx: TrayContext, text: (k: SiteContentKey) => string): TrayV
   }
   /* A list row: its name, a hint or its link, and Remove (list-parts.tsx). */
   if (ctx.type === 'row') {
-    return rowTrayView(ctx.table, ctx.id, ctx.field) ?? { label: COPY.firstLabel, body: COPY.first };
+    return rowTrayView(ctx.table, ctx.id, ctx.field) ?? { label: '', body: '' };
   }
   if (ctx.type === 'area') return { label: COPY.newArea, body: COPY.newAreaHint };
   const def = IMAGE_SLOTS[ctx.slot as ImageSlotKey];
@@ -162,6 +162,13 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   };
 
   useEffect(() => holdIosFocusZoom(), []);
+
+  /* While editing (not in Preview) components give their fields their
+     edit-mode boxes (edit.css, html.ed-editing). */
+  useEffect(() => {
+    document.documentElement.classList.toggle('ed-editing', !preview);
+    return () => document.documentElement.classList.remove('ed-editing');
+  }, [preview]);
 
   /* Pages get bottom padding equal to the bar, so the footer stays
      reachable above it. */
@@ -255,10 +262,10 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
     view = expiredView();
   } else if (!ui.online) {
     view = { label: COPY.offlineLabel, tone: 'warn', body: COPY.offline };
-  } else if (preview) {
-    view = { label: COPY.previewing, body: COPY.previewIdle };
   } else {
-    view = { label: COPY.firstLabel, body: COPY.first };
+    /* Nothing focused and nothing to report: the tray is empty. The count
+       and the Edit and Preview switch already say where the editor is. */
+    view = { label: '', body: '' };
   }
 
   const publishLabel =
@@ -289,8 +296,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
           aria-label={n ? `${COPY.changesShow}, ${COPY.pendingShort(n)}` : COPY.noChanges}
           onClick={() => setListOpen((o) => !o)}
         >
-          <span className="label">{preview ? COPY.previewing : COPY.editing}</span>
-          <span className="meta ed-count-n">
+          <span className="ed-count-n">
             <span>{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
             {n > 0 && <ChevronUp />}
           </span>

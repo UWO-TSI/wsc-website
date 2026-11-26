@@ -5,10 +5,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { supabase } from '@/lib/supabase/client';
 import { setEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
 import type { ListDraftApi, ListEngineApi, ListTable } from '@/edit/list-draft';
-import { COPY, draftDay } from '@/edit/engine/copy';
 import {
-  changeCount,
-  lastChangeAt,
   listApi,
   loadDrafts,
   overlayImage,
@@ -79,11 +76,6 @@ export default function EditEngine({ userId, publisher = supabasePublisher }: Ed
 
     loadDrafts(userId).then(() => {
       if (!live) return;
-      const n = changeCount();
-      const at = lastChangeAt();
-      if (n && at) {
-        setUi({ flash: { tone: 'info', label: COPY.firstLabel, text: COPY.draftFromEarlier(n, draftDay(at)) } });
-      }
       setEditSnapshot({ status: 'editing', engine: API });
       document.documentElement.classList.add('ed-on');
       setReady(true);

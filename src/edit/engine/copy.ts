@@ -8,10 +8,8 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 const changes = (n: number) => plural(n, 'change', 'changes');
 
 export const COPY = {
-  // First sign-in: the tray until there is something else to say.
+  /** The bar's accessible name. */
   firstLabel: 'Edit mode',
-  first:
-    'Every text and photo on the page is a field. Change it where it is. Nothing goes live until you press Publish.',
 
   // Field focused: "About · Body copy." and "212 of 320 characters."
   fieldHead: (section: string, label: string) => `${section} · ${label}`,
@@ -46,7 +44,6 @@ export const COPY = {
   addPhoto: 'Add photo',
 
   // Bar
-  editing: 'Editing',
   previewing: 'Preview',
   noChanges: 'No changes',
   pending: (n: number) => `${plural(n, 'unpublished change', 'unpublished changes')}.`,
@@ -57,7 +54,6 @@ export const COPY = {
   discard: 'Discard',
   edit: 'Edit',
   modeGroup: 'Edit or preview',
-  previewIdle: 'Preview shows the page as visitors will see it after you publish.',
 
   // Discard, confirmed in the tray
   confirmDiscard: (n: number) =>
@@ -82,10 +78,6 @@ export const COPY = {
   expiredLabel: 'Signed out',
   expired: 'Your sign-in expired. Your changes are saved in this browser. Sign in again to publish them.',
   signIn: 'Sign in',
-
-  // Draft from earlier: "You have 3 unpublished changes from Tuesday."
-  draftFromEarlier: (n: number, when: string) =>
-    `You have ${plural(n, 'unpublished change', 'unpublished changes')} from ${when}.`,
 
   // Areas, used by the list editors in phase 3
   duplicateArea: (name: string) => `${name} already exists. Pick it from the list.`,
@@ -259,19 +251,3 @@ export const COPY = {
   linkRefusedHead: 'Link not changed. Start it with https:// or /',
   linkRefusedHeadHttps: 'Link not changed. Start it with https://',
 };
-
-/**
- * "Tuesday" in "from Tuesday". Within the last six days the weekday, then
- * the date, so a week-old draft never reads as this week's.
- */
-export function draftDay(at: number, now = Date.now()): string {
-  const day = (t: number) => {
-    const d = new Date(t);
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  };
-  const days = Math.round((day(now) - day(at)) / 86_400_000);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 7) return new Date(at).toLocaleDateString('en-CA', { weekday: 'long' });
-  return new Date(at).toLocaleDateString('en-CA', { month: 'long', day: 'numeric' });
-}

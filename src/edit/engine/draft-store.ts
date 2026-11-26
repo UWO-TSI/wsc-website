@@ -268,17 +268,6 @@ export function changeCount(): number {
   return n;
 }
 
-/** When the newest draft change was made, for "Draft from earlier". */
-export function lastChangeAt(): number | null {
-  let at = 0;
-  texts.forEach((t) => (at = Math.max(at, t.at)));
-  photos.forEach((p) => (at = Math.max(at, p.at)));
-  files.forEach((f) => (at = Math.max(at, f.at)));
-  lists.forEach((l) => (at = Math.max(at, l.updatedAt)));
-  areas.forEach((a) => (at = Math.max(at, a.at)));
-  return at || null;
-}
-
 export function pendingTexts(): Array<[string, string]> {
   return [...texts].map(([k, t]) => [k, t.value]);
 }

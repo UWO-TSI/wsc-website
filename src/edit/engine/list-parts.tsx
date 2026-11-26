@@ -28,7 +28,7 @@ import { LIMITS } from '@/lib/admin-config';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import { COPY } from '@/edit/engine/copy';
 import { currentRow } from '@/edit/engine/draft-store';
-import { columnWidth, onRemeasure, textHeight, textWidth } from '@/edit/engine/measure';
+import { onRemeasure, textHeight, textWidth } from '@/edit/engine/measure';
 import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, type Tone } from '@/edit/engine/ui-store';
 
 /*
@@ -50,9 +50,6 @@ import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, ty
   neighbours close the gap on --e-move. Under reduced motion each one is
   shown in its final state at once.
 */
-
-/** The Field shell's inline padding, both sides, from edit.css. */
-const SHELL_X = 24;
 
 const fieldId = (table: ListTable, id: string, column: string) => `${table}.${id}.${column}`;
 
@@ -107,22 +104,16 @@ export interface RowFieldProps {
 export function RowField({ table, id, column, value, max, label, who, placeholder, block, className, onChange }: RowFieldProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  /* As the text fields in fields.tsx: the size of its text (the
-     placeholder while empty), capped at the column, following each
-     keystroke. */
+  /* As the text fields in fields.tsx: a block field takes its cell, a
+     one-line field is the size of its text (the placeholder while empty)
+     and capped at its cell by max-width. Only the height is measured, at
+     the width the field was given. */
   const shown = value || placeholder || label;
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
-    const s = shown;
-    let width = el.clientWidth;
-    if (!block) {
-      /* The cap is the column the shell is placed in (measure.ts). */
-      const cap = Math.max(40, columnWidth(el) - SHELL_X);
-      width = Math.min(textWidth(el, s) + 2, cap);
-      el.style.width = `${width}px`;
-    }
-    el.style.height = `${textHeight(el, s, width)}px`;
+    if (!block) el.style.width = `${textWidth(el, shown) + 2}px`;
+    el.style.height = `${textHeight(el, shown, el.clientWidth)}px`;
   }, [shown, block]);
 
   return (

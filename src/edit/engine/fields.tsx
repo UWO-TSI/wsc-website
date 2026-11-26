@@ -16,10 +16,8 @@ import type { EditableImageProps } from '@/edit/editable-image';
 import { COPY } from '@/edit/engine/copy';
 import { setDraftPhoto, setDraftText } from '@/edit/engine/draft-store';
 import {
-  columnWidth,
   fieldHeight,
   onRemeasure,
-  textHeight,
   textWidth,
   wrapsOnPhones,
 } from '@/edit/engine/measure';
@@ -77,28 +75,26 @@ function useMeasure(measure: () => void, deps: unknown[]) {
 
 /* ── InlineText and InlineParagraph ── */
 
-export function EditText({ k, as: Tag = 'span', className, id }: EditableTextProps) {
+export function EditText({ k, as: Tag = 'span', className, id, size }: EditableTextProps) {
   const { text, published } = useSiteContent();
   const m = meta(k);
   const value = text(k);
   const pub = published.text(k);
-  const block = m.kind === 'longtext';
+  const fill = (size ?? (m.kind === 'longtext' ? 'fill' : 'fit')) === 'fill';
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  /* One-line values are as wide as their text, capped at the column;
-     paragraphs take the column, as the paragraph does in Preview. Either
-     way the height is the text wrapped at the field's width. The shell's
-     fill reaches outward (.ed-out), so the text sits where Preview puts
-     it. */
+  /* The width comes from the component's layout: a fill field takes the
+     element's box (CSS), a fit field is as wide as its text and capped at
+     that box by max-width. Only the height is measured, at the width the
+     field was given. The fill is drawn outside the text (.ed-out), so the
+     text sits where Preview puts it. */
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
     const s = value || m.label;
-    const cap = Math.max(40, columnWidth(el));
-    const width = block ? cap : Math.min(textWidth(el, s) + 2, cap);
-    el.style.width = `${width}px`;
-    el.style.height = `${textHeight(el, s, width)}px`;
-  }, [value, m.label, block]);
+    el.style.width = fill ? '' : `${textWidth(el, s) + 2}px`;
+    el.style.height = `${fieldHeight(el, s)}px`;
+  }, [value, m.label, fill]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     edited();
@@ -107,7 +103,7 @@ export function EditText({ k, as: Tag = 'span', className, id }: EditableTextPro
 
   return (
     <Tag id={id} className={className}>
-      <span className={`ed ed-out ${block ? 'ed-block' : 'ed-line'}`} data-ed-field={k}>
+      <span className={`ed ed-out ${fill ? 'ed-fill' : 'ed-fit'}`} data-ed-field={k}>
         <textarea
           ref={ref}
           className="ed-in"
@@ -163,15 +159,14 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
     focusField({ type: 'lines', keys, tooWide });
   };
 
-  /* Every heading field is the full width its title may take: the title
-     measure (.measure-title, about 31 characters) or the column, whichever
-     is narrower, so headings on every page are one size and a line wraps
-     where it wraps in Preview. As tall as the lines need, so no text is
-     ever hidden, measured on every keystroke. */
+  /* A heading field fills the box its component gives the title (the
+     page head's title measure, a card's column), so headings are one size
+     wherever the same component is used and a line wraps where it wraps
+     in Preview. Only the height is measured, on every keystroke, so no
+     text is ever hidden. */
   const fit = () => {
     const el = ref.current;
     if (!el) return;
-    el.style.width = `${Math.max(40, columnWidth(el))}px`;
     el.style.height = `${fieldHeight(el, el.value || label)}px`;
   };
   useMeasure(fit, [raw, label]);
@@ -212,7 +207,7 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
 
   return (
     <Tag id={id} className={[className, role].filter(Boolean).join(' ') || undefined}>
-      <span className="ed ed-out ed-line" data-ed-field={keys.join(' ')}>
+      <span className="ed ed-out ed-fill" data-ed-field={keys.join(' ')}>
         <textarea
           ref={ref}
           className="ed-in ed-lines"
@@ -279,7 +274,7 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
     const region = face.current!.closest<HTMLElement>('li, section, nav, footer, form');
     const regionWidth = region
       ? region.clientWidth - parseFloat(getComputedStyle(region).paddingLeft) - parseFloat(getComputedStyle(region).paddingRight)
-      : columnWidth(face.current!.parentElement!);
+      : document.documentElement.clientWidth;
     const cap = Math.max(40, regionWidth - BUTTON_CHROME);
     const shown = value || m.label;
     const width = Math.min(textWidth(el, shown) + 2, cap);

@@ -59,7 +59,7 @@ test('an emptied heading keeps the full title width', async ({ page }) => {
 
 test('the contact page subtitle field takes the width Preview gives the paragraph', async ({ page }) => {
   await open(page, '/contact-us');
-  const p = page.locator('[data-ed-field="contact.header.body"]').locator('xpath=..');
+  const p = page.locator('h1.measure-title').locator('xpath=following-sibling::p[1]');
   const edit = await page.locator('[data-ed-field="contact.header.body"] textarea').evaluate((el) => el.getBoundingClientRect().width);
   await preview(page, true);
   const view = await p.evaluate((el) => el.getBoundingClientRect().width);

@@ -102,7 +102,7 @@ A `--sunken` slab under the closing band: the wordmark, the club email and the s
 
 The first section of every public page other than home: an `inverse` slab with a ribbon holding a CentredHead as the page's `h1` (title, optional copy). Each page passes its own ribbon through `texture` so the inner pages open differently: About `rise`, Events `arc`, Executive team `pair`, and `waist` (the default) on Partners, Contact and the legal pages. `sweep` is a type error there, because the closing band below draws it. One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `--pad-section` bottom. Pages pass keys only, never a padding or a tone.
 
-Props: `titleKeys`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page). The legal pages, whose copy is not in `site_content`, pass `titleLines` (fixed strings, same Line Mask Reveal, not fields in edit mode) instead of `titleKeys`; CentredHead takes the same prop.
+Props: `titleKeys`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page), and `ground`: `inverse` (the default) or `logo`, which sets the head on the plain logo ground with no ribbon. Only Partners passes `logo`, where the head and the logo wall are one joined surface. The legal pages, whose copy is not in `site_content`, pass `titleLines` (fixed strings, same Line Mask Reveal, not fields in edit mode) instead of `titleKeys`; CentredHead takes the same prop.
 
 With the ClosingBand it is the only other loud slab a page may carry.
 
@@ -128,6 +128,8 @@ Adjacent slabs never share a tone, the two loud tones never touch, one loud slab
 
 A slab is flat. A shadow would fill the 2px join, and a slab is the page, not a thing floating above it.
 
+**Joined slabs** (`.slab-join`). Where a dark section continues straight into the next one, the two slabs read as one surface: no 2px join, no corners where they meet, the outer corners stay `--r-xl`, and the wrapper is on `--logo-ground` so the seam can never show page white. It is used once, for the home hero into the brand strip. If the second slab renders nothing, the first keeps its own corners. Do not use it to join light slabs; between them the 2px join is still the divider.
+
 On an `--inverse`, `--accent` or `--logo-ground` slab the focus ring takes the slab's text colour, and a primary button takes the page fill. Both are handled by the slab; the page does nothing.
 
 `texture` (`sweep`, `rise`, `arc`, `waist`, `pair`) is allowed on the two loud tones only and is a type error elsewhere. It gives the slab its lit ground and draws the Texture behind the content.
@@ -150,7 +152,7 @@ Accent gives lit velvet, inverse gives lit velvet black. Every shape works on bo
 
 The roster is one tier per role, in `exec_groups.display_order`, and every portrait is the same size in every tier. Only the order of the tiers shows rank, presidents first; a larger portrait for a higher role made the people in later tiers look less important. No heading names a tier, because the title under each name already gives the role. Roles with nobody visible are dropped, and anyone whose role is not in the lookup goes in one last tier.
 
-Each tier is a centred flex row that wraps, so a short last row is centred under the full rows above it. Every cell in a tier has the same width, so names wrap at the same width across the row. The gap between tiers (64px) is larger than the gap between rows inside a tier (40px). Within a cell: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred. A word longer than the cell breaks inside the cell, so a long name never runs into the next one. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
+Each tier is split into centred rows of at least three people, unless the whole role has fewer, so no row ends with one person on their own (`rowSizes` in `src/lib/exec-tiers.ts`). A tier takes as few rows as fit at full cell size, split as evenly as possible with the longer rows first: eight people at seven per row are four and four. Where fewer than three full-size cells fit (a phone), a row still holds three or more and its cells and portraits shrink together. In edit mode the roster editor still wraps its tiers, because its Add tile and drag targets depend on one wrapping row. Every cell in a tier has the same width, so names wrap at the same width across the row. The gap between tiers (64px) is larger than the gap between rows inside a tier (40px). Within a cell: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred. A word longer than the cell breaks inside the cell, so a long name never runs into the next one. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
 
 Bare on `--page`, starting from the gutter. The skeleton has the shape of a typical roster: two lead cells, then six standard cells. In edit mode the roster editor shows the same tiers, cells and portrait size, so it matches Preview. The page and the editor cut tiers with one rule (`cutTiers` in `src/lib/exec-tiers.ts`), so people whose role is missing from the lookup share one last tier in both. A drag moves a person within their tier; changing the role moves them to that role's tier once focus leaves the roster. The Add tile is the last cell of the last tier.
 
@@ -174,7 +176,7 @@ The hero size fits its cell, which is a size container: the figure is `clamp(3re
 
 ## Brand strip
 
-The landing partner section on the logo ground, headed by one `.label` line ("Events and competitions with") instead of a section head, so the logos sit directly under the hero. With 8 logos or fewer it is a static centred row, because a few logos looping past read as a short list repeated. Above 8 it runs Marquee Drift as before. With no active partner the strip is left out, except in edit mode, where it stays with only its label so the label can be edited.
+The landing partner section on the logo ground, headed by one `.label` line ("Events and competitions with") instead of a section head, so the logos sit directly under the hero. It is joined to the hero (`.slab-join`), so the hero runs straight into black with no white join. With 8 logos or fewer it is a static centred row, because a few logos looping past read as a short list repeated. Above 8 it runs Marquee Drift as before. With no active partner the strip is left out, except in edit mode, where it stays with only its label so the label can be edited.
 
 ## FormatCard and CardRow
 
@@ -196,7 +198,7 @@ In edit mode the shown figures (the first four visible) are the visitor's row, i
 
 ## NextEvent
 
-A photo beside a raised panel holding the soonest upcoming event: date, time and room in `.meta`, the title in `.title`, the description, and Register as the section's one primary when the event has an http(s) link. The time and the Register check are the Events page's (`src/lib/event-display.ts`), so Home shows "6:30 PM" where the Events page does. Up to two more upcoming events follow as raised rows, then See all events stays as the secondary. With nothing upcoming the panel shows the empty message and keeps See all events. Past events are left to the Events page.
+A photo beside a raised panel holding the soonest upcoming event: date, time and room in `.meta`, the title in `.title`, the description, and Register as the section's one primary when the event has an http(s) link. The time and the Register check are the Events page's (`src/lib/event-display.ts`), so Home shows "6:30 PM" where the Events page does. Up to two more upcoming events follow as raised rows, then See all events stays as the secondary. With nothing upcoming, the three most recent past events take the same places, newest first: the panel carries a neutral `Past` chip and the year in its date and never offers Register, and the two rows are muted, as past rows are on the Events page. Only with no published events at all does the panel show the empty message. See all events stays in every case.
 
 ## About page
 
@@ -214,9 +216,9 @@ Four states, and none of them is a blank screen: loading, error with a retry, em
 
 ## LogoWall
 
-As built there is exactly **one** tier group, labelled Partners: the `sponsors` table has no `tier` column and `supabase/` is off limits, so scale comes from `display_order` (the lead tile spans two columns) rather than an invented tier. The paragraph below is what to build the day a `tier` column exists.
+As built there is exactly **one** tier group, labelled Partners: the `sponsors` table has no `tier` column and `supabase/` is off limits, so `display_order` is the only rank on the wall rather than an invented tier. The paragraph below is what to build the day a `tier` column exists.
 
-Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile behind each one. A per-logo panel on a light slab read as a grid of separate dark patches. Same treatment for the landing page marquee. On Partners this puts three dark sections in a row (the inverse page head, the wall, the closing band). That is an accepted exception to the one-loud-pair rule: supplied logos are mostly light marks on transparent backgrounds and need the dark ground.
+Also as built, the whole wall sits on `--logo-ground` with `--on-logo-ground` ink, and the marks sit directly on it with no tile and no loading skeleton left behind each one (`RevealImage` fades its skeleton out once a contained image has loaded). A per-logo panel on a light slab read as a grid of separate dark patches. Same treatment for the landing page marquee. The wall is laid out as a board: every partner has the same large tile (`TILE_SIZE.lead`, up to 128 by 384px), three across on a laptop, in centred rows with wide gaps, in `display_order`. Order is the only rank on the wall; mixed tile sizes in one wrapping row read as a scatter, not a board. That is an accepted exception to the one-loud-pair rule: supplied logos are mostly light marks on transparent backgrounds and need the dark ground.
 
 Sponsors grouped by tier, `--gold` for the tier bar and label, the explicit mark rather than `--accent`, because a sponsor's tier must look the same on every page. Tile scale carries the hierarchy, not a border.
 

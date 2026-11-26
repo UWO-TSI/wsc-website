@@ -49,8 +49,11 @@ export default function LandingPage() {
 
   return (
     <div className="stack">
-      <Hero />
-      <PartnersMarquee sponsors={sponsors} loading={sponsorsLoading} />
+      {/* One dark surface: the brand strip continues the hero with no gap. */}
+      <div className="slab-join">
+        <Hero />
+        <PartnersMarquee sponsors={sponsors} loading={sponsorsLoading} />
+      </div>
       <FormatsSection />
       <ProofBand />
       <EventsPreview events={events} loading={eventsLoading} error={eventsError} />

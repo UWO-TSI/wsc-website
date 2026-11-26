@@ -372,6 +372,32 @@ img {
   gap: 2px;
 }
 
+/*
+  Joined slabs: dark slabs that read as one surface, with no 2px join and
+  no corners where they meet. The outer corners stay --r-xl. Used where a
+  dark section continues straight into the next one: the home hero into the
+  brand strip. The wrapper is on
+  --logo-ground, so a sub-pixel gap at the seam shows black, never page white.
+  A child that renders nothing leaves the remaining slab with its own corners.
+  design-system/components.md, Slab.
+*/
+.slab-join {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-xl);
+  background: var(--logo-ground);
+}
+
+.slab-join > :not(:last-child) {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.slab-join > :not(:first-child) {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+
 .slab {
   background: var(--raised);
   border-radius: var(--r-xl);
@@ -917,6 +943,20 @@ img {
 */
 .reveal-frame[data-loaded] .skeleton::after {
   animation: none;
+}
+
+/*
+  A contained image (a supplied logo) does not cover its frame, so the
+  skeleton behind it would stay visible around the mark as a grey box. Once
+  the image has loaded the skeleton fades out; it stays mounted, so the
+  one-frame flash described above still cannot happen.
+*/
+.reveal-frame[data-fit="contain"] > .skeleton {
+  transition: opacity var(--d-hover) var(--e-enter);
+}
+
+.reveal-frame[data-fit="contain"][data-loaded] > .skeleton {
+  opacity: 0;
 }
 
 /*

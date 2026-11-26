@@ -117,6 +117,8 @@ export interface AdminLastSignIn {
   email: string | null;
   /** Null when the account has never completed a sign-in. */
   last_sign_in_at: string | null;
+  /** False until the person has finished two-factor setup. */
+  has_two_factor: boolean;
 }
 
 export interface AdminInvite {

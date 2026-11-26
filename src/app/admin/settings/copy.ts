@@ -41,9 +41,10 @@ export const SETTINGS_COPY = {
   remove: 'Remove',
   removing: 'Removing',
   confirmRemove: (email: string) =>
-    `Remove ${email}? They lose access now. A new invite gives it back.`,
+    `Remove ${email}? Their account and two-factor setup are deleted now. A new invite lets them set up again from the start.`,
   confirmRemoveSelf:
-    'Remove your own account? You lose access now, and another admin has to invite you again.',
+    'Remove your own account? It is deleted now, and another admin has to invite you again.',
+  setupUnfinished: 'Two-factor not set up yet',
   removeFailed: (email: string) => `${email} was not removed. Reload the page and try again.`,
   invitedRow: (days: number) =>
     days < 1 ? 'Invited, expires today' : `Invited, expires in ${plural(days, 'day', 'days')}`,

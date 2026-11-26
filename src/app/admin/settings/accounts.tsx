@@ -163,11 +163,15 @@ export default function Accounts({ me }: { me: { id: string; email: string } }) 
                 </>
               }
               detail={
-                !data.lastSignIn
-                  ? C.signInUnknown
-                  : seen
-                    ? C.signedIn(signedInWhen(seen, at))
-                    : C.neverSignedIn
+                <>
+                  {!data.lastSignIn
+                    ? C.signInUnknown
+                    : seen
+                      ? C.signedIn(signedInWhen(seen, at))
+                      : C.neverSignedIn}
+                  {/* Claimed the invite but has not entered a first code. */}
+                  {data.twoFactor?.[admin.user_id] === false && ` · ${C.setupUnfinished}`}
+                </>
               }
               actions={
                 admin.is_owner ? (

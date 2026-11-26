@@ -52,6 +52,15 @@ import { useSiteContent } from '@/providers/site-content-provider';
 
 const NAME_KEYS = ['home.hero.title_line2', 'home.hero.title_line3', 'home.hero.title_line4'] as const;
 
+/* The step between the greeting and the name, in the name's own em. It is
+   important because the title roles set margin: 0 outside any layer, which
+   beats a utility. It is at least 12px, the two fields' fills (6px above
+   and below each text box, edit.css), so in edit mode the greeting's fill
+   and the name's fill never overlap; Preview and the visitor page use the
+   same gap, so the name does not move between them. With no greeting
+   there is no gap. */
+const NAME_GAP = 'mt-[max(0.22em,12px)]!';
+
 export default function Hero() {
   const { complete } = usePreloader();
   const ref = useReveal<HTMLDivElement>({ immediate: true, enabled: complete });
@@ -98,12 +107,12 @@ export default function Hero() {
             <EditableLines
               keys={[...NAME_KEYS]}
               as="span"
-              className="mt-[0.22em] block"
+              className={`${NAME_GAP} block`}
               lineClassName="ln title-hero"
             />
           ) : (
             names.map((name, i) => (
-              <span key={name.k} className={`ln title-hero ${i === 0 ? 'mt-[0.22em]' : ''}`.trim()}>
+              <span key={name.k} className={`ln title-hero ${i === 0 && greeting ? NAME_GAP : ''}`.trim()}>
                 <i>{name.value}</i>
               </span>
             ))

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Slab from "@/components/ui/slab";
 import { useSiteContent } from "@/providers/site-content-provider";
 import { EditableText, useEditMode } from "@/edit";
+import EditableLink from "@/edit/editable-link";
 
 /*
   Footer: a --sunken slab, flat elevation, no shadow, full width and 2px
@@ -31,8 +32,10 @@ const LEGAL_LINKS = [
   { label: "Privacy", href: "/privacy-policy" },
 ] as const;
 
-/* The marks stay in code; the destinations are editable, and an empty
-   link hides its icon. */
+/* The marks stay in code; the destinations are editable through
+   EditableLink: in edit mode each icon is a control whose address is
+   edited in the tray. A visitor's link passes safeHref, and an empty or
+   refused address hides its icon (in Preview too). */
 const SOCIAL_LINKS = [
   { label: "Instagram", key: "footer.social.instagram_url", icon: "/logos/instagram.svg" },
   { label: "LinkedIn", key: "footer.social.linkedin_url", icon: "/logos/linkedin.svg" },
@@ -43,9 +46,6 @@ export default function Footer() {
   const { text } = useSiteContent();
   const { editing } = useEditMode();
   const email = text("footer.contact.email");
-  const socials = SOCIAL_LINKS.map((social) => ({ ...social, href: text(social.key) })).filter(
-    (social) => social.href
-  );
 
   return (
     <Slab
@@ -81,14 +81,11 @@ export default function Footer() {
             </a>
           )}
           <div className="flex items-center gap-3">
-            {socials.map((social) => (
-              <a
+            {SOCIAL_LINKS.map((social) => (
+              <EditableLink
                 key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-                data-cursor="hover"
+                hrefKey={social.key}
+                label={social.label}
                 className="grid h-11 w-11 place-items-center rounded-full bg-page text-ink-muted transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent hover:text-on-accent"
               >
                 {/*
@@ -105,7 +102,7 @@ export default function Footer() {
                     maskImage: `url("${social.icon}")`,
                   }}
                 />
-              </a>
+              </EditableLink>
             ))}
           </div>
         </div>

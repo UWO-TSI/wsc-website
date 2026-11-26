@@ -33,9 +33,9 @@ import { blurField, edited, enterTray, focusField, setUi, type TrayContext } fro
   so the page reads as a form that is already filled in. Hover changes only
   the cursor. The focus ring is drawn on the shell.
 
-  Each field is the size of the text it holds (its label while empty),
-  capped at the column, and grows or shrinks as the editor types, so edit
-  mode and Preview show the same box. Limits and labels come from each
+  A one-line field is the size of the text it holds (its label while
+  empty), never wider than its element, and grows or shrinks as the editor
+  types, so edit mode and Preview show the same box. Limits and labels come from each
   key's max_length, label and section in src/lib/site-content-defaults.ts,
   which the site_content seed is generated from, so the field and the
   database ceiling are one number.
@@ -73,6 +73,27 @@ function useMeasure(measure: () => void, deps: unknown[]) {
   }, deps);
 }
 
+/*
+  The width of a fit field. A hidden copy of the text is the only thing in
+  the shell with a width of its own; the control after it has width 0 and
+  min-width 100% (.ed-size + .ed-in in edit.css), so it adds nothing to
+  the shell's size and then fills it. The shell is therefore sized as the
+  text itself would be: as wide as the text on one line, or, when that is
+  wider than the space it has, exactly that space, with the text wrapping
+  where it wraps in Preview. No width here is a percentage of a box whose
+  size depends on it, so the sizing is not cyclic. The copy may break
+  anywhere, so a long unbroken value (an email address at its limit)
+  never makes the field wider than its element. The list row fields in
+  list-parts.tsx use the same span.
+*/
+function FitSize({ text }: { text: string }) {
+  return (
+    <span className="ed-size" aria-hidden="true">
+      {text}
+    </span>
+  );
+}
+
 /* ── InlineText and InlineParagraph ── */
 
 export function EditText({ k, as: Tag = 'span', className, id, size }: EditableTextProps) {
@@ -84,19 +105,16 @@ export function EditText({ k, as: Tag = 'span', className, id, size }: EditableT
   const ref = useRef<HTMLTextAreaElement>(null);
 
   /* The width comes from the component's layout: a fill field takes the
-     element's box (CSS), a fit field is as wide as its text and capped at
-     that box by max-width. Only the height is measured, at the width the
-     field was given. The fill is drawn outside the text (.ed-out), so the
-     text sits where Preview puts it. */
+     element's box (CSS); a fit field is as wide as its text, through a
+     hidden copy of the text in the shell (FitSize), and never wider than
+     that box. Only the height is measured, at the width the field was
+     given. The fill is drawn outside the text (.ed-out), so the text sits
+     where Preview puts it. */
+  const shown = value || m.label;
   useMeasure(() => {
     const el = ref.current;
-    if (!el) return;
-    const s = value || m.label;
-    /* min() with a percentage keeps a long value from widening the box
-       around it: the field never asks for more than the space it has. */
-    el.style.width = fill ? '' : `min(${textWidth(el, s) + 2}px, 100%)`;
-    el.style.height = `${fieldHeight(el, s)}px`;
-  }, [value, m.label, fill]);
+    if (el) el.style.height = `${fieldHeight(el, shown)}px`;
+  }, [shown, fill]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     edited();
@@ -106,6 +124,7 @@ export function EditText({ k, as: Tag = 'span', className, id, size }: EditableT
   return (
     <Tag id={id} className={className}>
       <span className={`ed ed-out ${fill ? 'ed-fill' : 'ed-fit'}`} data-ed-field={k}>
+        {!fill && <FitSize text={shown} />}
         <textarea
           ref={ref}
           className="ed-in"

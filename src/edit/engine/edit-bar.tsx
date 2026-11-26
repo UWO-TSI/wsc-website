@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import Button from '@/components/ui/button';
 import { useSiteContent } from '@/providers/site-content-provider';
-import { SITE_CONTENT, type SiteContentKey } from '@/lib/site-content-defaults';
+import { SITE_CONTENT, type ContentEntry, type SiteContentKey } from '@/lib/site-content-defaults';
 import { IMAGE_SLOTS, type ImageSlotKey } from '@/lib/image-slots';
 import { leaveEditMode, setEditPreview, useEditSnapshot } from '@/edit/edit-mode';
 import { COPY } from '@/edit/engine/copy';
@@ -32,8 +32,10 @@ import { signOutAndReload } from '@/edit/sign-out';
 import ChangesList from '@/edit/engine/changes-list';
 
 /*
-  The edit bar, left to right from 900px: Settings (a gear) and Sign out,
-  the change count, the tray, Edit and Preview, Discard and Publish. On
+  The edit bar, left to right from 1440px: Settings (a gear) and Sign out,
+  the change count, the tray, Edit and Preview, Discard and Publish. From
+  900px to 1439px the tray moves to a second row, with Discard and Publish
+  at its end, so it has the width its states need (edit.css). On
   phones the gear, the count and Edit and Preview share the first row
   (Sign out is on the Settings page there), the tray is the second, and
   Discard and Publish the third. The bar is the page ground with the
@@ -55,7 +57,7 @@ import ChangesList from '@/edit/engine/changes-list';
 
 const PUBLISHED_FOR_MS = 2000;
 
-const meta = (k: string) => SITE_CONTENT[k as SiteContentKey];
+const meta = (k: string): ContentEntry => SITE_CONTENT[k as SiteContentKey];
 const baseLabel = (label: string) => label.replace(/,\s*line \d+$/i, '');
 
 /*
@@ -73,21 +75,28 @@ interface TrayView {
 }
 
 /* A button's label count and its link address (link-field.tsx refuses an
-   address the database would refuse). */
-function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string }) {
+   address the database would refuse). A link with no label (a footer
+   social icon) shows only the address, with its help ("Leave empty to
+   hide the icon.") as the placeholder, since an empty address is what
+   hides it. */
+function LinkAddress({ labelKey, hrefKey }: { labelKey?: string; hrefKey: string }) {
   const { text, published } = useSiteContent();
-  const label = meta(labelKey);
+  const label = labelKey ? meta(labelKey) : undefined;
   const href = meta(hrefKey);
+  const named = label ?? href;
   return (
     <>
-      <span className="meta ed-flex-none">
-        {COPY.labelCount(text(labelKey as SiteContentKey).length, label.max)}
-      </span>
+      {labelKey && label && (
+        <span className="meta ed-flex-none">
+          {COPY.fieldCount(text(labelKey as SiteContentKey).length, label.max)}
+        </span>
+      )}
       <LinkField
-        label={COPY.linkAddress(`${label.section}, ${label.label.toLowerCase()}`)}
+        label={COPY.linkAddress(`${named.section}, ${named.label.toLowerCase()}`)}
         value={text(hrefKey as SiteContentKey)}
         format="url"
         maxLength={href.max}
+        placeholder={label ? undefined : href.help}
         onSave={(v) => setDraftText(hrefKey, v, published.text(hrefKey as SiteContentKey))}
       />
     </>
@@ -102,7 +111,8 @@ function LinkAddress({ labelKey, hrefKey }: { labelKey: string; hrefKey: string 
 */
 function trayKeys(e: KeyboardEvent<HTMLDivElement>) {
   if (e.key === 'Escape') {
-    if (leaveTray()) e.preventDefault();
+    /* Escape on the Discard confirmation cancels it (barKeys). */
+    if (!getUi().confirmDiscard && leaveTray()) e.preventDefault();
     return;
   }
   if (e.key !== 'Tab' || !enteredTray()) return;
@@ -135,6 +145,10 @@ function focusView(ctx: TrayContext, text: (k: SiteContentKey) => string): TrayV
       body: <LinkAddress labelKey={ctx.labelKey} hrefKey={ctx.hrefKey} />,
     };
   }
+  if (ctx.type === 'link') {
+    const m = meta(ctx.hrefKey);
+    return { label: COPY.fieldHead(m.section, m.label), body: <LinkAddress hrefKey={ctx.hrefKey} /> };
+  }
   /* A list row: its name, a hint or its link, and Remove (list-parts.tsx). */
   if (ctx.type === 'row') {
     return rowTrayView(ctx.table, ctx.id, ctx.field) ?? { label: '', body: '' };
@@ -160,6 +174,9 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
     setListOpen(false);
     if (refocus) countRef.current?.focus();
   };
+  /* The list closes when the last change goes (an edit undone, Discard,
+     Publish), so it never opens again by itself on the next edit. */
+  if (listOpen && n === 0) setListOpen(false);
 
   useEffect(() => holdIosFocusZoom(), []);
 
@@ -186,6 +203,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   }, []);
 
   const publish = async () => {
+    setListOpen(false);
     const missing = missingName();
     if (missing) {
       document
@@ -223,15 +241,36 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   };
 
   const discard = async () => {
+    setListOpen(false);
     setUi({ confirmDiscard: false, flash: null, focus: null });
     await discardAll();
+  };
+
+  /*
+    Escape anywhere in the bar: it cancels the Discard confirmation and
+    returns focus to Discard, or closes the changes list and returns focus
+    to the count. The list's own Escape (focus inside the list) is handled
+    there. The tray's Escape (trayKeys) runs first and leaves the
+    confirmation to this one.
+  */
+  const barKeys = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    if (getUi().confirmDiscard) {
+      e.preventDefault();
+      setUi({ confirmDiscard: false });
+      bar.current?.querySelector<HTMLElement>('.ed-discard button')?.focus();
+    } else if (listOpen) {
+      e.preventDefault();
+      closeList(true);
+    }
   };
 
   /* A refused link address keeps its message while the editor is back on
      that button or row, so the address can be fixed in place, and the
      tray's other controls (a row's Remove) stay where they are. */
   const linkRefused =
-    ui.flash?.label === COPY.linkRefusedLabel && (ui.focus?.type === 'button' || ui.focus?.type === 'row');
+    ui.flash?.label === COPY.linkRefusedLabel &&
+    (ui.focus?.type === 'button' || ui.focus?.type === 'link' || ui.focus?.type === 'row');
 
   /* What the tray shows, most urgent first. */
   let view: TrayView;
@@ -273,7 +312,7 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
   const announced = ui.flash?.announce ? ui.flash : null;
 
   return (
-    <div ref={bar} className="ed-bar" role="region" aria-label={COPY.firstLabel}>
+    <div ref={bar} className="ed-bar" role="region" aria-label={COPY.firstLabel} onKeyDown={barKeys}>
       {listOpen && n > 0 && <ChangesList id={listId} onClose={closeList} />}
 
       <div className="ed-acct" role="group" aria-label={COPY.accountGroup}>
@@ -317,7 +356,8 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
           onClick={() => setListOpen((o) => !o)}
         >
           <span className="ed-count-n">
-            <span>{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
+            <span className="ed-count-full">{n ? COPY.pendingShort(n) : COPY.noChanges}</span>
+            <span className="ed-count-phone">{n ? COPY.pendingPhone(n) : COPY.noChanges}</span>
             {n > 0 && <ChevronUp />}
           </span>
         </button>

@@ -14,8 +14,6 @@ export const COPY = {
   // Field focused: "About · Body copy." and "212 of 320 characters."
   fieldHead: (section: string, label: string) => `${section} · ${label}`,
   fieldCount: (n: number, max: number) => `${n} of ${max} characters.`,
-  /** The short count beside the link address of a button. */
-  labelCount: (n: number, max: number) => `${n} of ${max}`,
 
   // Heading focused
   headingCount: (lines: Array<{ n: number; max: number }>) =>
@@ -48,6 +46,10 @@ export const COPY = {
   noChanges: 'No changes',
   pending: (n: number) => `${plural(n, 'unpublished change', 'unpublished changes')}.`,
   pendingShort: (n: number) => plural(n, 'unpublished change', 'unpublished changes'),
+  /** The count below 640px, where "2 unpublished changes" does not fit
+      beside Edit and Preview: "2 changes". pendingShort stays its
+      accessible name. Not in the spec table. */
+  pendingPhone: (n: number) => changes(n),
   publish: (n: number) => (n ? `Publish ${changes(n)}` : 'Publish'),
   publishing: 'Publishing',
   published: 'Published',

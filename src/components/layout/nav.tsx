@@ -66,7 +66,8 @@ function Glyph() {
   );
 }
 
-export default function Nav() {
+/** `inert` while the preloader curtain covers the page. */
+export default function Nav({ inert = false }: { inert?: boolean }) {
   const pathname = usePathname();
   const panelId = useId();
   const navRef = useRef<HTMLElement>(null);
@@ -162,7 +163,10 @@ export default function Nav() {
   }, [open, close]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[var(--layer-nav)] flex justify-center px-[var(--gut)] pt-3">
+    <header
+      inert={inert}
+      className="fixed inset-x-0 top-0 z-[var(--layer-nav)] flex justify-center px-[var(--gut)] pt-3"
+    >
       {/* A floating pill up to 1024, then a full-width bar across the page. */}
       <nav ref={navRef} className="w-full max-w-3xl lg:max-w-none">
         <div

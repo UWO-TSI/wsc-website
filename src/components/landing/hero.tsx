@@ -79,12 +79,20 @@ export default function Hero() {
       <div ref={ref} className="relative flex flex-col items-center gap-7 text-center">
         {/* The h1 carries no scale of its own: each masked line sets its own. */}
         <h1 id="hero-title" className="m-0 w-full">
-          {(editing || greeting) && (
-            <span className="ln title">
-              <i>
-                <EditableText k="home.hero.title_line1" />
-              </i>
+          {/* While editing the greeting drops the Line Mask: its clip
+              would cut the field's shell and focus ring. */}
+          {editing ? (
+            <span className="title block">
+              <EditableText k="home.hero.title_line1" />
             </span>
+          ) : (
+            greeting && (
+              <span className="ln title">
+                <i>
+                  <EditableText k="home.hero.title_line1" />
+                </i>
+              </span>
+            )
           )}
           {editing ? (
             <EditableLines

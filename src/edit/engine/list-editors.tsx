@@ -722,8 +722,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
 
   return (
     <ReorderList layout="grid" {...reorder.listProps}>
-      {/* Wider than the visitor row: each field reserves the largest
-          number (99999) and a two-character suffix in the figure's font.
+      {/* Each field is as wide as its text, as in the visitor row.
           One centred row that wraps, with the Add tile as its last cell:
           three figures and the tile fit one row at 1280, and on phones
           each takes its own centred row. */}

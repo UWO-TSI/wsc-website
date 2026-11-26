@@ -1,8 +1,8 @@
 /*
-  Reserved sizes: a field is as large as its longest allowed value at the
-  current width, measured in the field's own font, and never changes while
-  someone types. Fields measure when they mount, when the fonts finish
-  loading, and when the window is resized. Nothing else re-measures.
+  Field sizes: a field is the size of the text it holds (its label while
+  empty) at the current width, measured in the field's own font. Fields
+  measure when they mount, on every change to their text, when the fonts
+  finish loading, and when the window is resized.
 */
 
 let box: HTMLDivElement | null = null;
@@ -39,38 +39,6 @@ export function lineHeightOf(el: HTMLElement): number {
   const cs = getComputedStyle(el);
   const lh = parseFloat(cs.lineHeight);
   return Number.isNaN(lh) ? parseFloat(cs.fontSize) * 1.2 : lh;
-}
-
-const FALLBACK_SAMPLE = 'Western Sales Club runs workshops and events';
-
-/**
- * A string of exactly `length` characters made from the published value,
- * so the reserve is measured in realistic words rather than in one glyph.
- */
-export function sample(base: string, length: number): string {
-  const words = base.trim() ? base.replace(/\s+/g, ' ').trim() : FALLBACK_SAMPLE;
-  let s = words;
-  while (s.length < length) s += ` ${words}`;
-  return s.slice(0, length);
-}
-
-/**
- * Samples for a wrapped field's reserve: the value's own words and the
- * fallback sentence, each started at each of its first words. A wrapped
- * value's row count depends on its word lengths and on where its words fall
- * at the row ends, so one arrangement can come up a row short for another
- * value of the same length: at 1280 a 60-character page title measured
- * three rows from its published words and needed four for other words. The
- * caller keeps the tallest.
- */
-export function samples(base: string, length: number, most = 8): string[] {
-  const rotations = (text: string) => {
-    const words = text.replace(/\s+/g, ' ').trim().split(' ');
-    return Array.from({ length: Math.min(words.length, most) }, (_, i) =>
-      sample([...words.slice(i), ...words.slice(0, i)].join(' '), length)
-    );
-  };
-  return [...(base.trim() ? rotations(base) : []), ...rotations(FALLBACK_SAMPLE)];
 }
 
 /** Width of one line of text in the font of `el`, without wrapping. */

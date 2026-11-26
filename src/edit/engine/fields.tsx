@@ -18,10 +18,7 @@ import { setDraftPhoto, setDraftText } from '@/edit/engine/draft-store';
 import {
   columnWidth,
   fieldHeight,
-  lineHeightOf,
   onRemeasure,
-  sample,
-  samples,
   textHeight,
   textWidth,
   wrapsOnPhones,
@@ -38,9 +35,12 @@ import { blurField, edited, enterTray, focusField, setUi, type TrayContext } fro
   so the page reads as a form that is already filled in. Hover changes only
   the cursor. The focus ring is drawn on the shell.
 
-  Sizes and labels come from each key's max_length, label and section in
-  src/lib/site-content-defaults.ts, which the site_content seed is
-  generated from, so the field and the database ceiling are one number.
+  Each field is the size of the text it holds (its label while empty),
+  capped at the column, and grows or shrinks as the editor types, so edit
+  mode and Preview show the same box. Limits and labels come from each
+  key's max_length, label and section in src/lib/site-content-defaults.ts,
+  which the site_content seed is generated from, so the field and the
+  database ceiling are one number.
 */
 
 /** The Field shell's inline padding, both sides, from edit.css. */
@@ -87,13 +87,13 @@ export function EditText({ k, as: Tag = 'span', className, id }: EditableTextPro
   const block = m.kind === 'longtext';
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  /* One-line values are as wide as their longest allowed value, capped at
-     the column; paragraphs take the column. Either way the height is that
-     longest value wrapped at the field's width. */
+  /* One-line values are as wide as their text, capped at the column;
+     paragraphs take the column. Either way the height is the text wrapped
+     at the field's width. */
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
-    const s = sample(pub, m.max);
+    const s = value || m.label;
     let width = el.clientWidth;
     if (!block) {
       const cap = Math.max(40, columnWidth(el) - SHELL_X);
@@ -101,7 +101,7 @@ export function EditText({ k, as: Tag = 'span', className, id }: EditableTextPro
       el.style.width = `${width}px`;
     }
     el.style.height = `${textHeight(el, s, width)}px`;
-  }, [pub, m.max, block]);
+  }, [value, m.label, block]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     edited();
@@ -166,45 +166,20 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
     focusField({ type: 'lines', keys, tooWide });
   };
 
-  /* Full column width. A line wider than the column wraps inside the
-     field, so no text is ever hidden. The reserve, a min-height, is every
-     line at its longest allowed value wrapped at this width, taken from the
-     tallest of several realistic samples, so typing to the limit leaves the
-     field's size alone and a long line 1 moves line 2 down only inside
-     space the field already holds.
-
-     A line whose samples wrap to three rows or more gets one row more:
-     each row end can fall a word earlier for other words of the same
-     length, and over three row ends that adds up to a row (a 60-character
-     page title at 375 needed six rows for some words where its samples
-     took five). Only a value that still wraps past the reserve grows the
-     field, because hiding text is the worse failure. */
-  const pubs = keys.map((k) => published.text(k));
+  /* As wide as the longest line (the label while empty), capped at the
+     column, and as tall as the lines need. A line wider than the column
+     wraps inside the field, so no text is ever hidden. Measured on every
+     keystroke, so the field follows the text. */
   const fit = () => {
     const el = ref.current;
-    if (el) el.style.height = `${fieldHeight(el, el.value)}px`;
-  };
-  useMeasure(() => {
-    const el = ref.current;
     if (!el) return;
-    const row = lineHeightOf(el);
-    const oneRow = fieldHeight(el, 'W');
-    /* The extra row is one more row of text, measured with the rest, so the
-       reserve matches what a textarea of that many rows needs. An empty row
-       measures about a pixel short in a title face, whose glyphs reach
-       past its tight line-height. */
-    const longest = pubs
-      .map((p, i) => {
-        const tallest = samples(p, metas[i].max)
-          .map((s) => ({ s, h: fieldHeight(el, s) }))
-          .reduce((a, b) => (b.h > a.h ? b : a));
-        return Math.round((tallest.h - oneRow) / row) + 1 >= 3 ? `${tallest.s}\nW` : tallest.s;
-      })
-      .join('\n');
-    el.style.minHeight = `${fieldHeight(el, longest)}px`;
-    fit();
-  }, [...pubs, ...metas.map((m) => m.max)]);
-  useLayoutEffect(fit, [raw]);
+    const shown = raw.split('\n').some(Boolean) ? raw.split('\n') : [label];
+    const cap = Math.max(40, columnWidth(el) - SHELL_X);
+    const widest = Math.max(...shown.map((l) => textWidth(el, l || ' ')));
+    el.style.width = `${Math.min(widest + 2, cap)}px`;
+    el.style.height = `${fieldHeight(el, el.value || label)}px`;
+  };
+  useMeasure(fit, [raw, label]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const el = e.target;
@@ -242,7 +217,7 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
 
   return (
     <Tag id={id} className={[className, role].filter(Boolean).join(' ') || undefined}>
-      <span className="ed ed-block" data-ed-field={keys.join(' ')}>
+      <span className="ed ed-line" data-ed-field={keys.join(' ')}>
         <textarea
           ref={ref}
           className="ed-in ed-lines"
@@ -268,7 +243,8 @@ export function EditLines({ keys, as: Tag = 'h2', className, lineClassName, id }
   and no click, with an empty spacer where its label goes. The field is
   placed over the spacer in the same grid cell, so it moves with the button
   and with nothing else. It copies the button's font and colour, and the
-  spacer holds the longest allowed label, so the button never resizes.
+  spacer is as wide as the label, so the button is the size it is in
+  Preview and follows the label as it is typed.
 
   A label-only button (no hrefKey: a row's own URL, a form submit) works
   the same way. The face takes no href or type, so it is an inert <button>
@@ -310,14 +286,14 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
       ? region.clientWidth - parseFloat(getComputedStyle(region).paddingLeft) - parseFloat(getComputedStyle(region).paddingRight)
       : columnWidth(face.current!.parentElement!);
     const cap = Math.max(40, regionWidth - BUTTON_CHROME);
-    const longest = sample(pub, m.max);
-    const width = Math.min(textWidth(el, longest) + 2, cap);
+    const shown = value || m.label;
+    const width = Math.min(textWidth(el, shown) + 2, cap);
     sp.style.width = `${width}px`;
     el.style.width = `${width}px`;
-    el.style.height = `${fieldHeight(el, longest)}px`;
+    el.style.height = `${fieldHeight(el, shown)}px`;
     sh.style.marginLeft = `${sp.offsetLeft - INBTN_X}px`;
   };
-  useMeasure(measure, [pub, m.max, variant, arrow, onAccent]);
+  useMeasure(measure, [value, m.label, variant, arrow, onAccent]);
 
   return (
     <span className={`ed-btn ${className ?? ''}`.trim()}>

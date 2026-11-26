@@ -1,7 +1,7 @@
 'use client';
 
 import Slab from '@/components/ui/slab';
-import { EditableButton, EditableText } from '@/edit';
+import { EditableButton, EditableLines, EditableText } from '@/edit';
 import type { SiteContentKey } from '@/lib/site-content-defaults';
 
 /*
@@ -66,10 +66,8 @@ function AudienceTile({ audience }: { audience: Audience }) {
       aria-labelledby={headingId}
       className="flex min-h-[clamp(26rem,42vw,36rem)] flex-col gap-8 rounded-lg bg-page p-[clamp(2rem,5vw,4rem)] shadow-1"
     >
-      <h2 id={headingId} className="title m-0">
-        <EditableText k={audience.titleKeys[0]} as="span" className="block" />
-        <EditableText k={audience.titleKeys[1]} as="span" className="block" />
-      </h2>
+      {/* The two lines are one heading field while editing (EditableLines). */}
+      <EditableLines keys={[...audience.titleKeys]} as="h2" id={headingId} className="title m-0" />
 
       <ul className="m-0 flex list-none flex-col gap-4 p-0">
         {audience.pointKeys.map((key) => (

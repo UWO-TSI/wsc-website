@@ -27,7 +27,7 @@ import { LIMITS } from '@/lib/admin-config';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import { COPY } from '@/edit/engine/copy';
 import { currentRow } from '@/edit/engine/draft-store';
-import { columnWidth, onRemeasure, sample, textHeight, textWidth } from '@/edit/engine/measure';
+import { columnWidth, onRemeasure, textHeight, textWidth } from '@/edit/engine/measure';
 import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, type Tone } from '@/edit/engine/ui-store';
 
 /*
@@ -37,8 +37,8 @@ import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, ty
   of a row.
 
   Every value is drawn in the same Field shell as the text fields in
-  fields.tsx (.ed in edit.css), sized to its longest allowed value, so
-  typing never resizes a row. The chips and the grip are controls, so they
+  fields.tsx (.ed in edit.css), sized to the text it holds, so a row in
+  edit mode is the size it is in Preview. The chips and the grip are controls, so they
   are buttons with a word or an accessible name. The state chip is not a
   control; it only reserves its slot.
 
@@ -96,7 +96,7 @@ export interface RowFieldProps {
   /** The row's name, added to the accessible name. */
   who?: string;
   placeholder?: string;
-  /** Takes the column; otherwise as wide as the longest allowed value. */
+  /** Takes the column; otherwise as wide as its text. */
   block?: boolean;
   /** Type role and alignment, on the shell so the field inherits them. */
   className?: string;
@@ -106,13 +106,14 @@ export interface RowFieldProps {
 export function RowField({ table, id, column, value, max, label, who, placeholder, block, className, onChange }: RowFieldProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  /* Every row's field is measured from the same sample text, never from
-     its own value, so the cells of one list reserve the same size and
-     line up. */
+  /* As the text fields in fields.tsx: the size of its text (the
+     placeholder while empty), capped at the column, following each
+     keystroke. */
+  const shown = value || placeholder || label;
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
-    const s = sample('', max);
+    const s = shown;
     let width = el.clientWidth;
     if (!block) {
       /* The cap is the column the shell is placed in (measure.ts). */
@@ -121,7 +122,7 @@ export function RowField({ table, id, column, value, max, label, who, placeholde
       el.style.width = `${width}px`;
     }
     el.style.height = `${textHeight(el, s, width)}px`;
-  }, [max, block]);
+  }, [shown, block]);
 
   return (
     <span
@@ -192,8 +193,8 @@ export function RowInput({
 /* ── InlineNumber ── */
 
 /*
-  The number of a counted figure in a Field, as wide as the largest
-  allowed value in the figure's own font. Digits only; an empty field
+  The number of a counted figure in a Field, as wide as the number in
+  the figure's own font. Digits only; an empty field
   stores 0.
 */
 export function InlineNumber({
@@ -223,8 +224,8 @@ export function InlineNumber({
 
   useMeasure(() => {
     const el = ref.current;
-    if (el) el.style.width = `${textWidth(el, '9'.repeat(digits)) + 2}px`;
-  }, [digits]);
+    if (el) el.style.width = `${textWidth(el, typed ?? String(value)) + 2}px`;
+  }, [typed, value]);
 
   return (
     <span className={`ed ed-line ${className ?? ''}`.trim()} data-ed-field={fieldId(table, id, column)}>

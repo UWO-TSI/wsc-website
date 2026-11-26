@@ -183,7 +183,7 @@ Home's one inverse slab, with the `arc` texture. A CentredHead, up to four StatF
 
 ## NextEvent
 
-A photo beside a raised panel holding the soonest upcoming event: date, time and room in `.meta`, the title in `.title`, the description, and Register as the section's one primary when the event has a link. Up to two more upcoming events follow as raised rows, then See all events stays as the secondary. With nothing upcoming the panel shows the empty message and keeps See all events. Past events are left to the Events page.
+A photo beside a raised panel holding the soonest upcoming event: date, time and room in `.meta`, the title in `.title`, the description, and Register as the section's one primary when the event has an http(s) link. The time and the Register check are the Events page's (`src/lib/event-display.ts`), so Home shows "6:30 PM" where the Events page does. Up to two more upcoming events follow as raised rows, then See all events stays as the secondary. With nothing upcoming the panel shows the empty message and keeps See all events. Past events are left to the Events page.
 
 ## About page
 

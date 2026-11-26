@@ -11,13 +11,13 @@ import { TILE_SIZE, scaleFor } from '@/components/sponsors/logo-card';
 import CardRow, { CARD_ROW_ITEM } from '@/components/ui/card-row';
 import { FORMAT_CARD, FORMAT_PHOTO, FORMAT_PHOTO_SIZES } from '@/components/landing/formats-section';
 import { EditableButton, useEditSnapshot } from '@/edit';
-import { externalLinkProps } from '@/lib/link-utils';
 import { LIMITS } from '@/lib/admin-config';
 import { SITE_IMAGES_BUCKET } from '@/lib/image-slots';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
+import { registerHref } from '@/lib/event-display';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import type { Event, EventFormat, ExecArea, ExecGroup, Executive, SiteStat, Sponsor } from '@/types/database';
 import { COPY } from '@/edit/engine/copy';
@@ -482,8 +482,8 @@ export function EventsEditor({ events }: { events: Event[] }) {
       {items.map(({ row: e, leaving }, index) => {
         const state = api.state(e.id);
         const isPast = isBefore(startOfDay(parseISO(e.date)), startOfDay(new Date()));
-        const registerUrl = e.register_url?.trim() ?? '';
-        const canRegister = !isPast && 'target' in externalLinkProps(registerUrl);
+        const registerUrl = registerHref(e.register_url);
+        const canRegister = !isPast && registerUrl !== null;
         const who = nameOf(e);
         return (
           <li
@@ -546,7 +546,7 @@ export function EventsEditor({ events }: { events: Event[] }) {
                     <EditableButton
                       labelKey="events.ledger.register_label"
                       variant="secondary"
-                      href={registerUrl}
+                      href={registerUrl ?? ''}
                       aria-label={`${text('events.ledger.register_label')}, ${e.title}`}
                     />
                   </span>

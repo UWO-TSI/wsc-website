@@ -347,12 +347,13 @@ img {
   max-width: 62ch;
 }
 
-/* A title line holds 24 characters, a heading line's limit in
-   site_content, so a line at its limit does not wrap (ch is the title
-   font's own; capitals run wider than its zero). Titles take this measure
-   and never the running copy's. */
+/* A title holds --title-chars characters per line: 24 by default (the
+   page heads), 25 on the audience cards. ch is the title font's own and
+   capitals run wider than its zero, hence the 1.08. Titles take this
+   measure and never the running copy's; in edit mode the title field
+   takes all of it (edit.css). */
 .measure-title {
-  max-width: 26ch;
+  max-width: calc(var(--title-chars, 24) * 1.08ch);
 }
 
 /*

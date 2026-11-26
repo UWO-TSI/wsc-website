@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { setEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
 import type { ListDraftApi, ListEngineApi, ListTable } from '@/edit/list-draft';
 import {
+  draftAreas,
   listApi,
   loadDrafts,
   overlayImage,
@@ -58,6 +59,7 @@ const API: ListEngineApi = {
   components: { Text: EditText, Lines: EditLines, Button: EditButton, Image: EditImage } as EditEngineApi['components'],
   /* The list editors, reached through ListEditBranch in src/edit/list-draft.ts. */
   listEditors: LIST_EDITORS as ListEngineApi['listEditors'],
+  draftAreas,
 };
 
 export interface EditEngineProps {

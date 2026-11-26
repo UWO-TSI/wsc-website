@@ -28,7 +28,7 @@ export {
   type EditStatus,
   type EditEngineApi,
 } from '@/edit/edit-mode';
-export { useDraftFile, type ListTable, type ListDraftApi, type ListRowState } from '@/edit/list-draft';
+export { useDraftFile, useDraftAreas, type ListTable, type ListDraftApi, type ListRowState } from '@/edit/list-draft';
 export { default as EditableText, type EditableTextProps, type TextTag } from '@/edit/editable-text';
 export { default as EditableLines, type EditableLinesProps } from '@/edit/editable-lines';
 export { default as EditableButton, type EditableButtonProps } from '@/edit/editable-button';

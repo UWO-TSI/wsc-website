@@ -92,6 +92,8 @@ export type ListEditorName = 'executives' | 'events' | 'sponsors' | 'stats' | 'f
 
 export interface ListEngineApi extends EditEngineApi {
   listEditors: Record<ListEditorName, ComponentType<never>>;
+  /** Areas typed in with Add an area and not yet published. */
+  draftAreas: () => Array<{ id: string; name: string }>;
 }
 
 /** True while the page is in edit mode with the engine loaded. */
@@ -112,6 +114,16 @@ export function useDraftFile(table: ListTable): (id: string, column: string) => 
   const { engine } = useEditSnapshot();
   const list = engine?.list(table);
   return (id, column) => list?.fileUrl(id, column) ?? null;
+}
+
+/**
+ * Areas added in the draft (Add an area), so the visitor roster in Preview
+ * can build "VP, <new area>" before the area is published. Empty for
+ * visitors.
+ */
+export function useDraftAreas(): Array<{ id: string; name: string }> {
+  const { engine } = useEditSnapshot();
+  return (engine as ListEngineApi | null)?.draftAreas?.() ?? [];
 }
 
 export function ListEditBranch<P extends object>({ name, props }: { name: ListEditorName; props: P }) {

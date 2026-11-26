@@ -8,7 +8,7 @@ import { useReveal } from '@/lib/reveal';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecArea, ExecGroup, Executive } from '@/types/database';
 import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
-import { useDraftFile } from '@/edit';
+import { useDraftAreas, useDraftFile } from '@/edit';
 
 /*
   The roster, as one centred row group per role, in role order.
@@ -111,7 +111,13 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
   /* Roles and areas are fetched only once someone has an area set. */
   const needsLookups = executives.some((executive) => !!executive.area_id);
   const { data: groups } = useSupabaseQuery<ExecGroup>('exec_groups', { enabled: needsLookups });
-  const { data: areas } = useSupabaseQuery<ExecArea>('exec_areas', { enabled: needsLookups });
+  const { data: savedAreas } = useSupabaseQuery<ExecArea>('exec_areas', { enabled: needsLookups });
+  /* An area added in edit mode and not yet published, so Preview shows the
+     full built title instead of the stored one (cut at 40 characters). */
+  const added = useDraftAreas();
+  const areas = added.length
+    ? [...savedAreas, ...added.map((a) => ({ ...a, display_order: 0 }) as ExecArea)]
+    : savedAreas;
 
   /* A headshot chosen in edit mode and not yet published shows in Preview. */
   const draftFile = useDraftFile('executives');

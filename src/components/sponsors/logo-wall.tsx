@@ -19,9 +19,13 @@ interface LogoWallProps {
   onRetry?: () => void;
 }
 
-/* Centred rows, the same spacing as the still marquee on the home page. */
+/*
+  A board: equal tiles in centred rows, three across on a laptop, with room
+  around every mark. This page presents the partners, so each logo is larger
+  and further apart than on the home brand strip.
+*/
 const WALL =
-  'flex flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8 py-[clamp(1rem,4vw,2.5rem)]';
+  'mx-auto flex max-w-[1300px] flex-wrap items-center justify-center gap-x-[clamp(2rem,5vw,4.5rem)] gap-y-[clamp(3rem,6vw,5rem)] py-[clamp(2.5rem,6vw,4.5rem)]';
 
 /*
   Built to the same rows and tile sizes as the wall, so the layout does not
@@ -34,7 +38,7 @@ function WallSkeleton() {
         <Skeleton
           key={i}
           index={i}
-          className={`rounded-md ${i < 2 ? TILE_SIZE.lead : TILE_SIZE.mid}`}
+          className={`rounded-md ${TILE_SIZE.lead}`}
         />
       ))}
     </div>
@@ -45,8 +49,8 @@ function WallSkeleton() {
   The sponsors table has no tier column, and hard rule 1 forbids touching
   supabase/, so every sponsor ships in one tier group: the gold bar and label
   reading "Partners". --gold, not --accent, because a sponsor's standing has
-  to read the same on every page. Tile scale carries the hierarchy inside
-  that group, taken from display_order rather than an invented tier
+  to read the same on every page. Inside that group every tile is the same
+  size and display_order is the only rank, rather than an invented tier
   (design-system/adoption.md, Data decisions).
 
   The whole wall sits on the constant --logo-ground slab and the marks sit
@@ -89,13 +93,11 @@ function LogoGridView({ sponsors }: { sponsors: Sponsor[] }) {
 
   return (
     <div ref={ref} className={WALL}>
-      {sponsors.map((sponsor, index) => (
+      {sponsors.map((sponsor) => (
         <LogoCard
           key={sponsor.id}
           sponsor={sponsor}
           logoUrl={logoOf(sponsor)}
-          rank={index}
-          total={sponsors.length}
           onReady={() => settle(sponsor.id)}
         />
       ))}

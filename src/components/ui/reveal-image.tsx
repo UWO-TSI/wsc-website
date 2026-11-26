@@ -133,6 +133,7 @@ export default function RevealImage({
       ref={frameRef}
       data-loaded={loaded || undefined}
       data-empty={empty || undefined}
+      data-fit={fit}
       style={index ? ({ '--i': index } as React.CSSProperties) : undefined}
       className={`reveal-frame relative block overflow-hidden ${className}`.trim()}
     >

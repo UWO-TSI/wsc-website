@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Avatar from '@/components/ui/avatar';
 import Skeleton from '@/components/ui/skeleton';
 import { getPublicUrl } from '@/lib/supabase/storage';
@@ -9,6 +9,7 @@ import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecArea, ExecGroup, Executive } from '@/types/database';
 import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 import { useDraftAreas, useDraftFile } from '@/edit';
+import { MIN_PER_ROW, rowSizes } from '@/lib/exec-tiers';
 
 /*
   The roster, as one centred row group per role, in role order.
@@ -17,9 +18,10 @@ import { useDraftAreas, useDraftFile } from '@/edit';
   rows shows rank: presidents first, then each role in turn. No heading names
   the tiers: the title under each name already says the role.
 
-  Each tier is its own centred flex row, so a short last row is centred under
-  the full rows above it. The gap between tiers is larger than the gap between
-  rows inside a tier.
+  Each tier is split into centred rows of at least three people, unless the
+  whole role has fewer (rowSizes in src/lib/exec-tiers.ts), so no row ends
+  with one person on their own. The gap between tiers is larger than the gap
+  between rows inside a tier.
 
   No cell has a fill, shadow, border or hover. These are people, not controls.
 
@@ -143,45 +145,97 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
     if (pending.current.size === 0) setReady(true);
   };
 
-  return (
-    <div ref={ref} className={TIER_STACK}>
-      {tiers.map((tier) => {
-        const size = SIZE;
-        return (
-          <ul key={tier[0].group} className={TIER_ROW}>
-            {tier.map((executive) => {
-              const src = headshot(executive);
-              return (
-                <li
-                  key={executive.id}
-                  className={`flex flex-col items-center gap-4 text-center ${size.cell}`}
-                >
-                  {/* The width is set on a wrapper, not on the Avatar. Passing
-                      a width class to a component that already sets w-full
-                      makes Tailwind's output order decide which width applies. */}
-                  <span className={size.avatar}>
-                    <Avatar
-                      name={executive.name}
-                      src={src}
-                      fluid
-                      sizes={size.sizes}
-                      reveal={src !== null}
-                      onReady={src ? () => settle(executive.id) : undefined}
-                    />
-                  </span>
+  const [measureRef, perRow] = usePerRow();
 
-                  {/* A word longer than the cell breaks inside the cell
-                      instead of running over the next name. */}
-                  <div className="flex flex-col gap-1 [overflow-wrap:anywhere]">
-                    <span className="title-sm">{executive.name}</span>
-                    <span className="meta">{titleOf(executive, groups, areas)}</span>
+  /*
+    Each tier is split into explicit rows by rowSizes (src/lib/exec-tiers.ts),
+    so no row holds fewer than three people unless the whole role does. A
+    wrapping flex row cannot promise that: eight people at seven per row wrap
+    as seven and one. Each row is centred and does not wrap; when a row holds
+    more cells than fit (a role of four on a phone), the cells and portraits
+    shrink together.
+  */
+  return (
+    <div ref={measureRef}>
+      <div ref={ref} className={TIER_STACK}>
+        {tiers.map((tier) => {
+          const size = SIZE;
+          const rows = rowSizes(tier.length, perRow);
+          return (
+            <div key={tier[0].group} role="list" className="flex flex-col gap-y-10">
+              {rows.map((count, rowIndex) => {
+                const start = rows.slice(0, rowIndex).reduce((sum, n) => sum + n, 0);
+                return (
+                  <div key={rowIndex} className="flex justify-center gap-x-6">
+                    {tier.slice(start, start + count).map((executive) => {
+                      const src = headshot(executive);
+                      return (
+                        <div
+                          key={executive.id}
+                          role="listitem"
+                          className={`flex min-w-0 flex-col items-center gap-4 text-center ${size.cell}`}
+                        >
+                          {/* The width is set on a wrapper, not on the Avatar. Passing
+                              a width class to a component that already sets w-full
+                              makes Tailwind's output order decide which width applies.
+                              max-w-full lets the portrait shrink with its cell. */}
+                          <span className={`${size.avatar} max-w-full`}>
+                            <Avatar
+                              name={executive.name}
+                              src={src}
+                              fluid
+                              sizes={size.sizes}
+                              reveal={src !== null}
+                              onReady={src ? () => settle(executive.id) : undefined}
+                            />
+                          </span>
+
+                          {/* A word longer than the cell breaks inside the cell
+                              instead of running over the next name. */}
+                          <div className="flex flex-col gap-1 [overflow-wrap:anywhere]">
+                            <span className="title-sm">{executive.name}</span>
+                            <span className="meta">{titleOf(executive, groups, areas)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        );
-      })}
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
+}
+
+/* The cell's widest size and the gap between cells, matching SIZE.cell and gap-x-6. */
+const CELL_MAX = { min: 148, vw: 0.2, max: 220 };
+const GAP_X = 24;
+
+/*
+  How many full-size cells fit across the roster, measured from its real
+  width. Never under MIN_PER_ROW: below that the cells shrink instead, so a
+  phone still shows three people to a row. Starts at 5 for the first frame,
+  before the roster has a width.
+*/
+function usePerRow() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [perRow, setPerRow] = useState(5);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (!width) return;
+      const cell = Math.min(CELL_MAX.max, Math.max(CELL_MAX.min, window.innerWidth * CELL_MAX.vw));
+      setPerRow(Math.max(MIN_PER_ROW, Math.floor((width + GAP_X) / (cell + GAP_X))));
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, perRow] as const;
 }

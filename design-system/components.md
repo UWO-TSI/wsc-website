@@ -35,6 +35,7 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | InlineText, InlineParagraph | `edit/engine/fields.tsx` (`EditText`), via `edit/editable-text.tsx` | none |
 | InlineHeading | `edit/engine/fields.tsx` (`EditLines`), via `edit/editable-lines.tsx` | none |
 | InlineLabel | `edit/engine/fields.tsx` (`EditButton`), via `edit/editable-button.tsx` | none |
+| Link icon | `edit/engine/link-icon.tsx` (`EditLinkIcon`), via `edit/editable-link.tsx` | none |
 | PhotoSlot | `edit/engine/fields.tsx` (`EditImage`), via `edit/editable-image.tsx` | none |
 | EditBar, Tray | `edit/engine/edit-bar.tsx`, `edit/engine/edit.css` | Publish label changes in place |
 | InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile | `edit/engine/list-parts.tsx`, used by `edit/engine/list-editors.tsx` | Reorder (card 15 move row), Add tile (Clip Reveal), removal on Publish |
@@ -92,6 +93,10 @@ The home page's first section, `landing/hero.tsx`: one full-bleed photo (`home.h
 The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink.
 
 Apart from the page head (inverse, with a ribbon), it is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
+
+## Footer
+
+A `--sunken` slab under the closing band: the wordmark, the club email and the social icons on the left, the nav in the centre, the Tethos mark on the right. The email is `footer.contact.email`. The Instagram and LinkedIn icons are `--r-disc` buttons on `--page` that go `--accent` on hover; their addresses are `footer.social.instagram_url` and `footer.social.linkedin_url`, rendered through `safeHref`, and an empty address hides its icon. In edit mode each icon is a Link icon (Edit mode, below) whose address is edited in the tray.
 
 ## PageHead
 
@@ -252,6 +257,8 @@ Card 16 in `floor.html`. Styles are `src/edit/engine/edit.css`, loaded only in t
 **InlineHeading.** One field for a heading of two lines. Enter starts line 2, a third line is refused, and each line saves to its own key. The field takes the full width its title may take (the title measure or the column, whichever is narrower), so every heading field on the site is one size and a line wraps where it wraps in Preview. It is as tall as its lines need, measured in a hidden textarea with the field's own font on every keystroke, so no text is hidden. A heading of several lines on a page is one field, never one field per line (the audience headings on Home use it). A page's line class (the hero's `.title-hero`) is set on the field, so the lines show at their page size.
 
 **InlineLabel.** A button label as a field inside an inert Button, as wide as the label, so the button is its Preview size. The ring takes the label's colour. The link address is edited in the tray. Tab from the label reaches the button itself (`.ed-btn-link`, a transparent button over the inert face and under the field, ringed round the pill); Enter or a click there moves focus to the link address in the tray, and Escape or Enter in the address returns to the label field. A label-only button has no link address and no second stop.
+
+**Link icon.** A link whose address is site content and which has no label to edit: the footer's Instagram and LinkedIn icons (`footer.social.*_url`). In edit mode each icon is a button in the visitor link's own look, ringed by the global focus ring. Focusing it shows its link address in the tray, as a button's link does; Enter or a click moves focus to the address, and Escape or Enter there returns to the icon. The address's help, "Leave empty to hide the icon.", is the input's placeholder. An empty address hides the icon for visitors and in Preview; in edit mode an empty icon still shows, at the placeholder's 45 percent, so it can be filled in. Visitors get the address through `safeHref`, so an address that fails the scheme check renders no link. The edit control is loaded on its own only when edit mode renders it.
 
 On an inverse slab, a field in a muted role (`.label`, `.subtitle`, `.meta`, `.body-sm`) writes in the full `--on-inverse` while editing. The field's fill lightens the ground, and over the veiled hero photo the 70 percent ink measured 4.1:1 inside it; full ink measures 6.1:1 over a white photo.
 

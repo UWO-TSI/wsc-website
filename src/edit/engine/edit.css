@@ -290,6 +290,20 @@ html.ed-editing :is(.measure, .measure-title) {
   outline-offset: 1px;
 }
 
+/* ── Link icon: a link with no label (the footer social icons) ──
+   A button in the visitor link's own look (link-icon.tsx); its address is
+   edited in the tray. The global ring draws round it. An empty address
+   is shown at the placeholder's strength, so it can be filled in;
+   visitors and Preview do not show it at all. */
+
+.ed-link-icon {
+  cursor: pointer;
+}
+
+.ed-link-icon.ed-link-empty {
+  opacity: 0.45;
+}
+
 /* ── PhotoSlot ── */
 
 /* In a layer so the caller's own utilities (an absolute fill, a grid

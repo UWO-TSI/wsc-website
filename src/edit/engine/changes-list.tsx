@@ -166,7 +166,9 @@ export default function ChangesList({ id, onClose }: { id: string; onClose: (ref
     onClose(false);
     if (el) {
       el.scrollIntoView({ block: 'center' });
-      el.querySelector<HTMLElement>('textarea, input, select, button')?.focus({ preventScroll: true });
+      /* A field holds its control; a link icon is the control itself. */
+      const control = 'textarea, input, select, button';
+      (el.matches(control) ? el : el.querySelector<HTMLElement>(control))?.focus({ preventScroll: true });
       return;
     }
     const path = e.page ? PAGE_PATH[e.page] : undefined;

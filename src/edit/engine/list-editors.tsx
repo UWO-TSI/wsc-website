@@ -501,10 +501,11 @@ export function EventsEditor({ events }: { events: Event[] }) {
                 label={COPY.field.title}
                 who={who}
                 block
-                className="title-sm text-ink min-w-0 flex-1 basis-60"
+                className="title-sm text-ink min-w-0 flex-1 basis-40"
                 onChange={(title) => api.update(e.id, { title })}
               />
-              <span className="meta text-ink! flex flex-wrap items-center gap-2">
+              {/* As in TimelineEvent: under the title, in line with it, on a phone. */}
+              <span className="meta text-ink! flex flex-wrap items-center gap-2 pl-[44px] sm:pl-0">
                 <RowInput
                   table={table}
                   id={e.id}
@@ -526,9 +527,14 @@ export function EventsEditor({ events }: { events: Event[] }) {
                   onChange={(time) => api.update(e.id, { time: time || null } as Partial<Event>)}
                 />
               </span>
-              {/* Takes the rest of the row, so the Register label measures
-                  against a real column rather than a shrink-wrapped one. */}
-              <span className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3">
+              {/* At the row's right end, as Open and Register are in
+                  TimelineEvent: on the title line while it fits, else on a
+                  line of its own, wrapping inside itself on a phone. Its
+                  width is its content, so it never shrinks under its
+                  controls. The state chip is first and takes no space
+                  until the row changes, so the controls after it stay put. */}
+              <span className="ml-auto flex flex-wrap items-center justify-end gap-3">
+                <StateChip state={state} keep={false} />
                 {!isPast && <Chip status="ok">Open</Chip>}
                 {/* An upcoming event keeps the Register button's slot while
                     its link is empty or invalid, so typing the link never
@@ -555,7 +561,6 @@ export function EventsEditor({ events }: { events: Event[] }) {
                   onToggle={() => api.hide(e.id, e.published)}
                 />
                 <RowOptions table={table} id={e.id} who={who} />
-                <StateChip state={state} />
               </span>
             </div>
             <div className="flex w-full flex-col gap-2 pl-[44px]">
@@ -592,6 +597,15 @@ export function EventsEditor({ events }: { events: Event[] }) {
 
 /* ── Sponsors ── */
 
+/* The width classes of a tile size. An item is as wide as its tile, as in
+   Preview, so the name and the chips under it never widen it and the wall
+   breaks its rows where Preview does. */
+const tileWidth = (scale: keyof typeof TILE_SIZE) =>
+  TILE_SIZE[scale]
+    .split(' ')
+    .filter((c) => /(^|:)w-/.test(c))
+    .join(' ');
+
 export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
   const table = 'sponsors';
   const api = useList<Sponsor>(table);
@@ -603,6 +617,16 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
 
   const reorder = useReorder({ api, table, rows: sponsors, listRef, nameOf });
   const { items, done } = useLeaving(sponsors, api, reorder.capture, listRef);
+
+  /* Tile sizes as Preview gives them: ranked among the partners a visitor
+     sees, so hidden and removed ones do not count. A hidden or removed tile
+     takes the size of the place it would have if it were shown. */
+  const shownBefore: number[] = [];
+  let shownCount = 0;
+  for (const { row: s, leaving } of items) {
+    shownBefore.push(shownCount);
+    if (s.active && !leaving && api.state(s.id) !== 'removing') shownCount++;
+  }
 
   useRowTray(table, (id, field, row): RowTrayView => {
     const s = row as unknown as Sponsor;
@@ -639,7 +663,8 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
         {items.map(({ row: s, leaving }, index) => {
           const state = api.state(s.id);
           const src = api.fileUrl(s.id, 'logo_path') ?? getPublicUrl('sponsor-logos', s.logo_path ?? null);
-          const scale = scaleFor(index, items.length);
+          const scale = scaleFor(shownBefore[index], shownCount);
+          const width = tileWidth(scale);
           const who = nameOf(s);
           return (
             <ReorderItem
@@ -650,7 +675,7 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
               data-leaving={leaving ? '' : undefined}
               inert={leaving}
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
-              className={`${itemClass(state, !s.active, reorder.held === s.id, leaving)} relative flex flex-col items-center gap-3`}
+              className={`${itemClass(state, !s.active, reorder.held === s.id, leaving)} relative flex flex-none flex-col items-center gap-3 ${width}`}
             >
               <span className={`relative flex flex-none items-center justify-center rounded-md p-2 ${TILE_SIZE[scale]}`}>
                 {/* No name fallback while editing: the name field under the
@@ -686,8 +711,8 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
               <span className="flex flex-wrap items-center justify-center gap-2">
                 <VisibilityChip table={table} id={s.id} who={who} visible={s.active} onToggle={() => api.hide(s.id, s.active)} />
                 <RowOptions table={table} id={s.id} who={who} />
-                <StateChip state={state} />
               </span>
+              <StateChip state={state} />
             </ReorderItem>
           );
         })}

@@ -42,7 +42,7 @@ import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, ty
   fields.tsx (.ed in edit.css), sized to the text it holds, so a row in
   edit mode is the size it is in Preview. The chips and the grip are controls, so they
   are buttons with a word or an accessible name. The state chip is not a
-  control; it only reserves its slot.
+  control.
 
   Motion is the three moves the spec allows in edit mode, on Floor's
   tokens read from the stylesheet: a reorder moves rows on the card 15
@@ -365,12 +365,31 @@ export function VisibilityChip({
   );
 }
 
-/** Unpublished or Will be removed. The slot is reserved while the row is unchanged. */
-export function StateChip({ state, className }: { state: ListRowState; className?: string }) {
+/**
+ * Unpublished or Will be removed.
+ *
+ * Inside an item of fixed size (a team cell, a logo tile, a figure, a
+ * format card) the slot is kept while the row is unchanged, on a line of
+ * its own or at the end of a line that has room for it, so a change never
+ * resizes the item or moves its neighbours. With `keep={false}` it takes
+ * no space until the row changes: the event ledger, where it is the first
+ * item of the row's right-aligned controls, so the controls after it stay
+ * where they are and only the title field gives up the room.
+ */
+export function StateChip({
+  state,
+  keep = true,
+  className,
+}: {
+  state: ListRowState;
+  keep?: boolean;
+  className?: string;
+}) {
   const removing = state === 'removing';
   const word = removing ? COPY.willBeRemoved : COPY.unpublished;
+  const off = state ? '' : keep ? ' ed-off' : ' ed-gone';
   return (
-    <span className={`ed-state${state ? '' : ' ed-off'} ${className ?? ''}`.trim()} aria-hidden={!state}>
+    <span className={`ed-state${off} ${className ?? ''}`.trim()} aria-hidden={!state}>
       <Chip status={removing ? 'alert' : 'warn'}>
         <Words words={[COPY.willBeRemoved, COPY.unpublished]} shown={word} />
       </Chip>

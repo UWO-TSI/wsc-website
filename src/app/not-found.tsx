@@ -1,4 +1,12 @@
+import type { Metadata } from 'next';
 import Button from '@/components/ui/button';
+import { UNLISTED_METADATA } from '@/lib/page-metadata';
+
+export const metadata: Metadata = {
+  ...UNLISTED_METADATA,
+  title: 'Page not found',
+  description: 'That page does not exist on the Western Sales Club website.',
+};
 
 export default function NotFound() {
   return (

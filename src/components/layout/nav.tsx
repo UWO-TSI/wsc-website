@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { indicatorTransition, navItem, navPanelTransition } from "@/lib/motion";
+import { EditableButton } from "@/edit";
 
 /*
   Nav: one component, two modes, never two menus.
@@ -15,6 +15,19 @@ import { indicatorTransition, navItem, navPanelTransition } from "@/lib/motion";
 
   Mobile: the same pill, hamburger on the right, growing downward into a
   panel: sequence 12, Nav Expand. There is no drawer and no scrim.
+
+  The one action, Apply to join, is a primary button in the pill from 640
+  up. Below 640 the pill holds the shark and the hamburger only, and Apply
+  to join is the first item of the panel, so a long label can never push
+  the hamburger out of the pill. Both copies read home.cta.*, the same keys
+  as the hero, About and the closing band.
+
+  Focus: closing the panel with focus inside it (Escape, choosing an item,
+  a route change) returns focus to the hamburger. Focus moving out of the
+  nav closes the panel, the same as a press outside it: the panel is a
+  disclosure over the page, not a modal, so it does not trap Tab. The edit
+  bar counts as inside, so an admin can move from the Apply field to its
+  link address in the tray without the panel closing.
 
   design-system/components.md → Nav. design-system/motion.md → sequence 12.
 */
@@ -30,10 +43,15 @@ const NAV_ITEMS = [
 
 const PILL_BACKGROUND = "color-mix(in srgb, var(--page) 88%, transparent)";
 
+/* The edit bar renders in a portal outside the nav; its tray edits the nav's fields. */
+function inEditBar(node: EventTarget | null) {
+  return node instanceof Element && node.closest(".ed-bar") !== null;
+}
+
 /*
   The club shark, filled with currentColor through a mask so the one white
-  asset reads correctly on both the Showroom and Afterhours grounds. See
-  .mark-mask in globals.css.
+  asset reads correctly on the white page ground. See .mark-mask in
+  globals.css.
 */
 function Glyph() {
   return (
@@ -48,11 +66,13 @@ function Glyph() {
   );
 }
 
-export default function Nav() {
+/** `inert` while the preloader curtain covers the page. */
+export default function Nav({ inert = false }: { inert?: boolean }) {
   const pathname = usePathname();
   const panelId = useId();
   const navRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const [open, setOpen] = useState(false);
   const [panelHeight, setPanelHeight] = useState(0);
@@ -82,27 +102,45 @@ export default function Nav() {
     });
   }, []);
 
-  // Escape closes the panel.
+  // Escape closes the panel. Escape in the edit bar's tray belongs to the tray.
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape" && !inEditBar(e.target)) close();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, close]);
 
   // A pointerdown outside the pill collapses it. There is no scrim to catch this.
+  // Focus leaving the nav collapses it too, so Tab never reaches the page
+  // under an open panel.
   useEffect(() => {
-    if (!open) return;
+    const nav = navRef.current;
+    if (!open || !nav) return;
+    const outside = (target: EventTarget | null) =>
+      target instanceof Node && !nav.contains(target) && !inEditBar(target);
     const onPointerDown = (e: PointerEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
-        close();
-      }
+      if (outside(e.target)) close();
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (outside(e.relatedTarget)) close();
     };
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    nav.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      nav.removeEventListener("focusout", onFocusOut);
+    };
   }, [open, close]);
+
+  // The closed panel is inert, so focus left inside it would drop to the
+  // page. Move it to the hamburger first, before the browser repaints.
+  useLayoutEffect(() => {
+    if (!open && panelRef.current?.contains(document.activeElement)) {
+      buttonRef.current?.focus();
+    }
+  }, [open]);
 
   // Re-measure the panel while open, and drop it if the viewport crosses into
   // the desktop breakpoint, where the panel does not exist.
@@ -125,7 +163,10 @@ export default function Nav() {
   }, [open, close]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-[var(--layer-nav)] flex justify-center px-[var(--gut)] pt-3">
+    <header
+      inert={inert}
+      className="fixed inset-x-0 top-0 z-[var(--layer-nav)] flex justify-center px-[var(--gut)] pt-3"
+    >
       {/* A floating pill up to 1024, then a full-width bar across the page. */}
       <nav ref={navRef} className="w-full max-w-3xl lg:max-w-none">
         <div
@@ -140,11 +181,12 @@ export default function Nav() {
           <div className="flex min-h-[50px] items-center gap-2 py-[7px] pl-[14px] pr-[7px] lg:min-h-[58px] lg:pl-6 lg:pr-3">
             <Link
               href="/"
+              aria-label="Western Sales Club, home"
               className="mr-auto flex min-w-0 items-center gap-[9px] no-underline"
               data-cursor="hover"
             >
               <Glyph />
-              <span className="truncate font-display text-[12px] font-black uppercase tracking-[0.07em] text-ink">
+              <span className="hidden truncate font-display sm:inline text-[12px] font-black uppercase tracking-[0.07em] text-ink">
                 Western Sales Club
               </span>
             </Link>
@@ -178,10 +220,17 @@ export default function Nav() {
               })}
             </div>
 
-            <ThemeToggle />
+            {/* From 640 up. Below 640 it is the first item of the panel. */}
+            <div className="ml-1 hidden flex-none sm:block lg:ml-3">
+              <EditableButton
+                labelKey="home.cta.button_label"
+                hrefKey="home.cta.button_href"
+              />
+            </div>
 
             {/* Hamburger, hidden at 1024 and up. Cross-fades to an X. */}
             <button
+              ref={buttonRef}
               type="button"
               onClick={toggleOpen}
               aria-expanded={open}
@@ -269,9 +318,22 @@ export default function Nav() {
             className="overflow-hidden lg:hidden"
             animate={{ height: open ? panelHeight : 0 }}
             transition={navPanelTransition}
-            aria-hidden={!open}
+            inert={!open}
           >
             <div ref={panelRef} className="flex flex-col gap-1 px-[10px] pb-[14px] pt-1">
+              <motion.div
+                custom={0}
+                variants={navItem}
+                initial="hidden"
+                animate={open ? "show" : "hidden"}
+                className="pb-1 sm:hidden"
+              >
+                <EditableButton
+                  labelKey="home.cta.button_label"
+                  hrefKey="home.cta.button_href"
+                  className="w-full"
+                />
+              </motion.div>
               {NAV_ITEMS.map((item, i) => {
                 const active = isActive(item.href);
                 return (
@@ -287,7 +349,6 @@ export default function Nav() {
                       aria-current={active ? "page" : undefined}
                       onClick={close}
                       data-cursor="hover"
-                      tabIndex={open ? 0 : -1}
                       className="flex items-center justify-between rounded-md px-3 py-[11px] font-display text-[17px] font-black uppercase tracking-[0.01em] no-underline transition-colors duration-[var(--d-hover)] ease-enter"
                       style={{
                         color: active ? "var(--on-accent)" : "var(--ink)",

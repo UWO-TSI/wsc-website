@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useState, type FormEvent, type ChangeEvent, type FocusEvent } from 'react';
+import { flushSync } from 'react-dom';
 import emailjs from '@emailjs/browser';
 import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
 import Chip from '@/components/ui/chip';
 import Field from '@/components/contact/field';
-import { useSiteContent } from '@/providers/site-content-provider';
+import { EditableButton, EditableText } from '@/edit';
 
 interface FormData {
   name: string;
@@ -36,7 +37,47 @@ const ORG_TYPE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
+/*
+  The Organization type a link may preselect with ?type=, for example
+  Become a partner on the Partners page. Only a value already offered by
+  the select is accepted; anything else leaves the select empty.
+*/
+export function orgTypeFromParam(value: string | null | undefined): string {
+  if (!value) return '';
+  return ORG_TYPE_OPTIONS.some((opt) => opt.value && opt.value === value) ? value : '';
+}
+
+/*
+  The form section is its own full-width sunken slab, the one content
+  section on an inner page that keeps a ground: the fields are a group, and
+  each --page well needs the sunken bed to read as a field. The form is a
+  640px column centred in the slab, under the centred page head. Labels and
+  inputs inside it stay left-aligned for reading; the submit button, the
+  failure message and the confirmation are centred on the column. Its id is
+  the target of the closing band's business button on this page.
+*/
+export const CONTACT_FORM_ID = 'contact-form';
+
+const SECTION_CLASS = 'scroll-mt-[clamp(5rem,8vw,7rem)]';
+const COLUMN_CLASS = 'mx-auto w-full max-w-[640px]';
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* Form order, so a refused submit moves focus to the first field to fix. */
+const VALIDATED: FieldName[] = ['name', 'email', 'subject', 'message'];
+
+/*
+  Which part of an address failed EMAIL_PATTERN, checked in order, so the
+  message names the part that broke. The value is already trimmed.
+*/
+function emailError(value: string): string {
+  if (/\s/.test(value)) return 'Remove the space from the email and send again.';
+  const at = value.split('@').length - 1;
+  if (at === 0) return 'That is missing an @. Check it and send again.';
+  if (at > 1) return 'That has more than one @. Keep one and send again.';
+  if (value.startsWith('@')) return 'Add the part before the @, then send again.';
+  return 'Check the part after the @. It needs a domain such as uwo.ca.';
+}
 
 /*
   What broke and how to fix it, never "Invalid input".
@@ -50,7 +91,7 @@ function validateField(name: FieldName, formData: FormData): string | undefined 
 
   if (name === 'email') {
     if (!value) return 'Add an email so we can reply.';
-    if (!EMAIL_PATTERN.test(value)) return 'That is missing an @. Check it and send again.';
+    if (!EMAIL_PATTERN.test(value)) return emailError(value);
   }
 
   return undefined;
@@ -65,15 +106,30 @@ function validateAll(formData: FormData): Record<FieldName, string | undefined> 
   };
 }
 
-export default function ContactForm() {
+function blockedText(count: number): string {
+  return count === 1
+    ? 'Not sent. 1 field needs a fix.'
+    : `Not sent. ${count} fields need a fix.`;
+}
+
+interface ContactFormProps {
+  /** A value from orgTypeFromParam: preselects the Organization type. */
+  initialOrgType?: string;
+}
+
+export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const { text } = useSiteContent();
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormData>({
+    ...INITIAL_FORM_DATA,
+    organization_type: initialOrgType,
+  });
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitFailed, setSubmitFailed] = useState(false);
   const [sent, setSent] = useState(false);
+  /* Fields with an error at the last refused submit, for the live region. */
+  const [blocked, setBlocked] = useState(0);
 
   const errors = validateAll(formData);
   const shownError = (name: FieldName) => (touched[name] || submitted ? errors[name] : undefined);
@@ -95,11 +151,21 @@ export default function ContactForm() {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
-    setSubmitFailed(false);
-
     const currentErrors = validateAll(formData);
-    if (Object.values(currentErrors).some(Boolean)) return;
+    const invalid = VALIDATED.filter((name) => currentErrors[name]);
+
+    /* Render the error text first, so the field that takes focus is
+       already described by its error when a screen reader reads it. */
+    flushSync(() => {
+      setSubmitted(true);
+      setSubmitFailed(false);
+      setBlocked(invalid.length);
+    });
+
+    if (invalid.length > 0) {
+      document.getElementById(`contact-${invalid[0]}`)?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -122,29 +188,38 @@ export default function ContactForm() {
 
   if (sent) {
     return (
-      <Slab tone="sunken" className="flex flex-col items-center gap-4 py-16 text-center">
-        <Chip status="ok">Sent</Chip>
-        <p className="title-sm">{text('contact.form.sent_title')}</p>
-        <p className="body-sm measure">{text('contact.form.sent_body')}</p>
-        <Button
-          variant="tertiary"
-          onClick={() => {
-            setFormData(INITIAL_FORM_DATA);
-            setTouched({});
-            setSubmitted(false);
-            setSubmitFailed(false);
-            setSent(false);
-          }}
+      <Slab tone="sunken" id={CONTACT_FORM_ID} className={SECTION_CLASS}>
+        <div
+          className={`${COLUMN_CLASS} flex flex-col items-center gap-4 py-[clamp(2rem,5vw,3rem)]`}
         >
-          Send another message
-        </Button>
+          <Chip status="ok">Sent</Chip>
+          <EditableText k="contact.form.sent_title" as="p" className="title-sm text-center" />
+          <EditableText k="contact.form.sent_body" as="p" className="body-sm measure text-center" />
+          <Button
+            variant="tertiary"
+            onClick={() => {
+              setFormData(INITIAL_FORM_DATA);
+              setTouched({});
+              setSubmitted(false);
+              setSubmitFailed(false);
+              setSent(false);
+            }}
+          >
+            Send another message
+          </Button>
+        </div>
       </Slab>
     );
   }
 
   return (
-    <Slab tone="sunken">
-      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+    <Slab tone="sunken" id={CONTACT_FORM_ID} className={SECTION_CLASS}>
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className={`${COLUMN_CLASS} flex flex-col gap-6`}
+        noValidate
+      >
         <Field
           label="Name"
           name="name"
@@ -209,8 +284,9 @@ export default function ContactForm() {
         />
 
         <div aria-live="polite" aria-atomic="true">
+          {blocked > 0 && <p className="sr-only">{blockedText(blocked)}</p>}
           {submitFailed && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col items-center gap-2 text-center">
               <Chip status="alert">Not sent</Chip>
               <p className="body-sm">
                 Something went wrong on our end. Check your connection and try again.
@@ -219,9 +295,13 @@ export default function ContactForm() {
           )}
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="self-start">
-          {isSubmitting ? 'Sending' : text('contact.form.submit_label')}
-        </Button>
+        <EditableButton
+          labelKey="contact.form.submit_label"
+          type="submit"
+          disabled={isSubmitting}
+          label={isSubmitting ? 'Sending' : undefined}
+          className="self-center"
+        />
       </form>
     </Slab>
   );

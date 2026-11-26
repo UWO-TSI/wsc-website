@@ -4,12 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import Slab from "@/components/ui/slab";
 import { useSiteContent } from "@/providers/site-content-provider";
+import { EditableText, useEditMode } from "@/edit";
+import EditableLink from "@/edit/editable-link";
 
 /*
-  Footer: a --sunken slab, flat elevation, no shadow. Three columns on a
-  shared rhythm from md up: wordmark and socials on the left, the nav stacked
-  in the center, and the Tethos mark right-aligned above "Website by Tethos".
-  Below md it is one centered stack with no left or right alignment.
+  Footer: a --sunken slab, flat elevation, no shadow, full width and 2px
+  under the page's closing band. Its block padding is --pad-section, the
+  page head's bottom, so it reads as a section of the page rather than a
+  strip under it. Three columns on a
+  shared rhythm: wordmark and socials on the left, the nav stacked in the
+  center, and the Tethos mark right-aligned above "Website by Tethos".
   Social links are --r-disc buttons that go --accent on hover.
 
   design-system/components.md → Footer.
@@ -28,8 +32,10 @@ const LEGAL_LINKS = [
   { label: "Privacy", href: "/privacy-policy" },
 ] as const;
 
-/* The marks stay in code; the destinations are editable, and an empty
-   link hides its icon. */
+/* The marks stay in code; the destinations are editable through
+   EditableLink: in edit mode each icon is a control whose address is
+   edited in the tray. A visitor's link passes safeHref, and an empty or
+   refused address hides its icon (in Preview too). */
 const SOCIAL_LINKS = [
   { label: "Instagram", key: "footer.social.instagram_url", icon: "/logos/instagram.svg" },
   { label: "LinkedIn", key: "footer.social.linkedin_url", icon: "/logos/linkedin.svg" },
@@ -38,19 +44,17 @@ const SOCIAL_LINKS = [
 export default function Footer() {
   const year = new Date().getFullYear();
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
   const email = text("footer.contact.email");
-  const socials = SOCIAL_LINKS.map((social) => ({ ...social, href: text(social.key) })).filter(
-    (social) => social.href
-  );
 
   return (
     <Slab
       as="footer"
       tone="sunken"
-      className="mx-[var(--gut)] mb-6 mt-6 flex flex-col gap-4 pb-5! md:pb-6!"
+      className="flex flex-col gap-4 py-[var(--pad-section)]!"
     >
       <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-x-10">
-        <div className="flex flex-col items-center gap-4 md:items-start">
+        <div className="flex flex-col items-start gap-4">
           <Link href="/" className="flex items-center gap-[9px] no-underline" data-cursor="hover">
             <span
               aria-hidden="true"
@@ -64,31 +68,31 @@ export default function Footer() {
               Western Sales Club
             </span>
           </Link>
-          {email && (
+          {/* While editing the address is a field, not a mailto link. */}
+          {editing ? (
+            <EditableText k="footer.contact.email" className="meta" />
+          ) : email && (
             <a
               href={`mailto:${email}`}
               data-cursor="hover"
               className="meta w-fit no-underline transition-colors duration-[var(--d-hover)] ease-enter hover:text-ink"
             >
-              {email}
+              <EditableText k="footer.contact.email" />
             </a>
           )}
           <div className="flex items-center gap-3">
-            {socials.map((social) => (
-              <a
+            {SOCIAL_LINKS.map((social) => (
+              <EditableLink
                 key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={social.label}
-                data-cursor="hover"
+                hrefKey={social.key}
+                label={social.label}
                 className="grid h-11 w-11 place-items-center rounded-full bg-page text-ink-muted transition-colors duration-[var(--d-hover)] ease-enter hover:bg-accent hover:text-on-accent"
               >
                 {/*
                   Both social SVGs are hardcoded fill="#ffffff", so rendering
                   them as images put a white glyph on the Showroom ground and
                   they disappeared. Masked and filled with currentColor they
-                  inherit the link's own colour and flip with the theme.
+                  inherit the link's own colour, including on hover.
                 */}
                 <span
                   aria-hidden="true"
@@ -98,7 +102,7 @@ export default function Footer() {
                     maskImage: `url("${social.icon}")`,
                   }}
                 />
-              </a>
+              </EditableLink>
             ))}
           </div>
         </div>
@@ -122,7 +126,7 @@ export default function Footer() {
           rel="noopener noreferrer"
           aria-label="Website by Tethos"
           data-cursor="hover"
-          className="flex flex-col items-center gap-3 no-underline md:items-end md:justify-self-end"
+          className="flex flex-col items-end gap-3 no-underline md:justify-self-end"
         >
           {/*
             The Tethos mark ships with its own black field baked into the file,
@@ -133,11 +137,11 @@ export default function Footer() {
           <span className="relative h-10 w-10 flex-none overflow-hidden rounded-sm shadow-1">
             <Image src="/logos/tethos.avif" alt="" fill sizes="40px" className="object-cover" />
           </span>
-          <span className="meta text-center md:text-right">Website by Tethos</span>
+          <span className="meta text-right">Website by Tethos</span>
         </a>
       </div>
 
-      <div className="flex flex-col items-center gap-4 md:flex-row md:flex-wrap md:justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <span className="meta">&copy; {year} Western Sales Club</span>
         <nav className="flex items-center gap-3" aria-label="Legal">
           {LEGAL_LINKS.map((link, i) => (

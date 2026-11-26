@@ -23,8 +23,15 @@ export function normalizeLine(value: string): string {
     .trim();
 }
 
-/** Schemes the site will put in an href. Mirrors the database CHECK. */
-const URL_PATTERN = /^(https?:\/\/|\/|#|mailto:)/i;
+/**
+ * Schemes the site will put in an href. The database CHECK accepts any
+ * leading "/", so this is one step stricter: "//host" is a link to another
+ * site (protocol-relative), and a page path is "/" followed by anything
+ * but a second "/". A browser reads a backslash as "/" and drops tabs and
+ * line breaks from a URL, so "/\host" and "/<tab>/host" are "//host" too:
+ * the character after the first "/" is none of "/", "\" or whitespace.
+ */
+const URL_PATTERN = /^(https?:\/\/|\/(?![\/\\\s])|#|mailto:)/i;
 const HTTP_PATTERN = /^https?:\/\//i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,6 +45,16 @@ export function normalizeUrl(value: string): string {
   if (URL_PATTERN.test(v)) return v;
   if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/|$)/i.test(v)) return `https://${v}`;
   return v;
+}
+
+/**
+ * The href to render for a stored or draft link, or undefined when it
+ * fails the scheme check, so the caller renders no link. Draft values reach
+ * Preview before their blur check runs, and old rows predate the CHECK.
+ */
+export function safeHref(href: string | null | undefined): string | undefined {
+  const v = href?.trim();
+  return v && URL_PATTERN.test(v) ? v : undefined;
 }
 
 export type FieldFormat = 'line' | 'url' | 'https' | 'email' | 'time';

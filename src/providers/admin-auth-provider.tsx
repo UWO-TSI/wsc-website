@@ -32,7 +32,8 @@ export function useAdminAuth(): AdminAuthContextValue {
 }
 
 /**
- * AdminAuthProvider: gate for /admin routes.
+ * AdminAuthProvider: the sign-in flow for /admin and /admin/settings.
+ * Its children render only for an admin at aal2.
  *
  * Phases: checking_auth → checking_admin → checking_mfa → authorized,
  * with needs_mfa and denied as terminal branches.
@@ -42,17 +43,17 @@ export function useAdminAuth(): AdminAuthContextValue {
  *  1. claim_admin_invite(): converts a pending email invite into an
  *     admins row. Has to run BEFORE is_admin(), because a first-time
  *     admin is not on the allowlist until their invite is claimed.
- *  2. is_admin(): identity and expiry only, deliberately answerable at
+ *  2. is_admin(): identity only, deliberately answerable at
  *     aal1, because someone who has not enrolled a second factor yet
  *     still needs to be recognised in order to reach the enrollment
  *     screen.
  *  3. AAL check: everything that writes is gated on aal2 in RLS, so a
  *     session that has not passed a TOTP challenge gets the MFA gate
- *     instead of the dashboard. This is a UX shortcut, not the
+ *     instead of the children. This is a UX shortcut, not the
  *     enforcement: the database refuses those writes regardless.
  *
  * Only a neutral spinner is shown during the loading phases, and no
- * dashboard content is rendered before all three checks pass.
+ * child content is rendered before all three checks pass.
  */
 export default function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AdminState>('checking_auth');
@@ -85,7 +86,7 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
         if (claimError) console.warn('Invite claim skipped:', claimError.message);
       }
 
-      // 2. Allowlist and expiry.
+      // 2. Allowlist.
       const { data: isAdmin, error } = await supabase.rpc('is_admin');
       if (error || !isAdmin) {
         await supabase.auth.signOut();
@@ -100,7 +101,7 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
 
       if (aalError) {
         // Fail closed: if the assurance level cannot be read, send them
-        // through the gate rather than showing a dashboard whose every
+        // through the gate rather than showing controls whose every
         // action the database would then reject.
         setState('needs_mfa');
         return;
@@ -171,12 +172,12 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
         {/* Spaced with gap: the type classes reset margin outside a layer, so mb-* never applies. */}
         <Slab tone="raised" as="div" className="max-w-md text-center flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
-            <p className="label text-accent-ink">Admin portal</p>
-            <h1 className="title-sm text-ink">Western Sales Club</h1>
+            <p className="label text-accent-ink">Western Sales Club</p>
+            <h1 className="title-sm text-ink">Admin sign in</h1>
           </div>
           <p className="body-sm text-ink-muted measure">
-            Sign in with an authorized Google account to access the content management
-            dashboard. If someone invited you, sign in with the exact address they invited.
+            Sign in with an admin Google account to edit the site. If someone invited you,
+            sign in with the exact address they invited.
           </p>
           <div className="flex flex-col items-center gap-4">
             <Button onClick={signIn}>Sign in with Google</Button>

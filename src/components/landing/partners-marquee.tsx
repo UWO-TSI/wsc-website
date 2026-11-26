@@ -4,12 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import RevealImage from '@/components/ui/reveal-image';
 
 import type { Sponsor } from '@/types/database';
-import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
-import SectionHead from '@/components/ui/section-head';
 import Skeleton from '@/components/ui/skeleton';
+import { EditableText, useDraftFile, useEditMode } from '@/edit';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { useSiteContent } from '@/providers/site-content-provider';
 
 /*
   Partners marquee: sequence 7, Marquee Drift. The one ambient loop in the
@@ -39,8 +37,20 @@ import { useSiteContent } from '@/providers/site-content-provider';
   The logos themselves sit directly on it with no tile behind them.
 
   Pauses on hover, on focus-within, and on visibilitychange. Under reduced
-  motion the loop stops and the track reflows to a static wrapped row.
+  motion the loop stops and the track reflows to a static wrapped row. In
+  edit mode it is off too: one copy of the logos as a static wrapped grid.
+
+  With STATIC_MAX logos or fewer the marquee does not run at all: the same
+  static row shows every logo at once. Five logos looping past read as a
+  short list repeated, and a visitor can read five names in one look.
+
+  The head is one .label line ("Events and competitions with") over the
+  logos. The section is a brand strip directly under the hero: the logos are
+  the content, and a full section head would push them below the fold.
 */
+
+/** At or under this many logos the strip is a static row, not a marquee. */
+const STATIC_MAX = 8;
 
 /** Pixels per second. Slow enough to read a mark as it passes. */
 const SPEED = 40;
@@ -56,9 +66,13 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
   const [copies, setCopies] = useState(2);
   const [duration, setDuration] = useState(48);
   const [hidden, setHidden] = useState(false);
-  const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   const active = sponsors.filter((sponsor) => sponsor.active);
+  /* A logo chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('sponsors');
+  const logoOf = (sponsor: Sponsor) =>
+    draftFile(sponsor.id, 'logo_path') ?? getPublicUrl('sponsor-logos', sponsor.logo_path);
 
   useEffect(() => {
     const onVisibility = () => setHidden(document.hidden);
@@ -91,7 +105,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     observer.observe(viewport);
     observer.observe(group);
     return () => observer.disconnect();
-  }, [active.length]);
+  }, [active.length, editing]);
 
   /*
     Only bail once we know there is nothing to show. Returning null while the
@@ -99,18 +113,18 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     grew by a whole band the moment the sponsors landed, shoving everything
     below it down. Loading renders the slab and a row of skeleton tiles at the
     real size instead.
+
+    In edit mode the strip stays with no logos, so its label can still be
+    edited. Preview leaves it out, as a visitor's page does.
   */
-  if (!loading && active.length === 0) return null;
+  if (!loading && active.length === 0 && !editing) return null;
 
   return (
-    <Slab tone="logo" className="mx-[var(--gut)]" aria-labelledby="partners-heading">
+    <Slab tone="logo" aria-labelledby="partners-heading">
       <div className="flex flex-col gap-8">
-        <SectionHead
-          eyebrow={text('home.partners.eyebrow')}
-          index="03"
-          id="partners-heading"
-          title={[text('home.partners.title_line1')]}
-        />
+        <h2 id="partners-heading" className="label m-0 text-center">
+          <EditableText k="home.brands.label" />
+        </h2>
 
         {loading ? (
           <div className="mq" role="status" aria-busy="true" aria-label="Loading partners">
@@ -119,6 +133,12 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                 <Skeleton key={i} index={i} className="h-12 w-36 rounded-md sm:h-14 sm:w-44" />
               ))}
             </div>
+          </div>
+        ) : active.length === 0 ? null : editing || active.length <= STATIC_MAX ? (
+          <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8">
+            {active.map((sponsor) => (
+              <SponsorMark key={sponsor.id} sponsor={sponsor} logoUrl={logoOf(sponsor)} still />
+            ))}
           </div>
         ) : (
           /* No role and no label: the section is already labelled by its
@@ -142,42 +162,49 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                   className="mq-group"
                   aria-hidden={copy > 0}
                 >
-                  {active.map((sponsor) => {
-                    const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
-
-                    return (
-                      <div key={`${copy}-${sponsor.id}`} className="mq-item h-12 w-36 sm:h-14 sm:w-44">
-                        {logoUrl ? (
-                          <RevealImage
-                            src={logoUrl}
-                            alt={sponsor.name}
-                            sizes="176px"
-                            className="h-full w-full"
-                            fit="contain"
-                            sequence="fade"
-                          />
-                        ) : (
-                          /* Never redraw a sponsor's mark. With no file, their
-                             name set in the display face stands in for it. */
-                          <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
-                            {sponsor.name}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {active.map((sponsor) => (
+                    <SponsorMark key={`${copy}-${sponsor.id}`} sponsor={sponsor} logoUrl={logoOf(sponsor)} />
+                  ))}
                 </div>
               ))}
             </div>
           </div>
         )}
-
-        <div>
-          <Button href="/sponsors" variant="tertiary" arrow>
-            {text('home.partners.link_label')}
-          </Button>
-        </div>
       </div>
     </Slab>
+  );
+}
+
+/* `still` drops the hover scale, for the static grid in edit mode. */
+function SponsorMark({
+  sponsor,
+  logoUrl,
+  still = false,
+}: {
+  sponsor: Sponsor;
+  logoUrl: string | null;
+  still?: boolean;
+}) {
+  return (
+    <div
+      className={`${still ? 'flex flex-none items-center justify-center' : 'mq-item'} h-12 w-36 sm:h-14 sm:w-44`}
+    >
+      {logoUrl ? (
+        <RevealImage
+          src={logoUrl}
+          alt={sponsor.name}
+          sizes="176px"
+          className="h-full w-full"
+          fit="contain"
+          sequence="fade"
+        />
+      ) : (
+        /* Never redraw a sponsor's mark. With no file, their name set in the
+           display face stands in for it. */
+        <span className="text-center font-display text-base font-bold uppercase leading-tight sm:text-lg">
+          {sponsor.name}
+        </span>
+      )}
+    </div>
   );
 }

@@ -8,11 +8,17 @@ out/
 # Supabase
 supabase/.temp
 supabase/.branches
-supabase/scripts
+supabase/scripts/*
+!supabase/scripts/backfill-exec-areas.sql
 
 # Misc files
 _reference/
-docs/
+docs/*
+!docs/CLAUDE-reference.md
+!docs/redesign/
+docs/redesign/*
+!docs/redesign/spec.md
+!docs/redesign/reference.html
 
 # dependencies
 /node_modules
@@ -61,3 +67,9 @@ raw/
 # Photos removed from the site when every photo became an admin slot.
 # Kept locally to seed the slots through the admin; never committed.
 /archive/
+
+# playwright
+/test-results/
+/playwright-report/
+/tests/.auth/
+/tests/.results/

@@ -1,29 +1,50 @@
 'use client';
 
-import Eyebrow from '@/components/ui/eyebrow';
-import ContactForm from '@/components/contact/contact-form';
-import { useReveal } from '@/lib/reveal';
-import { useSiteContent } from '@/providers/site-content-provider';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import PageHead from '@/components/layout/page-head';
+import ContactForm, { orgTypeFromParam } from '@/components/contact/contact-form';
+import ClosingBand from '@/components/layout/closing-band';
+import { EditableButton } from '@/edit';
+
+/*
+  Page head, the form, then the closing band. On this page the band's
+  business button points at the form above it rather than at the page
+  itself.
+
+  ?type= preselects the Organization type (Become a partner sends
+  type=sponsor). Reading the query needs a Suspense boundary so the page
+  stays static: the prerendered HTML carries the fallback, which is the
+  same form with nothing preselected, and the client swaps in the read
+  value before anyone can type.
+*/
+function ContactFormFromQuery() {
+  const type = useSearchParams().get('type');
+  return <ContactForm initialOrgType={orgTypeFromParam(type)} />;
+}
 
 export default function ContactPage() {
-  const ref = useReveal<HTMLDivElement>();
-  const { text } = useSiteContent();
-
   return (
-    <div className="px-[var(--gut)] pt-[clamp(6rem,10vw,10rem)] pb-[clamp(5rem,10vw,9rem)]">
-      <div className="stack mx-auto max-w-[640px]">
-        <div ref={ref} className="flex flex-col gap-3">
-          <Eyebrow>{text('contact.header.eyebrow')}</Eyebrow>
-          <h1 className="title">
-            <span className="ln">
-              <i>{text('contact.header.title')}</i>
-            </span>
-          </h1>
-          <p className="body measure">{text('contact.header.body')}</p>
-        </div>
+    <div className="stack">
+      <PageHead
+        id="contact-title"
+        titleKeys={['contact.header.title']}
+        bodyKey="contact.header.body"
+      />
 
-        <ContactForm />
-      </div>
+      <Suspense fallback={<ContactForm />}>
+        <ContactFormFromQuery />
+      </Suspense>
+
+      <ClosingBand
+        businessAction={
+          <EditableButton
+            labelKey="home.cta.business_label"
+            hrefKey="contact.cta.form_href"
+            variant="secondary"
+          />
+        }
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useEditMode } from '@/edit/edit-mode';
 
 /**
  * useLayoutEffect does nothing on the server and React says so loudly, so the
@@ -78,6 +79,9 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
   ready = true,
 }: RevealOptions = {}) {
   const ref = useRef<T>(null);
+  /* Edit mode leaves every sequence at rest, so fields never move. */
+  const { editing } = useEditMode();
+  const active = enabled && !editing;
 
   /*
     Arrival and readiness are tracked separately and the sequence needs both.
@@ -93,10 +97,17 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
   */
   useBeforePaint(() => {
     const el = ref.current;
-    if (!el || !enabled) return;
+    if (!el) return;
+    /* Going inactive puts the element at rest. Edit mode loads after the
+       first paint, so an element stamped "off" before it loaded would
+       otherwise stay hidden for the whole session. */
+    if (!active) {
+      el.removeAttribute('data-run');
+      return;
+    }
     if (reducedMotion()) return;
     if (!el.hasAttribute('data-run')) el.setAttribute('data-run', 'off');
-  }, [enabled]);
+  }, [active]);
 
   const start = useCallback(() => {
     const el = ref.current;
@@ -115,7 +126,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || !enabled) return;
+    if (!el || !active) return;
 
     if (reducedMotion()) {
       el.removeAttribute('data-run');
@@ -151,7 +162,7 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>({
       observer.unobserve(el);
       el.removeEventListener('animationend', settle);
     };
-  }, [enabled, immediate, threshold, start]);
+  }, [active, immediate, threshold, start]);
 
   return ref;
 }

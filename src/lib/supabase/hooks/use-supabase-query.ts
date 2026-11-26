@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../client';
+import { useEditSnapshot } from '@/edit/edit-mode';
+import { LIST_VISIBILITY_COLUMN, type ListTable } from '@/edit/list-draft';
 import { classifyError } from '@/lib/error-utils';
 import type { QueryError, QueryResult } from '@/types/database';
 
@@ -23,10 +25,22 @@ interface QueryOptions {
   thenBy?: string;
   filters?: QueryFilter[];
   enabled?: boolean;
+  /**
+   * The rows feed a list editor (the roster, the ledger, the logo wall,
+   * the counted figures). In edit mode it gets hidden rows and rows marked
+   * Will be removed too, so their chips show. Every other reader of the
+   * same table gets the rows visitors will see after Publish.
+   */
+  editList?: boolean;
 }
 
 /**
  * Generic hook for Supabase SELECT queries with loading/error/data states.
+ *
+ * In edit mode the rows pass through the edit engine, which lays the list
+ * draft over them (added, changed, reordered and removed rows), so a page
+ * shows drafted rows wherever it would show published ones. After Publish
+ * the engine bumps `refresh` and every query loads again in place.
  */
 export function useSupabaseQuery<T>(
   table: string,
@@ -37,9 +51,22 @@ export function useSupabaseQuery<T>(
     orderBy = 'display_order',
     ascending = true,
     thenBy,
-    filters = [],
+    filters: givenFilters = [],
     enabled = true,
+    editList = false,
   } = options;
+
+  const { engine, status, rev, refresh } = useEditSnapshot();
+
+  /*
+    In edit mode a list table is read without its visibility filter (an
+    admin's RLS allows it), and the filter is applied after the draft is
+    laid over the rows. A row the editor hides then leaves, and a hidden
+    row the editor shows again appears, on every page that reads the table.
+  */
+  const visibility =
+    engine && table in LIST_VISIBILITY_COLUMN ? LIST_VISIBILITY_COLUMN[table as ListTable] : null;
+  const filters = visibility ? givenFilters.filter((f) => f.column !== visibility) : givenFilters;
 
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +125,22 @@ export function useSupabaseQuery<T>(
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, refresh]);
 
-  return { data, loading, error, refetch: fetchData };
+  /* `status` is a dependency because Preview changes the rows without a
+     draft change: the engine leaves hidden and removed rows out of every
+     list while Preview is on. */
+  const shown = useMemo(() => {
+    if (!engine) return data;
+    const rows = engine.rows(table, data);
+    if (!visibility || editList) return rows;
+    const list = engine.list(table as ListTable);
+    return rows.filter((row) => {
+      const r = row as Record<string, unknown>;
+      return r[visibility] !== false && list.state(String(r.id)) !== 'removing';
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine, status, rev, table, data, visibility, editList]);
+
+  return { data: shown, loading, error, refetch: fetchData };
 }

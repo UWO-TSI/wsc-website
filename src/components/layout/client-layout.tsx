@@ -1,8 +1,8 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence } from 'framer-motion';
-import { ThemeProvider } from '@/providers/theme-provider';
 import { PreloaderProvider, usePreloader } from '@/providers/preloader-provider';
 import { CursorProvider } from '@/providers/cursor-provider';
 import { LenisProvider } from '@/providers/lenis-provider';
@@ -12,8 +12,29 @@ import Preloader from '@/components/layout/preloader';
 import Nav from '@/components/layout/nav';
 import Footer from '@/components/layout/footer';
 
+/*
+  While the curtain covers the page, the page under it is inert, so Tab
+  cannot reach the skip link or the nav behind it. Only when motion is
+  allowed: under reduced motion the curtain never paints. The server
+  snapshot is false, so the server HTML is never inert and the first
+  client render matches it.
+*/
+const MOTION_OK = '(prefers-reduced-motion: no-preference)';
+
+function subscribeMotion(onChange: () => void) {
+  const query = window.matchMedia(MOTION_OK);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   const { complete, markComplete } = usePreloader();
+  const motionAllowed = useSyncExternalStore(
+    subscribeMotion,
+    () => window.matchMedia(MOTION_OK).matches,
+    () => false
+  );
+  const behindCurtain = !complete && motionAllowed;
 
   return (
     <SiteContentProvider>
@@ -25,13 +46,17 @@ function Shell({ children }: { children: React.ReactNode }) {
             {!complete && <Preloader key="preloader" onLoadComplete={markComplete} />}
           </AnimatePresence>
 
-          <a href="#main-content" className="skip">
+          <a href="#main-content" className="skip" inert={behindCurtain}>
             Skip to content
           </a>
 
-          <Nav />
-          <main id="main-content">{children}</main>
-          <Footer />
+          <Nav inert={behindCurtain} />
+          {/* One stack, so the last section of every page meets the footer
+              2px apart like every other join. */}
+          <div className="stack" inert={behindCurtain}>
+            <main id="main-content">{children}</main>
+            <Footer />
+          </div>
         </LenisProvider>
       </CursorProvider>
     </SiteContentProvider>
@@ -42,18 +67,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/auth');
 
-  /* The theme sits outside the admin branch: /admin ships in both themes too,
-     and the toggle in the dashboard header needs the same context. The
-     preloader does not, so /admin gets the default `complete: true`. */
+  /* The preloader is for the public site only, so /admin gets the default
+     `complete: true`. */
   if (isAdmin) {
-    return <ThemeProvider>{children}</ThemeProvider>;
+    return <>{children}</>;
   }
 
   return (
-    <ThemeProvider>
-      <PreloaderProvider>
-        <Shell>{children}</Shell>
-      </PreloaderProvider>
-    </ThemeProvider>
+    <PreloaderProvider>
+      <Shell>{children}</Shell>
+    </PreloaderProvider>
   );
 }

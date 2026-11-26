@@ -1,0 +1,145 @@
+-- ================================================================
+-- 20261124000003_admin_access_no_expiry.sql: admin access is permanent
+-- ================================================================
+-- Admin access no longer ends after ten months. It lasts until another
+-- admin removes the person from the Admins tab.
+--
+-- Unchanged by this migration:
+--   - Unclaimed invites in admin_invites still expire 14 days after
+--     they are created (admin_invites_normalise sets that).
+--   - Google sign-in, the authenticator-code requirement
+--     (is_admin_mfa(): is_admin() AND aal2), RLS, and is_admin() as
+--     the only admin check.
+--   - No INSERT or UPDATE grant on public.admins. claim_admin_invite()
+--     is still the only write path into the table.
+--
+-- ORDER MATTERS:
+--   1. Replace is_admin() and claim_admin_invite() first. Their SQL
+--      bodies are not tracked as dependencies, so dropping the column
+--      while they still name it would break sign-in at runtime.
+--   2. Delete every non-owner admin and every unused invite. The
+--      permanent roster starts from the owner alone; everyone else
+--      joins again through a new per-email invite.
+--   3. Drop admins.expires_at.
+-- ================================================================
+
+
+-- ----------------------------------------------------------------
+-- 1a. is_admin(): on the allowlist, nothing more
+-- ----------------------------------------------------------------
+-- Same contract as before: no parameters, boolean only, SECURITY
+-- DEFINER, search_path pinned to public, owned by postgres.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.admins
+    WHERE user_id = auth.uid()
+  );
+$$;
+
+ALTER FUNCTION public.is_admin() OWNER TO postgres;
+REVOKE EXECUTE ON FUNCTION public.is_admin() FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION public.is_admin() TO authenticated, anon;
+
+
+-- ----------------------------------------------------------------
+-- 1b. claim_admin_invite(): no expiry to set
+-- ----------------------------------------------------------------
+-- Same flow: find the caller's live invite by their own email claim,
+-- add or refresh the admins row (never the owner row), mark the invite
+-- used, write an audit entry.
+CREATE OR REPLACE FUNCTION public.claim_admin_invite()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+VOLATILE
+SET search_path = public, pg_catalog
+AS $$
+DECLARE
+  v_uid   UUID := auth.uid();
+  v_email TEXT := lower(auth.email());
+  v_inv   public.admin_invites%ROWTYPE;
+BEGIN
+  IF v_uid IS NULL OR v_email IS NULL OR v_email = '' THEN
+    RETURN false;
+  END IF;
+
+  SELECT * INTO v_inv
+  FROM public.admin_invites
+  WHERE email = v_email
+    AND used_at IS NULL
+    AND expires_at > now()
+  ORDER BY created_at DESC
+  LIMIT 1
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN false;
+  END IF;
+
+  INSERT INTO public.admins (user_id, email, note, invited_by, is_owner)
+  VALUES (v_uid, v_email, v_inv.note, v_inv.invited_by, false)
+  ON CONFLICT (user_id) DO UPDATE
+    SET email      = EXCLUDED.email,
+        invited_by = EXCLUDED.invited_by
+    WHERE public.admins.is_owner = false;   -- never touch the owner row
+
+  UPDATE public.admin_invites
+    SET used_at = now(), used_by = v_uid
+    WHERE id = v_inv.id;
+
+  INSERT INTO public.admin_audit (actor_user_id, actor_email, action, target_email)
+  VALUES (v_uid, v_email, 'invite_claimed', v_email);
+
+  RETURN true;
+END;
+$$;
+
+ALTER FUNCTION public.claim_admin_invite() OWNER TO postgres;
+REVOKE EXECUTE ON FUNCTION public.claim_admin_invite() FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.claim_admin_invite() TO authenticated;
+
+
+-- ----------------------------------------------------------------
+-- 2. Start the permanent roster from the owner alone
+-- ----------------------------------------------------------------
+-- Access no longer ends on a date, so every non-owner admin is removed
+-- and every unused invite is withdrawn. Each admin then joins again
+-- through a new per-email invite. The admins_audit_del trigger records
+-- each removed row as 'removed'. The owner row stays, so someone can
+-- always sign in and invite the rest.
+DO $$
+DECLARE v_admins INT; v_invites INT;
+BEGIN
+  -- With no owner row, these deletes would leave nobody able to sign in
+  -- and invite the rest. Stop instead.
+  IF EXISTS (SELECT 1 FROM public.admins)
+     AND NOT EXISTS (SELECT 1 FROM public.admins WHERE is_owner) THEN
+    RAISE EXCEPTION 'No owner row in public.admins. Set is_owner on one admin before applying this migration.';
+  END IF;
+
+  DELETE FROM public.admins
+  WHERE is_owner = false;
+  GET DIAGNOSTICS v_admins = ROW_COUNT;
+
+  DELETE FROM public.admin_invites
+  WHERE used_at IS NULL;
+  GET DIAGNOSTICS v_invites = ROW_COUNT;
+
+  RAISE NOTICE 'Removed % non-owner admin row(s) and % unused invite(s).', v_admins, v_invites;
+END $$;
+
+
+-- ----------------------------------------------------------------
+-- 3. Drop the column
+-- ----------------------------------------------------------------
+ALTER TABLE public.admins
+  DROP COLUMN IF EXISTS expires_at;
+
+COMMENT ON COLUMN public.admins.is_owner IS
+  'Exactly one row. Cannot be deleted through the API.';

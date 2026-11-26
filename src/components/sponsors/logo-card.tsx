@@ -2,10 +2,15 @@
 
 import RevealImage from '@/components/ui/reveal-image';
 import type { Sponsor } from '@/types/database';
-import { getPublicUrl } from '@/lib/supabase/storage';
+import { externalLinkProps } from '@/lib/link-utils';
 
 interface LogoCardProps {
   sponsor: Sponsor;
+  /**
+   * The mark's URL, or null for the name in the display face. The wall
+   * resolves it: a logo drafted in edit mode first, then the stored object.
+   */
+  logoUrl: string | null;
   /** Position in display_order, zero-based. Carries the tile's scale. */
   rank: number;
   total: number;
@@ -20,7 +25,7 @@ type Scale = 'lead' | 'mid' | 'std';
   the first third of the wall reads large, the next third medium, the rest
   standard. Tile scale carries the hierarchy, not a border.
 */
-function scaleFor(rank: number, total: number): Scale {
+export function scaleFor(rank: number, total: number): Scale {
   if (total <= 3) return rank === 0 ? 'lead' : 'std';
   const third = Math.ceil(total / 3);
   if (rank < third) return 'lead';
@@ -28,30 +33,28 @@ function scaleFor(rank: number, total: number): Scale {
   return 'std';
 }
 
-const logoHeights: Record<Scale, string> = {
-  lead: 'h-16 sm:h-24',
-  mid: 'h-12 sm:h-16',
-  std: 'h-10 sm:h-12',
+/*
+  Each scale is a fixed box the mark is contained in, so a wide wordmark and
+  a square mark of the same scale read at about the same weight. The wall's
+  skeleton uses the same boxes.
+*/
+export const TILE_SIZE: Record<Scale, string> = {
+  lead: 'h-20 w-56 sm:h-24 sm:w-72',
+  mid: 'h-16 w-44 sm:h-20 sm:w-56',
+  std: 'h-12 w-36 sm:h-16 sm:w-44',
 };
 
-const spanClass: Record<Scale, string> = {
-  lead: 'col-span-2',
-  mid: '',
-  std: '',
-};
-
-export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProps) {
-  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
+export default function LogoCard({ sponsor, logoUrl, rank, total, onReady }: LogoCardProps) {
   const scale = scaleFor(rank, total);
 
   /*
-    The tile is the constant dark logo ground. The wall behind it is sunken,
-    so the black plate is visible in both themes, and a light-on-transparent
-    mark still has the ground it was drawn for.
+    No plate behind the mark: the wall itself is the --logo-ground slab, so a
+    light-on-transparent mark has the ground it was drawn for. The tile keeps
+    its frame and corner only for layout and the focus ring.
   */
   const tileClass = [
-    'group flex aspect-[3/2] items-center justify-center overflow-hidden rounded-md bg-logo-ground p-4',
-    spanClass[scale],
+    'group flex flex-none items-center justify-center overflow-hidden rounded-md p-2',
+    TILE_SIZE[scale],
   ]
     .filter(Boolean)
     .join(' ');
@@ -61,9 +64,17 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     The mark eases up on --d-move and --e-move, the same pair a row uses when
     it shifts, and only far enough to notice.
   */
-  const markClass = sponsor.link
-    ? 'flex w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
-    : 'flex w-full items-center justify-center';
+  /*
+    The tile is a link only for an http(s) address: rows from before the
+    database check and draft values in Preview are never checked otherwise.
+  */
+  const link = sponsor.link?.trim() ?? '';
+  const linkProps = externalLinkProps(link);
+  const isLink = 'target' in linkProps;
+
+  const markClass = isLink
+    ? 'flex h-full w-full items-center justify-center transition-transform duration-[var(--d-move)] ease-move group-hover:scale-[1.03] group-focus-visible:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100'
+    : 'flex h-full w-full items-center justify-center';
 
   // Never redraw a sponsor's mark: use their file, or fall back to the name
   // set in the display face, in the same tile.
@@ -72,7 +83,7 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
       src={logoUrl}
       alt={`${sponsor.name} logo`}
       sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
-      className={`w-full ${logoHeights[scale]}`}
+      className="h-full w-full"
       fit="contain"
       sequence="fade"
       hold
@@ -84,12 +95,11 @@ export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProp
     </span>
   );
 
-  if (sponsor.link) {
+  if (isLink) {
     return (
       <a
-        href={sponsor.link}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={link}
+        {...linkProps}
         className={tileClass}
         aria-label={`${sponsor.name}, opens in a new tab`}
         data-cursor="view"

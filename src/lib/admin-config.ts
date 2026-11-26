@@ -1,95 +1,19 @@
 export const LIMITS = {
   MAX_IMAGE_SIZE_MB: 2,
-  MAX_IMAGE_WIDTH: 1920,
-  MAX_IMAGE_HEIGHT: 1080,
   MAX_HEADSHOT_DIMENSION: 3000,
   MAX_LOGO_DIMENSION: 2500,
   ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
+  /*
+    The most items each edited list holds. The database has no cap, so
+    edit mode enforces these: at the cap the Add tile is disabled and says
+    why. They keep the headshot and logo buckets within the storage budget
+    and the public layouts within what they were designed for (the home
+    page shows at most four counted figures, and ProofBand reads the same
+    MAX_SITE_STATS).
+  */
   MAX_EVENTS: 50,
   MAX_SPONSORS: 20,
   MAX_EXECUTIVES: 30,
-  MAX_GALLERY_PHOTOS: 40,
-  MAX_SITE_STATS: 6,
-  MAX_EXEC_GROUPS: 10,
-};
-
-export interface ContentConfig {
-  table: string;
-  bucket?: string;
-  pathColumn?: string;
-  visibilityColumn: string;
-  displayName: string;
-  /** Singular noun for the "Add X" button, when trimming an "s" is wrong. */
-  singularName?: string;
-  limit: number;
-  /** Drag-to-reorder on display_order. Default true. */
-  orderable?: boolean;
-  /**
-   * The public page sorts by this exec_groups slug column first and
-   * display_order second, so the editor lists one reorderable group per
-   * role. A flat list would let an editor drag someone past a role
-   * boundary that the site then ignores.
-   */
-  groupColumn?: string;
-  /** Fixed sort for a table that is not orderable. */
-  sort?: { column: string; ascending: boolean; thenBy?: string };
-}
-
-export const CONTENT_CONFIG: Record<string, ContentConfig> = {
-  events: {
-    table: 'events',
-    visibilityColumn: 'published',
-    displayName: 'Events',
-    singularName: 'Event',
-    limit: LIMITS.MAX_EVENTS,
-    // Events are ordered by their date, newest first, same as the site.
-    // Manual ordering would only be overridden by the date anyway.
-    orderable: false,
-    sort: { column: 'date', ascending: false, thenBy: 'created_at' },
-  },
-  sponsors: {
-    table: 'sponsors',
-    bucket: 'sponsor-logos',
-    pathColumn: 'logo_path',
-    visibilityColumn: 'active',
-    displayName: 'Sponsors',
-    singularName: 'Sponsor',
-    limit: LIMITS.MAX_SPONSORS,
-  },
-  executives: {
-    table: 'executives',
-    bucket: 'headshots',
-    pathColumn: 'headshot_path',
-    visibilityColumn: 'visible',
-    displayName: 'Executives',
-    singularName: 'Executive',
-    limit: LIMITS.MAX_EXECUTIVES,
-    // Was false, which left the club unable to order its own team even
-    // though executives.display_order has always existed.
-    orderable: true,
-    groupColumn: 'group',
-  },
-  gallery_photos: {
-    table: 'gallery_photos',
-    bucket: 'gallery',
-    pathColumn: 'image_path',
-    visibilityColumn: 'visible',
-    displayName: 'Gallery Photos',
-    singularName: 'Photo',
-    limit: LIMITS.MAX_GALLERY_PHOTOS,
-  },
-  site_stats: {
-    table: 'site_stats',
-    visibilityColumn: 'visible',
-    displayName: 'Statistics',
-    singularName: 'Statistic',
-    limit: LIMITS.MAX_SITE_STATS,
-  },
-  exec_groups: {
-    table: 'exec_groups',
-    visibilityColumn: 'visible',
-    displayName: 'Roles',
-    singularName: 'Role',
-    limit: LIMITS.MAX_EXEC_GROUPS,
-  },
+  MAX_SITE_STATS: 4,
+  MAX_EVENT_FORMATS: 12,
 };

@@ -4,7 +4,7 @@ Every sequence in here is running live in `floor.html`. Watch it there first; th
 
 ## The thesis
 
-Sales motion arrives and stops. Everything moves fast out of the gate and comes to a dead stop, which is what `--e-enter` describes. Nothing eases in slowly, nothing overshoots, nothing loops, with two exceptions: `--e-snap` on the theme toggle knob, and `--e-drift` on the marquee.
+Sales motion arrives and stops. Everything starts fast and stops without settling, which is what `--e-enter` describes. Nothing eases in slowly, nothing overshoots, and two things loop: the marquee on `--e-drift`, and the grain on a textured container (see Grain Shift below). `--e-snap`, the one overshoot curve, has no current use since the theme toggle was removed.
 
 Three laws:
 
@@ -26,9 +26,11 @@ Three laws:
 
 Stagger is 60ms between lines, 40ms between words, 35ms between menu items. More than five staggered elements is too many.
 
-Animate `transform` and `opacity` only. `clip-path` is allowed on the mask reveals because it is the point of them. Never animate `width`, `height`, `top` or `left` — with one documented exception, the mobile nav panel, which animates a JS-measured `height` because `height: auto` is not interpolable.
+Animate `transform` and `opacity` only. `clip-path` is allowed on the mask reveals because it is the point of them. Never animate `width`, `height`, `top` or `left`, with one documented exception, the mobile nav panel, which animates a JS-measured `height` because `height: auto` is not interpolable.
 
-## The twelve sequences
+## The eleven sequences
+
+Theme Wipe (11) is retired with the dark theme. The others keep their numbers, so a reference to "sequence 12" in code still means Nav Expand.
 
 ### 1. Line Mask Reveal
 
@@ -83,27 +85,13 @@ Images and gallery. `clip-path: inset(0 0 100% 0 round var(--r-md))` to `inset(0
 
 Directory and event rows. Block padding grows, the name shifts right, `--raised` fill and `--sh-2` come in, the avatar clips from the right. `--d-move`, `--e-move`. The row is one link, so keyboard focus produces the identical state.
 
-### 11. Theme Wipe
+### 11. Theme Wipe (retired)
 
-A circle expands from the toggle's own centre to cover the viewport, revealing the new theme underneath.
-
-```js
-const r = el.getBoundingClientRect();
-const x = r.left + r.width / 2, y = r.top + r.height / 2;
-const rad = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-const t = document.startViewTransition(applyTheme);
-await t.ready;
-document.documentElement.animate(
-  { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${rad}px at ${x}px ${y}px)`] },
-  { duration: 620, easing: "cubic-bezier(0.16,1,0.3,1)", pseudoElement: "::view-transition-new(root)" }
-);
-```
-
-Because the accent hue flips as well as the ground, this is the most visible interaction on the site. Unsupported browsers get an instant swap with a `--d-hover` cross-fade on colour only.
+Retired with the dark theme. The site has one theme, so there is nothing to wipe between. The number stays unused.
 
 ### 12. Nav Expand
 
-The mobile pill grows into a panel. Not a drawer, not a second menu — the same element.
+The mobile pill grows into a panel. It is the same element, not a drawer or a second menu.
 
 - `height` on the panel from `0` to the measured `scrollHeight`, `--d-move`, `--e-move`. JS-measured because `auto` is not interpolable.
 - `border-radius` from `25px` (half the closed height, a true pill) to `--r-xl`. **Never from `--r-pill`**: 999px re-clamps to half the width as the box grows and bulges it into a stadium.
@@ -125,11 +113,23 @@ Honoured per sequence, never a blanket `animation: none`, which would leave mask
 | Marquee Drift | Stops and reflows to a static wrapped grid. |
 | Scroll Scrub | Pin released, becomes a vertical stack. |
 | Row Expand | Padding and offset drop, fill still applies. |
-| Theme Wipe | Instant swap, no circle. |
+| Grain Shift | Stops. The texture is still drawn. |
 | Nav Expand | Panel opens with no transition. |
 | Curtain | Does not render. |
 
 Lenis smooth scrolling is disabled entirely under reduced motion.
+
+## Loops
+
+Two things in Floor loop. Nothing else may.
+
+1. **Marquee Drift** (sequence 7).
+2. **Grain Shift.** The grain on every textured container (the Lit velvet texture, see `README.md`) moves to a new position six times a second: `grain-shift`, `0.9s`, `steps(6)`, infinite, in edit mode too. It jumps between positions with no motion in between. Under `prefers-reduced-motion: reduce` it stops; that is the only case in which it is still. The ribbon and the dot matrix on the same container never move.
+
+```css
+.texture > .billboard { animation: grain-shift 0.9s steps(6) infinite; }
+@media (prefers-reduced-motion: reduce) { .texture > .billboard { animation: none; } }
+```
 
 ## Performance
 
@@ -140,4 +140,4 @@ Lenis smooth scrolling is disabled entirely under reduced motion.
 
 ## Banned
 
-Fade-up on every block. Parallax backgrounds. Text that types itself. Anything that floats or pulses at rest. Visible spring wobble outside `--e-snap`. Hover effects that move a neighbour. Anything longer than `--d-seq`. Scroll-jacking, which is different from Scroll Scrub: the page always responds to a normal scroll gesture at a normal rate.
+Fade-up on every block. Parallax backgrounds. Text that types itself. Anything that floats or pulses at rest, other than the two loops above. Visible spring wobble outside `--e-snap`. Hover effects that move a neighbour. Anything longer than `--d-seq`. Scroll-jacking, which is different from Scroll Scrub: the page always responds to a normal scroll gesture at a normal rate.

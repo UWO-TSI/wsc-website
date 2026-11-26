@@ -4,9 +4,9 @@
 
 The __Supabase__ backend powers the **Western Sales Club (WSC) website** as a small, secure **content management system**. It provides:
 
-- **Database**: Events, sponsors, executive team, gallery content, executive roles, headline statistics, and every editable string on the public site, with visibility controls so only approved items appear.
+- **Database**: Events, sponsors, executive team, gallery content, executive roles, headline statistics, the home page format cards, and every editable string on the public site, with visibility controls so only approved items appear.
 - **Authentication**: Google OAuth for admin sign-in, plus a mandatory TOTP second factor. The public site does not require login.
-- **Admin model**: Access is controlled by an **allowlist** that admins manage themselves. Membership is granted by invite and **expires automatically after ten months**. One permanent **owner** row cannot be removed through the app.
+- **Admin model**: Access is controlled by an **allowlist** that admins manage themselves. Membership is granted by invite and lasts until another admin removes it. One **owner** row cannot be removed through the app.
 - **Storage**: Public buckets for headshots, sponsor logos, event images, gallery photos, and editable site imagery. Files are referenced by object name in the DB; URLs are built at runtime.
 
 The frontend is treated as **untrusted**. All enforcement (who can read what, who can write) happens **server-side** in Supabase via **SQL grants**, **Row Level Security (RLS)**, and the **hardened `is_admin()`** function. No sensitive keys or admin logic live in the client.
@@ -24,14 +24,16 @@ The frontend is treated as **untrusted**. All enforcement (who can read what, wh
 | **executives** | Executive team members | `visible` (boolean) |
 | **gallery_photos** | About-page gallery | `visible` (boolean) |
 | **exec_groups** | Executive role tiers (President, VP, …) | `visible` (defaults **true**) |
+| **exec_areas** | Executive areas (Marketing, Events, …) | *none, see below* |
 | **site_stats** | Headline figures on the home page | `visible` (boolean) |
+| **event_formats** | The format cards on the home page ("Sales competitions", ...) | `visible` (boolean) |
 | **site_content** | Every editable string on the site | *none, see below* |
 
 Access-control tables (never public):
 
 | Table | Purpose |
 |------|---------|
-| **admins** | Allowlist, with `expires_at`, `is_owner` |
+| **admins** | Allowlist, with `is_owner` |
 | **admin_invites** | Pending invites keyed by email |
 | **admin_audit** | Append-only log of admin changes |
 
@@ -40,6 +42,10 @@ Access-control tables (never public):
   - **Two documented exceptions.** `exec_groups.visible` defaults to `true`, because a hidden role silently drops its members from the team page, which reads as data loss rather than a draft. `site_content` has no visibility column at all, because hiding a page title would render a blank page; its rows are public by definition.
 - **`site_content` keys are structural.** They are owned by the code and mirrored in `src/lib/site-content-defaults.ts`. Admins are granted `SELECT, UPDATE` only: they change wording, they cannot create or delete keys. A missing key falls back to the compiled-in default, so an outage never blanks the site.
 - **`executives.group` is a foreign key** to `exec_groups(slug)`, `ON UPDATE CASCADE ON DELETE RESTRICT`. It used to be a `CHECK` constraint, which meant adding a role required a migration. Renaming a role slug now follows through to its members, and a role with members cannot be deleted.
+- **Executive titles are built, not stored.** `executives.area_id` is an optional foreign key to `exec_areas(id)`, `ON DELETE RESTRICT`, so an area with members cannot be deleted. The site shows the role's `exec_groups.short_label`, a comma, and the area name ("VP, Marketing"), or the short label alone when there is no area. Area names are unique ignoring case.
+  - **Transition.** `executives.title` is still in the table. The site shows it for every executive whose `area_id` is NULL, so the team page reads the same until `supabase/scripts/backfill-exec-areas.sql` has been reviewed and applied. A later migration drops the column.
+  - `exec_areas` has no visibility column: an area is only shown through an executive, and the executive row has its own `visible` flag. Anyone can read every area.
+- **`events.register_url`** is an optional registration link with the same checks as `sponsors.link`: at most 200 characters, `http` or `https` only.
 - **Asset columns** (`image_path`, `logo_path`, `headshot_path`) store only the **storage object name** (e.g. `a1b2c3d4.webp`), not full URLs
   - Public URLs are built with `getPublicUrl(bucket, name)` at runtime.
 - **Triggers** keep `updated_at` in sync on `events`, `sponsors`, and `executives`.
@@ -52,7 +58,7 @@ Five **public** buckets (readable by anyone via CDN URL):
 - **sponsor-logos**: Sponsor logos  
 - **event-images**: Event banner/promo images  
 - **gallery**: About-page gallery photos  
-- **site-images**: The 11 photo slots (`site_images`, ids in `src/lib/image-slots.ts`)  
+- **site-images**: The photo slots (`site_images`, ids in `src/lib/image-slots.ts`) and each format card's photo (`event_formats.image_path`)  
 
 Write access to each bucket is restricted by storage RLS to admins **with a verified second factor** (see Security).
 
@@ -68,13 +74,20 @@ Migrations in `supabase/migrations/` are applied in order:
 6. `20260929000001_site_content.sql`: `site_content`, `site_stats`, `site-images` bucket  
 7. `20260929000002_site_content_seed.sql`: Seed every editable string; generated by `scripts/gen-site-content-seed.mjs`  
 8. `20260929000003_exec_groups.sql`: Role lookup table, drops the `CHECK` on `executives.group`  
-9. `20260929000004_admin_lifecycle.sql`: Ten-month TTL, owner row, invites, audit, self-service roster  
+9. `20260929000004_admin_lifecycle.sql`: Ten-month TTL (removed by migration 18), owner row, invites, audit, self-service roster  
 10. `20260929000005_admin_mfa_aal2.sql`: Require a verified second factor for every admin write
 11. `20260929000006_site_images.sql`: Photo slots, plus 2 MB and raster-only limits on all five buckets
 12. `20260929000007_field_constraints.sql`: Length ceilings (`NOT VALID`) and normalising triggers
-13. `20260929000008_executives_year.sql`: Optional year of study, 1 to 6
+13. `20260929000008_executives_year.sql`: Optional year of study, 1 to 6 (dropped by migration 17)
 14. `20260929000009_fit_description_ceilings.sql`: Event and sponsor description caps raised to fit live copy (800, 500)
 15. `20260929000010_event_time_structured.sql`: Event time as `HH:MM`, converting free text where it parses  
+16. `20261124000001_exec_roles_areas.sql`: `exec_groups.short_label`, the `exec_areas` table, `executives.area_id`
+17. `20261124000002_drop_executives_year.sql`: Drops `executives.year_of_study`
+18. `20261124000003_admin_access_no_expiry.sql`: Admin access no longer expires; drops `admins.expires_at` after removing every non-owner admin and unused invite, so the roster restarts from the owner
+19. `20261124000004_admin_last_sign_in.sql`: `admin_last_sign_ins()`, each admin's last sign-in time
+20. `20261124000005_events_register_url.sql`: Optional `events.register_url`
+21. `20261124000010_site_content_phase2_seed.sql`: Seed the Phase 2 `site_content` keys
+22. `20261125000001_event_formats.sql`: The `event_formats` table, seeded with the four home page cards and their existing photos
 
 ---
 
@@ -87,7 +100,7 @@ Security is designed in **three layers**. Even if one layer is misconfigured, th
 - **Server-side enforcement**: Grants and RLS define what each role can do. The client cannot bypass them.
 - **Least privilege**: Anonymous users can only read rows that are explicitly visible (`published` / `active` / `visible`). They have no INSERT/UPDATE/DELETE on __ANY__ table.
 - **Second factor required to write**: Every admin write policy is gated on `is_admin_mfa()`, which requires the session to have reached `aal2` by passing a TOTP challenge. An OAuth-only session can read the public site and nothing else.
-- **Time-limited access**: Non-owner admins expire ten months after their invite is claimed. Expiry is evaluated inside `is_admin()` on every request, so there is no cleanup job to forget to run.
+- **Access until removed**: Admin access does not expire. It ends when another admin removes the person from the Admins tab. Unclaimed invites still expire after 14 days.
 - **No admin data in the client**: Admin status is not stored in localStorage or cookies. The app calls the `is_admin()` RPC and reacts to the boolean.
 
 **Changed in September 2026.** The allowlist used to be completely invisible to the API (`REVOKE ALL` plus RLS with no policies). Self-service user management requires admins to read and modify the roster, so `public.admins` is now readable by any admin at `aal2`, and every admin can see every other admin's email. This was a deliberate trade for letting the club manage its own turnover without a developer. The compensating controls are: no `INSERT` or `UPDATE` grant on the table at all, a protected owner row, mandatory 2FA, and an append-only audit log.
@@ -96,7 +109,7 @@ Security is designed in **three layers**. Even if one layer is misconfigured, th
 
 | Table | `anon` | `authenticated` |
 |------|--------|-----------------|
-| Content tables (`events`, `sponsors`, `executives`, `gallery_photos`, `site_stats`, `exec_groups`) | SELECT only | SELECT, INSERT, UPDATE, DELETE |
+| Content tables (`events`, `sponsors`, `executives`, `gallery_photos`, `site_stats`, `event_formats`, `exec_groups`, `exec_areas`) | SELECT only | SELECT, INSERT, UPDATE, DELETE |
 | `site_content` | SELECT only | SELECT, **UPDATE only** |
 | `admins` | REVOKE ALL | **SELECT, DELETE only** |
 | `admin_invites` | REVOKE ALL | SELECT, INSERT, DELETE |
@@ -104,7 +117,7 @@ Security is designed in **three layers**. Even if one layer is misconfigured, th
 
 Three grants here are doing real work, not decoration:
 
-- **No INSERT or UPDATE on `admins`.** The only write path in is `claim_admin_invite()`, a SECURITY DEFINER function. An admin therefore cannot extend anyone's expiry, or their own, by writing to the table. The clock only moves when a fresh invite is claimed.
+- **No INSERT or UPDATE on `admins`.** The only write path in is `claim_admin_invite()`, a SECURITY DEFINER function. An admin therefore cannot add anyone, or make anyone the owner, by writing to the table. A person joins only by claiming an invite another admin created.
 - **No INSERT or DELETE on `site_content`.** Admins edit wording; they cannot delete a key and blank a section of the site.
 - **No INSERT, UPDATE or DELETE on `admin_audit`.** It is written only from inside SECURITY DEFINER triggers, which bypass RLS. The log cannot be doctored through the API.
 
@@ -113,10 +126,10 @@ At the SQL level, unauthenticated clients cannot write anything. Authenticated c
 ### Layer 2: Row Level Security (RLS)
 
 - **Content tables**: RLS is enabled. Each has:
-  - A **public SELECT** policy filtered by the visibility column (`published`, `active`, or `visible`). `site_content` uses `USING (true)` instead, since its rows are the page copy itself.
+  - A **public SELECT** policy filtered by the visibility column (`published`, `active`, or `visible`). `site_content` and `exec_areas` use `USING (true)` instead: the first holds the page copy itself, and the second has no visibility column.
   - An **admin FOR ALL** policy gated by `public.is_admin_mfa()` (both `USING` and `WITH CHECK`).
 - **Allowlist**: SELECT and DELETE policies, both gated by `is_admin_mfa()`. The DELETE policy additionally requires `is_owner = false`, so the owner row cannot be removed through the API by anyone, including the owner. Removing it takes the SQL editor and the service role.
-- **Invites**: SELECT, INSERT and DELETE gated by `is_admin_mfa()`. The INSERT policy also requires `lower(email) <> lower(auth.email())`: **self-invitation is blocked**, so nobody can renew their own ten months. Renewal has to come from another admin, which is what makes the limit mean anything. The owner never expires, so this can never lock the club out entirely.
+- **Invites**: SELECT, INSERT and DELETE gated by `is_admin_mfa()`. The INSERT policy also requires `lower(email) <> lower(auth.email())`: **self-invitation is blocked**. It dates from the ten-month limit and is kept because an admin has no reason to invite their own address.
 - **Audit log**: SELECT only. Writes happen inside SECURITY DEFINER functions owned by `postgres`, which bypass RLS.
 
 Anonymous users see only visible rows. Admins see the same, and can change rows only once their session has passed a TOTP challenge.
@@ -151,26 +164,33 @@ AS $$ SELECT public.is_admin(); $$;
 
 Two functions, deliberately separate.
 
-**`is_admin()`**: identity and expiry only:
+**`is_admin()`**: identity only:
 
 - **Exposed as RPC** so the frontend can call it (e.g. from `AdminAuthProvider`).
-- **Returns only a boolean**: whether the caller is on the allowlist and not expired. No rows, column values, or error details. No parameters, since parameters could be used to probe the table.
+- **Returns only a boolean**: whether the caller has a row in `public.admins`. No rows, column values, or error details. No parameters, since parameters could be used to probe the table.
 - **Answerable at `aal1` on purpose.** A new admin who has not enrolled a factor yet still has to be recognised in order to reach the enrollment screen. Gating this on `aal2` would deadlock the flow.
 - **Implemented securely:**
   - `SECURITY DEFINER`: runs with the owner's privileges so it can read `public.admins`.
   - `SET search_path = public`: avoids schema injection.
   - Explicit `public.admins` and `auth.uid()`: exact comparison by UUID.
   - Owned by `postgres`; `REVOKE EXECUTE FROM PUBLIC`; `GRANT EXECUTE TO authenticated, anon` (anon needs it so RLS evaluation returns false rather than throwing).
-  - Expiry: `is_owner OR (expires_at IS NOT NULL AND expires_at > now())`. **Fails closed**: a non-owner with a NULL `expires_at` gets nothing.
+  - No expiry check since migration 18. Being on the allowlist is the whole test.
 
 **`is_admin_mfa()`**: `is_admin()` AND `auth.jwt() ->> 'aal' = 'aal2'`. This is the one every write policy uses.
 
 **`claim_admin_invite()`**: the only write path into `public.admins`:
 
 - SECURITY DEFINER, VOLATILE, no parameters. It reads `auth.email()` and only ever acts on the caller's own verified email claim, so the invite list cannot be probed.
-- Finds a live unused invite for that email, inserts or refreshes the `admins` row with a ten-month expiry, marks the invite used, and writes an audit entry.
+- Finds a live unused invite for that email (invites expire 14 days after they are created), inserts or refreshes the `admins` row, marks the invite used, and writes an audit entry.
 - The `ON CONFLICT DO UPDATE` carries `WHERE admins.is_owner = false`, so claiming an invite can never overwrite the owner row.
-- Returns a boolean: whether the caller gained or renewed access.
+- Returns a boolean: whether the caller claimed an invite.
+
+**`admin_last_sign_ins()`**: when each admin last signed in, for the Admins tab:
+
+- Returns `user_id`, `email` and `auth.users.last_sign_in_at` for every row in `public.admins`. Read-only.
+- Raises `42501` unless `is_admin_mfa()` is true. That is the same bar as reading the roster, since the result carries every admin's email.
+- SECURITY DEFINER so it can read `auth.users`, with `SET search_path = ''` and every name schema-qualified.
+- Owned by `postgres`; `REVOKE EXECUTE FROM PUBLIC, anon`; `GRANT EXECUTE TO authenticated`.
 
 ### Storage
 
@@ -184,7 +204,7 @@ Two functions, deliberately separate.
 - RLS stays enabled on all tables.
 - No INSERT/UPDATE/DELETE for `anon` on any table.
 - `is_admin()`: no parameters, boolean only; keep SECURITY DEFINER and search_path unless reviewed.
-- **Never grant INSERT or UPDATE on `public.admins`.** That grant is what stops an admin from extending their own expiry. The only write path is `claim_admin_invite()`.
+- **Never grant INSERT or UPDATE on `public.admins`.** That grant is what stops an admin from adding someone, or promoting someone to owner, without an invite. The only write path is `claim_admin_invite()`.
 - **Never drop the `is_owner = false` condition** from the admins DELETE policy, or the `admins_single_owner_idx` unique index.
 - **Never grant INSERT/UPDATE/DELETE on `admin_audit`.** It stays append-only via triggers.
 - **Never grant INSERT or DELETE on `site_content`.** Keys are structural and owned by the code.
@@ -219,15 +239,15 @@ Admins cannot create keys, so step 2 is not optional: without the row, the site 
 
 1. An existing admin enters an email address in the Admins tab, which writes a row to `admin_invites` (valid 14 days).
 2. Nothing is emailed. The inviter tells the person to go to `/admin` and sign in with that exact Google account.
-3. On first sign-in, `claim_admin_invite()` converts the invite into an `admins` row with `expires_at = now() + 10 months`.
+3. On first sign-in, `claim_admin_invite()` converts the invite into an `admins` row.
 4. They enrol an authenticator app, and they are in.
 
 **Rules the database enforces, not the UI:**
 
-- **Ten months, always.** A trigger hard-sets `expires_at` and `is_owner = false` on insert, whatever the client sends.
-- **No self-renewal.** The invite INSERT policy rejects an admin inviting their own address. Someone else has to extend you.
-- **No renewal action at all.** An expiring admin is simply re-invited, which resets the clock through the normal flow.
-- **The owner is permanent and undeletable through the app.** Exactly one owner exists, enforced by a unique partial index.
+- **Access does not expire.** It lasts until another admin removes the row. Invites do expire: one that is not claimed within 14 days stops working, and the admin sends a new one.
+- **Invites are set by the server.** A trigger hard-sets the 14-day window, the inviter and the unused state on insert, whatever the client sends. `claim_admin_invite()` always inserts with `is_owner = false`.
+- **No self-invite.** The invite INSERT policy rejects an admin inviting their own address.
+- **The owner is undeletable through the app.** Exactly one owner exists, enforced by a unique partial index.
 
 **Removing an admin:** the Admins tab, or `DELETE FROM public.admins WHERE user_id = '<uuid>'` in the SQL editor.
 
@@ -235,10 +255,8 @@ Admins cannot create keys, so step 2 is not optional: without the row, the site 
 
 ```sql
 BEGIN;
-UPDATE public.admins SET is_owner = false, expires_at = now() + interval '10 months'
-  WHERE is_owner;
-UPDATE public.admins SET is_owner = true, expires_at = NULL
-  WHERE user_id = '<new-owner-uuid>';
+UPDATE public.admins SET is_owner = false WHERE is_owner;
+UPDATE public.admins SET is_owner = true  WHERE user_id = '<new-owner-uuid>';
 COMMIT;
 ```
 

@@ -1,5 +1,8 @@
 import { format, isBefore, parseISO, startOfDay } from 'date-fns';
 import Chip from '@/components/ui/chip';
+import { EditableButton, useEditMode } from '@/edit';
+import { formatTime, registerHref } from '@/lib/event-display';
+import { useSiteContent } from '@/providers/site-content-provider';
 import type { Event } from '@/types/database';
 
 /*
@@ -13,22 +16,16 @@ import type { Event } from '@/types/database';
   The index, date, and place roles set --ink-muted themselves, so they need
   the important utility to come back up to the same contrast as the title.
 
-  Like ExecRow, a live row is inert: there is no registration URL to link to,
-  and the expand is a pointer-only response to attention rather than an
-  affordance.
-*/
+  An upcoming event with a registration link gets a Register button. The
+  link is the row's own register_url and opens in a new tab; anything that
+  is not an absolute http(s) address renders no button. The row itself
+  stays inert, so the button is the one control in it and the expand is a
+  pointer-only response to attention.
 
-/*
-  events.time is 24-hour HH:MM (migration 9). Shown the way the club writes
-  times on posters, "6:30 PM". Anything that is not HH:MM is a row from
-  before the migration that did not parse, and is shown as written.
+  Row Expand is off while editing, like every self-running motion. The
+  button is label-only EditableButton: while editing its label is a field
+  over an inert button face, so it goes nowhere.
 */
-function formatTime(time: string) {
-  const match = /^(\d{2}):(\d{2})$/.exec(time);
-  if (!match) return time;
-  const hours = Number(match[1]);
-  return `${hours % 12 || 12}:${match[2]} ${hours < 12 ? 'AM' : 'PM'}`;
-}
 
 interface TimelineEventProps {
   event: Event;
@@ -36,11 +33,17 @@ interface TimelineEventProps {
 }
 
 export default function TimelineEvent({ event, index }: TimelineEventProps) {
+  const { editing } = useEditMode();
+  const { text } = useSiteContent();
   const date = parseISO(event.date);
   const isPast = isBefore(startOfDay(date), startOfDay(new Date()));
 
+  /* Null for anything that is not an http(s) URL (src/lib/event-display.ts). */
+  const registerUrl = registerHref(event.register_url);
+  const canRegister = !isPast && registerUrl !== null;
+
   return (
-    <li className={`row ${isPast ? '' : 'row-live'}`}>
+    <li className={`row ${isPast || editing ? '' : 'row-live'}`}>
       <div className="flex w-full flex-wrap items-center gap-x-[14px] gap-y-1">
         <span className="label text-ink! w-[30px] shrink-0">
           {String(index).padStart(2, '0')}
@@ -56,8 +59,16 @@ export default function TimelineEvent({ event, index }: TimelineEventProps) {
         </time>
 
         {!isPast && (
-          <span className="order-3 ml-auto shrink-0">
+          <span className="order-3 ml-auto flex shrink-0 items-center gap-3">
             <Chip status="ok">Open</Chip>
+            {canRegister && (
+              <EditableButton
+                labelKey="events.ledger.register_label"
+                variant="secondary"
+                href={registerUrl ?? ''}
+                aria-label={`${text('events.ledger.register_label')}, ${event.title}`}
+              />
+            )}
           </span>
         )}
       </div>

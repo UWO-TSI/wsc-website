@@ -5,10 +5,12 @@ import type { Sponsor, QueryError } from '@/types/database';
 import AsyncStateWrapper from '@/components/shared/async-state-wrapper';
 import Slab from '@/components/ui/slab';
 import Skeleton from '@/components/ui/skeleton';
-import LogoCard from '@/components/sponsors/logo-card';
+import LogoCard, { TILE_SIZE } from '@/components/sponsors/logo-card';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
 import { useSiteContent } from '@/providers/site-content-provider';
+import { EditableText, useDraftFile, useEditMode } from '@/edit';
+import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 
 interface LogoWallProps {
   sponsors: Sponsor[];
@@ -17,20 +19,22 @@ interface LogoWallProps {
   onRetry?: () => void;
 }
 
-const GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4';
+/* Centred rows, the same spacing as the still marquee on the home page. */
+const WALL =
+  'flex flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8 py-[clamp(1rem,4vw,2.5rem)]';
 
 /*
-  Built to the same grid as the wall, including the lead tile spanning two
-  columns, so the layout does not reshuffle when the sponsors arrive.
+  Built to the same rows and tile sizes as the wall, so the layout does not
+  reshuffle when the sponsors arrive.
 */
 function WallSkeleton() {
   return (
-    <div className={GRID}>
-      {Array.from({ length: 8 }, (_, i) => (
+    <div className={WALL}>
+      {Array.from({ length: 6 }, (_, i) => (
         <Skeleton
           key={i}
           index={i}
-          className={`aspect-[3/2] rounded-md ${i === 0 ? 'col-span-2' : ''}`}
+          className={`rounded-md ${i < 2 ? TILE_SIZE.lead : TILE_SIZE.mid}`}
         />
       ))}
     </div>
@@ -41,13 +45,14 @@ function WallSkeleton() {
   The sponsors table has no tier column, and hard rule 1 forbids touching
   supabase/, so every sponsor ships in one tier group: the gold bar and label
   reading "Partners". --gold, not --accent, because a sponsor's standing has
-  to read the same in both themes. Tile scale carries the hierarchy inside
+  to read the same on every page. Tile scale carries the hierarchy inside
   that group, taken from display_order rather than an invented tier
   (design-system/adoption.md, Data decisions).
 
-  The bed is --sunken, a lighter gray than the tiles. Each mark keeps the
-  constant --logo-ground tile, so a black plate still reads against the bed
-  and a light mark still has the dark ground it was drawn for.
+  The whole wall sits on the constant --logo-ground slab and the marks sit
+  directly on it, the same treatment as the landing marquee. A dark plate
+  per logo on a light bed read as a grid of separate dark patches
+  (design-system/components.md, LogoWall).
 
   The slab and the tier bar are outside the async wrapper: both are known
   before the query resolves, so they paint immediately and only the grid
@@ -60,10 +65,19 @@ function WallSkeleton() {
   it once, so the marks arrive together instead of each one popping in as
   its response lands.
 */
-function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
-  const ids = sponsors.flatMap((sponsor) =>
-    getPublicUrl('sponsor-logos', sponsor.logo_path ?? null) ? [sponsor.id] : []
-  );
+function LogoGrid(props: { sponsors: Sponsor[] }) {
+  /* While editing, the engine's wall editor renders instead (src/edit/list-draft.ts). */
+  if (useListEditBranch()) return <ListEditBranch name="sponsors" props={props} />;
+  return <LogoGridView {...props} />;
+}
+
+function LogoGridView({ sponsors }: { sponsors: Sponsor[] }) {
+  /* A logo chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('sponsors');
+  const logoOf = (sponsor: Sponsor) =>
+    draftFile(sponsor.id, 'logo_path') ?? getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
+
+  const ids = sponsors.flatMap((sponsor) => (logoOf(sponsor) ? [sponsor.id] : []));
   const pending = useRef(new Set(ids));
   const [ready, setReady] = useState(ids.length === 0);
   const ref = useReveal<HTMLDivElement>({ ready });
@@ -74,11 +88,12 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
   };
 
   return (
-    <div ref={ref} className={GRID}>
+    <div ref={ref} className={WALL}>
       {sponsors.map((sponsor, index) => (
         <LogoCard
           key={sponsor.id}
           sponsor={sponsor}
+          logoUrl={logoOf(sponsor)}
           rank={index}
           total={sponsors.length}
           onReady={() => settle(sponsor.id)}
@@ -90,18 +105,21 @@ function LogoGrid({ sponsors }: { sponsors: Sponsor[] }) {
 
 export default function LogoWall({ sponsors, loading, error, onRetry }: LogoWallProps) {
   const { text } = useSiteContent();
+  const { editing } = useEditMode();
 
   return (
-    <Slab tone="sunken">
-      <div className="mb-6 flex items-center gap-3">
+    <Slab tone="logo" aria-labelledby="partners-wall-label">
+      <div className="flex items-center justify-center gap-3">
         <span className="h-1 w-10 rounded-pill bg-gold" aria-hidden="true" />
-        <span className="label text-gold">{text('partners.wall.label')}</span>
+        {/* Important: the logo slab mutes every .label, and the tier mark is gold. */}
+        <EditableText k="partners.wall.label" id="partners-wall-label" className="label text-gold!" />
       </div>
 
       <AsyncStateWrapper
         loading={loading}
         error={error}
-        data={sponsors}
+        /* An empty wall still shows the editor, so its Add tile is there. */
+        data={editing ? [editing] : sponsors}
         onRetry={onRetry}
         emptyMessage={text('partners.wall.empty')}
         skeleton={<WallSkeleton />}

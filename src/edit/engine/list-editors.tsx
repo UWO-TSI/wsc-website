@@ -8,15 +8,18 @@ import RevealImage from '@/components/ui/reveal-image';
 import { AVATAR_SIZES, AVATAR_WIDTH, GRID, titleOf } from '@/components/team/executive-grid';
 import { byDateDesc } from '@/components/events/timeline';
 import { TILE_SIZE, scaleFor } from '@/components/sponsors/logo-card';
+import CardRow, { CARD_ROW_ITEM } from '@/components/ui/card-row';
+import { FORMAT_CARD, FORMAT_PHOTO, FORMAT_PHOTO_SIZES } from '@/components/landing/formats-section';
 import { EditableButton, useEditSnapshot } from '@/edit';
 import { externalLinkProps } from '@/lib/link-utils';
 import { LIMITS } from '@/lib/admin-config';
+import { SITE_IMAGES_BUCKET } from '@/lib/image-slots';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
-import type { Event, ExecArea, ExecGroup, Executive, SiteStat, Sponsor } from '@/types/database';
+import type { Event, EventFormat, ExecArea, ExecGroup, Executive, SiteStat, Sponsor } from '@/types/database';
 import { COPY } from '@/edit/engine/copy';
 import { addDraftArea, draftAreas, useDraftVersion } from '@/edit/engine/draft-store';
 import {
@@ -41,17 +44,17 @@ import { LinkField } from '@/edit/engine/link-field';
 import { blurField, edited, focusField, setUi } from '@/edit/engine/ui-store';
 
 /*
-  The edit branches of the four lists: the roster, the event ledger, the
-  logo wall and the counted figures. Each takes the same props as the
+  The edit branches of the five lists: the roster, the event ledger, the
+  logo wall, the counted figures and the format cards. Each takes the same props as the
   visitor component it replaces, gets its rows from the page's
   useSupabaseQuery (drafts already laid over them), and writes through the
   list draft. Every field is inline, the Add tile is the last cell, the
   Grip reorders, the chips hide and show the state, and Remove is in the
   tray.
 
-  Column limits are the database's CHECK constraints (migrations 7, 9 and
-  the register_url migration), so a field never accepts more than the row
-  can store.
+  Column limits are the database's CHECK constraints (migrations 7, 9, the
+  register_url migration and the event_formats migration), so a field
+  never accepts more than the row can store.
 */
 
 const LIMIT = {
@@ -65,6 +68,9 @@ const LIMIT = {
   statValue: 99999,
   statSuffix: 2,
   statLabel: 24,
+  formatTitle: 28,
+  formatBody: 140,
+  formatMeta: 60,
 };
 
 /** The characters a figure's number row reserves: the number's digits and its suffix. */
@@ -732,7 +738,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
               onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
               className={`${itemClass(state, !s.visible, reorder.held === s.id, leaving)} flex flex-col items-center gap-2 text-center`}
             >
-              <span className="flex items-baseline gap-1 font-data text-[clamp(2.4rem,7vw,56px)] font-medium leading-none tracking-[-0.02em] tabular-nums">
+              <span className="flex items-baseline gap-1 font-text text-[clamp(2.4rem,7vw,56px)] font-semibold leading-none tracking-[-0.03em] tabular-nums">
                 <InlineNumber
                   table={table}
                   id={s.id}
@@ -784,7 +790,7 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
             type, so only the width uses this font. */}
         <div
           key={`add-${adds}`}
-          className="flex max-w-full font-data text-[clamp(2.4rem,7vw,56px)]"
+          className="flex max-w-full font-text font-semibold text-[clamp(2.4rem,7vw,56px)]"
           style={{ width: `calc(${FIGURE_CHARS}ch - ${FIGURE_CHARS * 0.02}em + 56px)` }}
         >
           <AddTile
@@ -803,9 +809,156 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
   );
 }
 
+/* ── Format cards ── */
+
+/*
+  The home page's CardRow with every card, hidden ones included, as the
+  visitor card with its fields inline: the photo with Replace or Add photo,
+  the name, the sentence and the companies line. The chips and the Grip sit
+  on the photo's corners, as on a headshot. The Add tile is the last card.
+*/
+export function FormatsEditor({ formats }: { formats: EventFormat[] }) {
+  const table = 'event_formats';
+  const api = useList<EventFormat>(table);
+  const copy = COPY.list[table];
+  const listRef = useRef<HTMLUListElement>(null);
+  const focusNew = useFocusNew();
+  const [adds, setAdds] = useState(0);
+  const nameOf = (f: EventFormat) => f.title.trim() || copy.fresh;
+
+  const reorder = useReorder({ api, table, rows: formats, listRef, nameOf });
+  const { items, done } = useLeaving(formats, api, reorder.capture, listRef);
+
+  useRowTray(table, (id, field, row): RowTrayView => {
+    const f = row as unknown as EventFormat;
+    const text =
+      field === 'grip' ? COPY.gripHint
+      : field === 'image_path' ? COPY.rowPhotoHint
+      : field === 'body' ? COPY.formatBodyHint
+      : field === 'meta' ? COPY.formatMetaHint
+      : COPY.formatHint;
+    return {
+      label: COPY.rowHead(copy.kind, f.title.trim() || copy.fresh),
+      body: text,
+      actions: <RemoveButton api={api} table={table} id={id} />,
+    };
+  });
+
+  const add = () => {
+    reorder.capture();
+    const id = api.add({ title: '', body: null, meta: null, image_path: null, visible: true } as Partial<EventFormat>);
+    setAdds((n) => n + 1);
+    focusNew(`[data-ed-field="event_formats.${id}.title"] textarea`);
+  };
+
+  return (
+    <>
+      <CardRow label="Event formats" count={items.length + 1} listRef={listRef}>
+        {items.map(({ row: f, leaving }, index) => {
+          const state = api.state(f.id);
+          const src = api.fileUrl(f.id, 'image_path') ?? getPublicUrl(SITE_IMAGES_BUCKET, f.image_path);
+          const who = nameOf(f);
+          return (
+            <li
+              key={f.id}
+              data-key={f.id}
+              data-leaving={leaving ? '' : undefined}
+              inert={leaving}
+              onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(f.id)}
+              className={`${itemClass(state, !f.visible, reorder.held === f.id, leaving)} ${CARD_ROW_ITEM}`}
+            >
+              <article className={FORMAT_CARD}>
+                <span className="relative block rounded-md">
+                  <RevealImage src={src} alt="" sizes={FORMAT_PHOTO_SIZES} className={FORMAT_PHOTO} index={index} />
+                  <RowPhoto
+                    api={api}
+                    table={table}
+                    id={f.id}
+                    column="image_path"
+                    filled={!!src}
+                    what={COPY.field.photo}
+                    who={who}
+                    head={COPY.rowHead(copy.kind, who)}
+                  />
+                  <VisibilityChip
+                    table={table}
+                    id={f.id}
+                    who={who}
+                    visible={f.visible}
+                    onToggle={() => api.hide(f.id, f.visible)}
+                    className="ed-over-tl"
+                  />
+                  <button {...reorder.gripProps(f, index)} className="ed-grip ed-over-tr">
+                    <GripIcon />
+                  </button>
+                </span>
+                <div className="flex flex-col gap-2 px-3 pb-3">
+                  <RowField
+                    table={table}
+                    id={f.id}
+                    column="title"
+                    value={f.title}
+                    max={LIMIT.formatTitle}
+                    label={COPY.field.formatName}
+                    who={who}
+                    block
+                    className="title-sm"
+                    onChange={(title) => api.update(f.id, { title })}
+                  />
+                  <RowField
+                    table={table}
+                    id={f.id}
+                    column="body"
+                    value={f.body ?? ''}
+                    max={LIMIT.formatBody}
+                    label={COPY.field.formatBody}
+                    who={who}
+                    block
+                    className="body text-ink-muted"
+                    onChange={(body) => api.update(f.id, { body: body || null })}
+                  />
+                  <RowField
+                    table={table}
+                    id={f.id}
+                    column="meta"
+                    value={f.meta ?? ''}
+                    max={LIMIT.formatMeta}
+                    label={COPY.field.formatMeta}
+                    who={who}
+                    block
+                    className="meta"
+                    onChange={(meta) => api.update(f.id, { meta: meta || null })}
+                  />
+                  <span className="flex flex-wrap items-center gap-2">
+                    <RowOptions table={table} id={f.id} who={who} />
+                    <StateChip state={state} />
+                  </span>
+                </div>
+              </article>
+            </li>
+          );
+        })}
+        <li key={`add-${adds}`} className={CARD_ROW_ITEM}>
+          <AddTile
+            label={copy.add}
+            shape="card"
+            appear={adds > 0}
+            full={fullAt(api, formats, LIMITS.MAX_EVENT_FORMATS, copy.full)}
+            onAdd={add}
+          />
+        </li>
+      </CardRow>
+      <p className="sr-only" role="status">
+        {reorder.announce}
+      </p>
+    </>
+  );
+}
+
 export const LIST_EDITORS = {
   executives: ExecutivesEditor,
   events: EventsEditor,
   sponsors: SponsorsEditor,
   stats: StatsEditor,
+  formats: FormatsEditor,
 };

@@ -28,7 +28,8 @@ import {
   Publish writes every change in the draft, in three passes:
 
    1. Uploads. Each chosen photo goes to the site-images bucket under a new
-      object name, and each drafted headshot or logo to its own bucket.
+      object name, and each drafted headshot, logo or format card photo to
+      its list's bucket.
       Nothing points at them yet, so a failure here changes nothing a
       visitor sees.
    2. Rows. site_content gets UPDATE on `value` only, which is all the
@@ -86,11 +87,12 @@ export interface ListPublisher {
 export const LIST_FILES: Partial<Record<ListTable, { bucket: string; column: string }>> = {
   executives: { bucket: 'headshots', column: 'headshot_path' },
   sponsors: { bucket: 'sponsor-logos', column: 'logo_path' },
+  event_formats: { bucket: SITE_IMAGES_BUCKET, column: 'image_path' },
 };
 
 /*
   The field that names a row in each list: an executive's name, an event's
-  title, a partner's name, a figure's label. A new row without it, or a
+  title, a partner's name, a figure's label, a format card's title. A new row without it, or a
   published row whose name was cleared, blocks Publish (spec section 3,
   Lists; the column is NOT NULL), so the bar checks missingName() before it
   calls publishDraft.
@@ -100,6 +102,7 @@ export const NAME_FIELD: Record<ListTable, string> = {
   events: 'title',
   sponsors: 'name',
   site_stats: 'label',
+  event_formats: 'title',
 };
 
 /** The first row whose name field is empty, or null when every row has one. */

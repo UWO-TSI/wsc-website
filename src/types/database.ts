@@ -70,6 +70,20 @@ export interface SiteStat {
   display_order: number;
 }
 
+/** One card in the home page row of event formats. */
+export interface EventFormat {
+  id: string;
+  title: string;
+  /** One sentence on what happens there. Null hides the line. */
+  body: string | null;
+  /** Who ran it, e.g. "With Owner.com". Null hides the line. */
+  meta: string | null;
+  /** Object name in the site-images bucket, or null for the empty frame. */
+  image_path: string | null;
+  visible: boolean;
+  display_order: number;
+}
+
 /** Which uploaded file fills a design photo slot. No row means empty. */
 export interface SiteImage {
   slot: string;

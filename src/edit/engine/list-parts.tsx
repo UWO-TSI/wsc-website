@@ -395,7 +395,7 @@ export function AddTile({
   onAdd,
 }: {
   label: string;
-  shape: 'disc' | 'row' | 'logo' | 'figure';
+  shape: 'disc' | 'row' | 'logo' | 'figure' | 'card';
   appear: boolean;
   /** Why the list takes no more items, or undefined while it does. */
   full?: string;

@@ -22,18 +22,18 @@ Published copy: https://claude.ai/artifact/FVj2N5CmLvssoHdBkFiG15
 
 ## Type
 
-Three families, each with one job. Mixing the jobs is the fastest way to make this look like every other site.
+Two families. Archivo sets titles. Instrument Sans sets everything else, in two treatments: running copy, and data (labels, dates, counts). There is no monospace face.
 
 | Family | Face | Job |
 | --- | --- | --- |
 | `--f-display` | Archivo 800 to 900 | Every title. Always uppercase. |
-| `--f-text` | Instrument Sans | All running copy and UI labels. |
-| `--f-data` | Geist Mono | Dates, counts, percentages, field labels, eyebrows. |
+| `--f-text` | Instrument Sans 400 to 500 | Running copy, buttons and UI text. |
+| `--f-text` as data | Instrument Sans 500 to 600 | `.label`: 600, 11px, upper case, 0.14em tracking, for field labels, chips and the brand strip's one line. The site uses no eyebrows. `.meta`: 500, 13px, tabular figures, for dates, counts and captions. Figures: 600 with tabular figures and -0.03em tracking. |
 
 Load from Google Fonts:
 
 ```html
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Geist+Mono:wght@400..600&family=Instrument+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Instrument+Sans:wght@400..700&display=swap">
 ```
 
 Running copy holds a 62 character measure. `.meta` and any figure set `tabular-nums`.
@@ -44,7 +44,7 @@ Running copy holds a 62 character measure. `.meta` and any figure set `tabular-n
 - Text on `--page`, `--raised` and `--sunken` is `--ink`; secondary is `--ink-muted`. `--ink-faint` is near 3.4:1 and is for 24px-and-up marks, disabled labels and index numerals only, never running copy.
 - On `--inverse` use `--on-inverse`. On `--accent` use `--on-accent`. Neither ever appears on the page ground.
 - A tile inside an inverse slab is `--inverse-tile`: `--on-inverse` at 7 percent.
-- A photo with text set on it (the hero) takes `--inverse-veil`: `--inverse` at 75 percent over the photo. That strength keeps the slab's secondary ink (`--on-inverse` at 70 percent) at 4.7:1 over a pure white photo, so any photo passes AA.
+- A photo with text set on it takes `--inverse-veil`: `--inverse` at 75 percent over the photo. That strength keeps the slab's secondary ink (`--on-inverse` at 70 percent) at 4.7:1 over a pure white photo, so any photo passes AA.
 - The accent as a **shape** is `--accent`. The accent as a **word** is `--accent-ink`. On a loud slab the word falls back to the slab's own ink (`.accent-mark`), because `--accent-ink` is the ground itself there.
 - The focus ring is `--focus` (velvet). On an inverse, accent or logo slab it takes the slab's text colour, because velvet does not show on those grounds.
 - `--logo-ground` is the constant near-black behind every supplied logo, with `--on-logo-ground` as its ink.
@@ -75,18 +75,18 @@ A page is a stack of containers on `--page`. A section is a container that spans
 
 Rounded shapes stay for the things inside a container: photos, fields, buttons and chips.
 
-Adjacent containers never share a tone. `--inverse` and `--accent` never touch, and there is one of them per page. The page head (or the home hero) above the closing band is the one exception.
+Adjacent containers never share a tone. `--inverse` and `--accent` never touch, and there is one of them per page. The one exception is the page's single inverse container above the closing band: the page head on an inner page, the proof band on Home.
 
-A container has a tone of its own only where it marks a change of role. On the inner pages (About, Events, Executive team, Partners, Contact and the legal pages) the page head and the closing band are the containers. Every content section between them sits bare on `--page`, with no raised or sunken tint, and is separated from its neighbours by room: `--pad-section` above and below. Two content sections keep a ground: the contact form, because its fields are a group on a `--sunken` bed, and the Partners logo wall, because supplied logos are light marks that need `--logo-ground`. The home page keeps its slabs.
+A container has a tone of its own only where it marks a change of role. On the inner pages (About, Events, Executive team, Partners, Contact and the legal pages) the page head and the closing band are the containers. Every content section between them sits bare on `--page`, with no raised or sunken tint, and is separated from its neighbours by room: `--pad-section` above and below. Three content sections keep a ground: the contact form, because its fields are a group on a `--sunken` bed; the Partners logo wall, because supplied logos are light marks that need `--logo-ground`; and the About story grid, whose raised and sunken facts are cells of one grid. The home page keeps its slabs.
 
-The hero is a full-width inverse container with a photo slot (`home.hero.image1`) as its background, under `--inverse-veil`. The footer takes `--pad-section` top and bottom, so it reads as a section.
+The home hero is one full-bleed photo under `--inverse-veil` that fills the first screen, with the centred head over it, so the first screen shows the club at work. The brand strip follows directly below. The hero photo counts as a photo, not as the page's inverse container. The footer takes `--pad-section` top and bottom, so it reads as a section.
 
 A photo slot with no photo shows a placeholder at the slot's frame and aspect ratio: the skeleton surface, still, with no label. It runs the same reveal a photo would, so the layout and the motion read before photos exist. Visitors see it too.
 
 ## Alignment
 
-- **Selling moments are centred:** the hero, page heads, closing bands, and a home section head whose section is one message and a link (About, Partners). The order is the eyebrow, the bold Archivo title, at most three lines of copy, then the buttons. Use `CentredHead`.
-- **A section whose job is reading or scanning content is left-aligned, head included:** its eyebrow and title sit on the same left edge as the content below them. This covers the About story, the event ledger and the home events preview, the team roster, the contact form, the legal text and every long paragraph. Use `SectionHead`. A centred head over left-aligned content puts the head and the content on different edges.
+- **Selling moments are centred:** the hero, page heads, closing bands, and a home section head whose section is one message and a link (About, Partners). The order is the bold Archivo title, at most three lines of copy, then the buttons. Use `CentredHead`.
+- **A section whose job is reading or scanning content is left-aligned, head included:** its title sits on the same left edge as the content below them. This covers the About story grid, the event ledger and the home events preview, the team roster, the legal text and every long paragraph. Use `SectionHead`. The contact form is the exception: its 640px column is centred in its sunken slab under the centred page head, with labels and inputs left-aligned inside it. A centred head over left-aligned content puts the head and the content on different edges.
 
 ## Signature texture
 
@@ -97,7 +97,7 @@ Lit velvet is the texture on every velvet and velvet black container. There is n
 - **Grain.** Fine and coarse fractal noise together under the dot matrix. It moves six times a second and stops only under reduced motion.
 - **One unit.** A dot is `--tex-dot` across, a ribbon line is `--tex-dot` thick and solid, and both repeat every `--tex-pitch`.
 - **Ribbon.** Parallel lines offset from one curve, strongest at the centre, never crossing. Drawn once per size; the same band always draws the same way. It never moves.
-- **Five shapes.** `sweep` for a closing band, `rise` for a statement slab, `arc` for a stats band, `waist` for a page head, `pair` for a wide, short band.
+- **Five shapes.** `sweep` for a closing band, `rise` for a statement slab, `arc` for a stats band, `waist` for a page head, `pair` for a wide, short band. A page head may take any shape but `sweep`, so the inner pages differ from one another and from the closing band.
 
 The numbers come from `docs/redesign/reference.html`. Change them there first.
 

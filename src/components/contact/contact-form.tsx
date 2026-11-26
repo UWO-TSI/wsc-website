@@ -50,14 +50,15 @@ export function orgTypeFromParam(value: string | null | undefined): string {
   The form section is its own full-width sunken slab, the one content
   section on an inner page that keeps a ground: the fields are a group, and
   each --page well needs the sunken bed to read as a field. The form is a
-  640px column on the gutter's left edge, labels and confirmation included,
-  because it is filled in, not sold. Its id is the target of the closing
-  band's business button on this page.
+  640px column centred in the slab, under the centred page head. Labels and
+  inputs inside it stay left-aligned for reading; the submit button, the
+  failure message and the confirmation are centred on the column. Its id is
+  the target of the closing band's business button on this page.
 */
 export const CONTACT_FORM_ID = 'contact-form';
 
 const SECTION_CLASS = 'scroll-mt-[clamp(5rem,8vw,7rem)]';
-const COLUMN_CLASS = 'w-full max-w-[640px]';
+const COLUMN_CLASS = 'mx-auto w-full max-w-[640px]';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -154,11 +155,11 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
     return (
       <Slab tone="sunken" id={CONTACT_FORM_ID} className={SECTION_CLASS}>
         <div
-          className={`${COLUMN_CLASS} flex flex-col items-start gap-4 py-[clamp(2rem,5vw,3rem)]`}
+          className={`${COLUMN_CLASS} flex flex-col items-center gap-4 py-[clamp(2rem,5vw,3rem)]`}
         >
           <Chip status="ok">Sent</Chip>
-          <EditableText k="contact.form.sent_title" as="p" className="title-sm" />
-          <EditableText k="contact.form.sent_body" as="p" className="body-sm measure" />
+          <EditableText k="contact.form.sent_title" as="p" className="title-sm text-center" />
+          <EditableText k="contact.form.sent_body" as="p" className="body-sm measure text-center" />
           <Button
             variant="tertiary"
             onClick={() => {
@@ -249,7 +250,7 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
 
         <div aria-live="polite" aria-atomic="true">
           {submitFailed && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col items-center gap-2 text-center">
               <Chip status="alert">Not sent</Chip>
               <p className="body-sm">
                 Something went wrong on our end. Check your connection and try again.
@@ -263,7 +264,7 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
           type="submit"
           disabled={isSubmitting}
           label={isSubmitting ? 'Sending' : undefined}
-          className="self-start"
+          className="self-center"
         />
       </form>
     </Slab>

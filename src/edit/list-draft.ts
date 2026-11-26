@@ -23,7 +23,7 @@ import { useEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
   list editor puts that attribute on the name field's shell.
 */
 
-export type ListTable = 'executives' | 'events' | 'sponsors' | 'site_stats';
+export type ListTable = 'executives' | 'events' | 'sponsors' | 'site_stats' | 'event_formats';
 
 /** The column that hides a row from visitors, per table. */
 export const LIST_VISIBILITY_COLUMN: Record<ListTable, string> = {
@@ -31,6 +31,7 @@ export const LIST_VISIBILITY_COLUMN: Record<ListTable, string> = {
   events: 'published',
   sponsors: 'active',
   site_stats: 'visible',
+  event_formats: 'visible',
 };
 
 /** Ids of rows added in the draft start with this, so they never match a uuid. */
@@ -86,7 +87,7 @@ export interface ListDraftApi<Row extends { id: string } = { id: string }> {
   visitor version with the draft rows in it.
 */
 
-export type ListEditorName = 'executives' | 'events' | 'sponsors' | 'stats';
+export type ListEditorName = 'executives' | 'events' | 'sponsors' | 'stats' | 'formats';
 
 export interface ListEngineApi extends EditEngineApi {
   listEditors: Record<ListEditorName, ComponentType<never>>;

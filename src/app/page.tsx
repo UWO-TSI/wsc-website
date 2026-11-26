@@ -3,16 +3,24 @@
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { Event, Sponsor } from '@/types/database';
 import Hero from '@/components/landing/hero';
-import StatsRow from '@/components/landing/stats-row';
-import AboutSection from '@/components/landing/about-section';
-import EventsPreview from '@/components/landing/events-preview';
 import PartnersMarquee from '@/components/landing/partners-marquee';
+import FormatsSection from '@/components/landing/formats-section';
+import ProofBand from '@/components/landing/proof-band';
+import EventsPreview from '@/components/landing/events-preview';
+import AudienceSplit from '@/components/landing/audience-split';
 import ClosingBand from '@/components/layout/closing-band';
+import { EditableButton } from '@/edit';
 
 /*
-  The sales order: the promise (hero), the numbers that back it, the
-  partners as proof, what the club is, what is on, and the promise again
-  next to the same button (closing band).
+  The sales order, proof first: the promise with photos of the club at work
+  (hero), the companies it works with (brand strip), the three formats with
+  a photo each, the record in numbers (proof band), the next event, one
+  tile per audience, and both buttons again (closing band).
+
+  Tones, top to bottom: page, logo, raised, inverse, page, sunken, accent.
+  No two neighbours share a tone, and inverse and accent never touch. Home
+  has no PageHead, so its one inverse slab is the proof band
+  (design-system/adoption.md, Before you call a component done, rule 4).
 
   The visibility filters are not redundant with RLS. Anonymous visitors only
   ever get published rows, but RLS lets a signed-in admin read drafts, and an
@@ -42,11 +50,20 @@ export default function LandingPage() {
   return (
     <div className="stack">
       <Hero />
-      <StatsRow />
       <PartnersMarquee sponsors={sponsors} loading={sponsorsLoading} />
-      <AboutSection />
+      <FormatsSection />
+      <ProofBand />
       <EventsPreview events={events} loading={eventsLoading} error={eventsError} />
-      <ClosingBand />
+      <AudienceSplit />
+      <ClosingBand
+        businessAction={
+          <EditableButton
+            labelKey="home.hero.partner_label"
+            hrefKey="home.hero.partner_href"
+            variant="secondary"
+          />
+        }
+      />
     </div>
   );
 }

@@ -1,14 +1,13 @@
 'use client';
 
-import Eyebrow from '@/components/ui/eyebrow';
 import { EditableLines, EditableText } from '@/edit';
 import { useReveal } from '@/lib/reveal';
 import type { SiteContentKey } from '@/lib/site-content-defaults';
 
 /*
   SectionHead: the left-aligned head of a section whose job is reading or
-  scanning content (the About story, the event ledger). Eyebrow, the masked
-  title, an optional line of meta or copy, then any buttons, all on the
+  scanning content (the About story, the event ledger). The masked title,
+  an optional line of meta or copy, then any buttons, all on the
   left edge the content below them starts from. CentredHead is the centred
   head, for selling moments only.
 
@@ -29,10 +28,6 @@ interface SectionHeadProps {
   title?: string[];
   /** One site_content key per visual line. */
   titleKeys?: SiteContentKey[];
-  eyebrow?: string;
-  eyebrowKey?: SiteContentKey;
-  /** Section numeral, rendered by Eyebrow in the accent. */
-  index?: string;
   meta?: string;
   /** At most three lines of copy under the title. */
   bodyKey?: SiteContentKey;
@@ -46,9 +41,6 @@ interface SectionHeadProps {
 export default function SectionHead({
   title,
   titleKeys = [],
-  eyebrow,
-  eyebrowKey,
-  index,
   meta,
   bodyKey,
   id,
@@ -58,17 +50,9 @@ export default function SectionHead({
 }: SectionHeadProps) {
   const ref = useReveal<HTMLDivElement>();
   const Title = as;
-  const hasEyebrow = Boolean(eyebrow || eyebrowKey);
 
   return (
     <div ref={ref} className={`flex flex-col items-start gap-4 text-left ${className}`.trim()}>
-      {hasEyebrow && (
-        <div className="flex flex-wrap items-baseline gap-3">
-          <Eyebrow index={index}>{eyebrowKey ? <EditableText k={eyebrowKey} /> : eyebrow}</Eyebrow>
-          {meta && <span className="meta">{meta}</span>}
-        </div>
-      )}
-
       {title ? (
         <Title id={id} className="title">
           {title.map((line) => (
@@ -81,7 +65,7 @@ export default function SectionHead({
         <EditableLines keys={titleKeys} as={as} id={id} className="title" />
       )}
 
-      {!hasEyebrow && meta && <span className="meta">{meta}</span>}
+      {meta && <span className="meta">{meta}</span>}
 
       {bodyKey && <EditableText k={bodyKey} as="p" className="body measure" />}
 

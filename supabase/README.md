@@ -4,7 +4,7 @@
 
 The __Supabase__ backend powers the **Western Sales Club (WSC) website** as a small, secure **content management system**. It provides:
 
-- **Database**: Events, sponsors, executive team, gallery content, executive roles, headline statistics, and every editable string on the public site, with visibility controls so only approved items appear.
+- **Database**: Events, sponsors, executive team, gallery content, executive roles, headline statistics, the home page format cards, and every editable string on the public site, with visibility controls so only approved items appear.
 - **Authentication**: Google OAuth for admin sign-in, plus a mandatory TOTP second factor. The public site does not require login.
 - **Admin model**: Access is controlled by an **allowlist** that admins manage themselves. Membership is granted by invite and lasts until another admin removes it. One **owner** row cannot be removed through the app.
 - **Storage**: Public buckets for headshots, sponsor logos, event images, gallery photos, and editable site imagery. Files are referenced by object name in the DB; URLs are built at runtime.
@@ -26,6 +26,7 @@ The frontend is treated as **untrusted**. All enforcement (who can read what, wh
 | **exec_groups** | Executive role tiers (President, VP, …) | `visible` (defaults **true**) |
 | **exec_areas** | Executive areas (Marketing, Events, …) | *none, see below* |
 | **site_stats** | Headline figures on the home page | `visible` (boolean) |
+| **event_formats** | The format cards on the home page ("Sales competitions", ...) | `visible` (boolean) |
 | **site_content** | Every editable string on the site | *none, see below* |
 
 Access-control tables (never public):
@@ -57,7 +58,7 @@ Five **public** buckets (readable by anyone via CDN URL):
 - **sponsor-logos**: Sponsor logos  
 - **event-images**: Event banner/promo images  
 - **gallery**: About-page gallery photos  
-- **site-images**: The 11 photo slots (`site_images`, ids in `src/lib/image-slots.ts`)  
+- **site-images**: The photo slots (`site_images`, ids in `src/lib/image-slots.ts`) and each format card's photo (`event_formats.image_path`)  
 
 Write access to each bucket is restricted by storage RLS to admins **with a verified second factor** (see Security).
 
@@ -85,6 +86,8 @@ Migrations in `supabase/migrations/` are applied in order:
 18. `20261124000003_admin_access_no_expiry.sql`: Admin access no longer expires; drops `admins.expires_at` after removing every non-owner admin and unused invite, so the roster restarts from the owner
 19. `20261124000004_admin_last_sign_in.sql`: `admin_last_sign_ins()`, each admin's last sign-in time
 20. `20261124000005_events_register_url.sql`: Optional `events.register_url`
+21. `20261124000010_site_content_phase2_seed.sql`: Seed the Phase 2 `site_content` keys
+22. `20261125000001_event_formats.sql`: The `event_formats` table, seeded with the four home page cards and their existing photos
 
 ---
 
@@ -106,7 +109,7 @@ Security is designed in **three layers**. Even if one layer is misconfigured, th
 
 | Table | `anon` | `authenticated` |
 |------|--------|-----------------|
-| Content tables (`events`, `sponsors`, `executives`, `gallery_photos`, `site_stats`, `exec_groups`, `exec_areas`) | SELECT only | SELECT, INSERT, UPDATE, DELETE |
+| Content tables (`events`, `sponsors`, `executives`, `gallery_photos`, `site_stats`, `event_formats`, `exec_groups`, `exec_areas`) | SELECT only | SELECT, INSERT, UPDATE, DELETE |
 | `site_content` | SELECT only | SELECT, **UPDATE only** |
 | `admins` | REVOKE ALL | **SELECT, DELETE only** |
 | `admin_invites` | REVOKE ALL | SELECT, INSERT, DELETE |

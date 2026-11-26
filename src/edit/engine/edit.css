@@ -688,9 +688,9 @@ html.ed-on body {
   border: 0;
   background: var(--sunken);
   color: var(--accent-ink);
-  font-family: var(--f-data);
+  font-family: var(--f-text);
   font-size: var(--t-label);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -740,6 +740,14 @@ html.ed-on body {
 .ed-add-figure {
   padding: 24px 12px;
   border-radius: var(--r-md);
+}
+
+/* A format card's tile: as tall as the cards beside it, with the card's
+   --r-lg corners. In an empty row it takes the card photo's 4:5. */
+.ed-add-card {
+  height: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--r-lg);
 }
 
 /* On a sunken ledger the tile takes the page ground, so it still shows. */

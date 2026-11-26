@@ -38,43 +38,30 @@ export interface ImageSlot {
 }
 
 export const IMAGE_SLOTS = {
-  /* The hero's background: the frame is the whole hero, so its shape follows
-     the hero's (wide on a desktop, taller than wide on a phone). 16/9 is the
-     desktop shape. `sizes` is 100vw, and 1920 is a full HD screen at 1x: the
-     photo sits under --inverse-veil, which hides the softness 2x would cure. */
+  /*
+    Slot keys are stable ids: renaming one would orphan the photo already
+    uploaded to it. When a layout moves a photo, the key stays and the
+    section and label change to say where it shows now. The format cards on Home are not slots:
+    each card's photo is in event_formats.image_path, in the same bucket.
+  */
   'home.hero.image1': {
     page: 'Home', section: 'Hero', label: 'Background',
     aspect: 16 / 9, aspectClass: 'aspect-[16/9]', minWidth: 1920,
-    alt: 'Western Sales Club members at a club event',
+    alt: 'Western Sales Club members at a sales competition',
     note: 'Fills the hero behind the headline and is cropped to the hero at each width.',
   },
-  'home.about.image1': {
-    page: 'Home', section: 'About', label: 'Strip, left',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,
-    alt: 'Western Sales Club members at a sales competition',
-  },
-  'home.about.image2': {
-    page: 'Home', section: 'About', label: 'Strip, middle',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,
-    alt: 'Western Sales Club members at a club event',
-  },
-  'home.about.image3': {
-    page: 'Home', section: 'About', label: 'Strip, right',
-    aspect: 4 / 3, aspectClass: 'aspect-[4/3]', minWidth: 560,
-    alt: 'Western Sales Club members presenting',
-  },
   'home.events.image1': {
-    page: 'Home', section: 'Events', label: 'Portrait beside the list',
-    aspect: 3 / 4, aspectClass: 'aspect-[3/4]', minWidth: 840,
+    page: 'Home', section: 'Coming up', label: 'Beside the next event',
+    aspect: 3 / 4, aspectClass: 'aspect-[3/4]', minWidth: 920,
     alt: 'Western Sales Club members at a club event',
   },
   'about.story.image1': {
-    page: 'About', section: 'Fact 1', label: 'Below the paragraphs',
+    page: 'About', section: 'Story', label: 'Top right',
     aspect: 3 / 2, aspectClass: 'aspect-[3/2]', minWidth: 1400,
     alt: 'Western Sales Club members holding a competition prize cheque',
   },
   'about.story.image2': {
-    page: 'About', section: 'Fact 3', label: 'Below the paragraphs',
+    page: 'About', section: 'Story', label: 'Bottom left',
     aspect: 3 / 2, aspectClass: 'aspect-[3/2]', minWidth: 1400,
     alt: 'Western Sales Club members standing with the club banner',
   },

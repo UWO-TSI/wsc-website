@@ -5,19 +5,14 @@ import StorySection from '@/components/about/story-section';
 import ClosingBand from '@/components/layout/closing-band';
 
 /*
-  Page head, the four facts, then the default closing band.
+  The page head, then the production About layout: one grid of four facts
+  and two photographs (StorySection), then the closing band.
 */
 export default function AboutPage() {
   return (
     <div className="stack">
-      <PageHead
-        id="about-title"
-        eyebrowKey="about.header.eyebrow"
-        titleKeys={['about.header.title']}
-      />
-
+      <PageHead id="about-title" texture="rise" titleKeys={['about.header.title']} />
       <StorySection />
-
       <ClosingBand />
     </div>
   );

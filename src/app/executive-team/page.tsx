@@ -12,8 +12,8 @@ import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
 import { useEditMode } from '@/edit';
 
 /*
-  One roster, read left to right. The groups are an ordering, not labelled
-  sections: see the note in executive-grid.tsx.
+  One roster, split into one tier per role. Every portrait is the same size,
+  only the tier order shows rank, and no heading names the tiers: see the note in executive-grid.tsx.
 
   Roles are data now (exec_groups, the Roles tab), so the ordering comes from
   their display_order rather than a hardcoded list. A role the club adds sorts
@@ -52,9 +52,11 @@ export default function ExecutiveTeamPage() {
   );
 
   /*
-    Sort by group first, then keep the display_order the query already applied
-    within each group. Array.prototype.sort is stable, so the second ordering
-    survives the first.
+    Sort by role first, then keep the display_order the query already applied
+    within each role. Array.prototype.sort is stable, so the second ordering
+    survives the first. The visitor view then cuts this into one tier per
+    role; the roster editor takes it flat. A role with nobody visible has no
+    tier, and anyone whose role is not in the lookup goes in one last tier.
   */
   const ordered = useMemo(() => {
     /* An unknown slug sorts last rather than first (indexOf is -1). */
@@ -67,11 +69,23 @@ export default function ExecutiveTeamPage() {
       .sort((a, b) => rank(a.group) - rank(b.group));
   }, [executives, groupOrder, editing]);
 
+  /* The same order cut at each role boundary. Unknown roles share the last tier. */
+  const tiers = useMemo(() => {
+    const tierOf = (slug: string) => (groupOrder.includes(slug) ? slug : '');
+    const out: Executive[][] = [];
+    for (const executive of ordered) {
+      const last = out[out.length - 1];
+      if (last && tierOf(last[0].group) === tierOf(executive.group)) last.push(executive);
+      else out.push([executive]);
+    }
+    return out;
+  }, [ordered, groupOrder]);
+
   return (
     <div className="stack">
       <PageHead
         id="team-heading"
-        eyebrowKey="team.header.eyebrow"
+        texture="pair"
         titleKeys={['team.header.title_line1', 'team.header.title_line2']}
       />
 
@@ -86,9 +100,9 @@ export default function ExecutiveTeamPage() {
           data={editing ? [editing] : ordered}
           onRetry={refetch}
           emptyMessage={text('team.header.empty')}
-          skeleton={<ExecutiveGridSkeleton count={8} />}
+          skeleton={<ExecutiveGridSkeleton />}
         >
-          <ExecutiveGrid executives={ordered} />
+          <ExecutiveGrid tiers={tiers} />
         </AsyncStateWrapper>
       </section>
 

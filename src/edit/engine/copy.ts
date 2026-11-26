@@ -122,6 +122,9 @@ export const COPY = {
   newAreaHint: 'Type the area name and press Enter. Escape cancels.',
   registerLink: (title: string) => `Register link for ${title}`,
   partnerLink: (name: string) => `Link for ${name}`,
+  formatBodyHint: 'One sentence on what happens there. Leave it empty to show no line.',
+  formatMetaHint: 'Who ran it, as in With Owner.com. Leave it empty to show no line.',
+  formatHint: 'Cards show on the home page in this order. Empty lines are left off the card.',
   linkPlaceholder: 'https://',
   list: {
     executives: {
@@ -168,6 +171,17 @@ export const COPY = {
       cleared: 'Add a label for this figure before publishing.',
       full: (n: number) => `The home page shows up to ${n} figures. Remove one before adding another.`,
     },
+    event_formats: {
+      kind: 'Format',
+      fresh: 'New format',
+      add: 'Add format',
+      show: (who: string) => `Show ${who} on home page`,
+      remove: 'Remove format',
+      keep: 'Keep format',
+      missing: 'Add a name for the new format before publishing.',
+      cleared: 'Add a name for this format before publishing.',
+      full: (n: number) => `The home page shows up to ${n} formats. Remove one before adding another.`,
+    },
   },
   /** Names of the row fields, for screen readers and placeholders. */
   field: {
@@ -185,6 +199,10 @@ export const COPY = {
     label: 'Label',
     headshot: 'headshot',
     logo: 'logo',
+    photo: 'photo',
+    formatName: 'Format name',
+    formatBody: 'What happens there',
+    formatMeta: 'Companies involved',
   },
   // Bar: Settings and Sign out. Not in the spec table.
   settings: 'Settings',

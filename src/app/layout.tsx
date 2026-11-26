@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Instrument_Sans, Geist_Mono } from "next/font/google";
+import { Archivo, Instrument_Sans } from "next/font/google";
 import ClientLayout from "@/components/layout/client-layout";
 import "./globals.css";
 
@@ -15,12 +15,6 @@ const archivo = Archivo({
 const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-instrument",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -66,7 +60,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${archivo.variable} ${instrumentSans.variable} ${geistMono.variable}`}
+      className={`${archivo.variable} ${instrumentSans.variable}`}
     >
       <body>
         <ClientLayout>{children}</ClientLayout>

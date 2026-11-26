@@ -105,7 +105,6 @@
   /* families */
   --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --f-text: "Instrument Sans", system-ui, -apple-system, sans-serif;
-  --f-data: "Geist Mono", ui-monospace, Menlo, monospace;
 
   /* fluid type: the scale is 4 roles, nothing between them */
   --t-title-hero: clamp(2.6rem, 11.5vw, 9rem);
@@ -190,7 +189,6 @@
 
   --font-display: var(--f-display);
   --font-text: var(--f-text);
-  --font-data: var(--f-data);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -231,17 +229,18 @@ body {
 .body-sm  { font-size: var(--t-body-sm); line-height: 1.5; color: var(--ink-muted); }
 
 .label {
-  font-family: var(--f-data);
+  font-family: var(--f-text);
   font-size: var(--t-label);
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-muted);
 }
 .meta {
-  font-family: var(--f-data);
+  font-family: var(--f-text);
   font-size: var(--t-meta);
-  letter-spacing: 0.02em;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
 }

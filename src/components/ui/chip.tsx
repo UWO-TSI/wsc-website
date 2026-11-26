@@ -27,7 +27,7 @@ export default function Chip({ children, status = 'neutral', className = '' }: C
 
   return (
     <span
-      className={`inline-flex items-center gap-[7px] rounded-pill bg-page px-[13px] py-2 font-data text-[11px] uppercase tracking-[0.13em] shadow-1 ${tone.text} ${className}`.trim()}
+      className={`inline-flex items-center gap-[7px] rounded-pill bg-page px-[13px] py-2 font-text text-[11px] font-semibold uppercase tracking-[0.13em] shadow-1 ${tone.text} ${className}`.trim()}
     >
       <span aria-hidden="true" className={`size-1.5 rounded-full ${tone.dot}`} />
       {children}

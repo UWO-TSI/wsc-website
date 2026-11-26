@@ -30,8 +30,6 @@ import type { SiteContentKey } from '@/lib/site-content-defaults';
 interface ClosingBandProps {
   /** One key per visual line. Defaults to the Join title. */
   titleKeys?: SiteContentKey[];
-  /** Off by default: an eyebrow over the title Join repeats it. */
-  eyebrowKey?: SiteContentKey;
   /** One or two sentences under the title. Pass null for none. */
   bodyKey?: SiteContentKey | null;
   /** The second button, after Apply to join. Defaults to Get in touch. */
@@ -42,7 +40,6 @@ interface ClosingBandProps {
 
 export default function ClosingBand({
   titleKeys = ['home.cta.title_line1'],
-  eyebrowKey,
   bodyKey = 'home.cta.subtitle',
   businessAction,
   id = 'closing-heading',
@@ -58,7 +55,6 @@ export default function ClosingBand({
     >
       <CentredHead
         id={id}
-        eyebrowKey={eyebrowKey}
         titleKeys={titleKeys}
         bodyKey={bodyKey ?? undefined}
         bodyRole="subtitle"

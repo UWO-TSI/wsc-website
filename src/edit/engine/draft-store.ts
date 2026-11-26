@@ -9,6 +9,8 @@ import {
   type StoredListDraft,
 } from '@/edit/list-draft';
 import { memoryDraftDb, openDraftDb, type DraftDb } from '@/edit/engine/idb';
+import { IMAGE_SLOTS } from '@/lib/image-slots';
+import { SITE_CONTENT } from '@/lib/site-content-defaults';
 
 /*
   The draft: every change an editor has made and not published.
@@ -134,8 +136,12 @@ function readDrafts(records: Array<{ id: string; value: unknown }>) {
   for (const { id, value } of records) {
     const [kind, ...rest] = id.split(':');
     const name = rest.join(':');
-    if (kind === 'text') texts.set(name, value as TextDraft);
-    if (kind === 'photo') photos.set(name, keep(oldPhotos, name, value as FileDraft));
+    /* A draft saved before a key or slot left the code (the home format
+       cards moved to event_formats) is skipped. Publishing it would point
+       a slot no page reads at a new photo and delete the object the slot
+       had, which a format card may now use. */
+    if (kind === 'text' && name in SITE_CONTENT) texts.set(name, value as TextDraft);
+    if (kind === 'photo' && name in IMAGE_SLOTS) photos.set(name, keep(oldPhotos, name, value as FileDraft));
     if (kind === 'file') files.set(name, keep(oldFiles, name, value as FileDraft));
     if (kind === 'list') lists.set(name as ListTable, value as StoredListDraft);
     if (kind === 'areas') {

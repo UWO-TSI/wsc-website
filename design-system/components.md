@@ -10,7 +10,6 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | Preloader | `layout/preloader.tsx` | Curtain |
 | Cursor | `cursor/custom-cursor.tsx` | Magnetic Pull |
 | Button | `ui/button.tsx` | Magnetic Pull |
-| Eyebrow | `ui/eyebrow.tsx` | travels with its title |
 | Field | `contact/field.tsx` | none |
 | KineticHeadline | `landing/hero.tsx` | Line Mask Reveal, Word Cascade |
 | SectionHead | `ui/section-head.tsx` | Line Mask Reveal |
@@ -18,7 +17,11 @@ Every component here has a live card in `floor.html`. Look at the card before bu
 | StatFigure | `ui/stat-figure.tsx` | Counter Roll |
 | Slab | `ui/slab.tsx` | Slab Clip |
 | Texture | `ui/texture.tsx` | Grain Shift (a loop) |
-| Marquee | `landing/partners-marquee.tsx` | Marquee Drift |
+| Marquee, brand strip | `landing/partners-marquee.tsx` | Marquee Drift above 8 logos, none at 8 or fewer |
+| FormatCard, CardRow | `landing/formats-section.tsx`, `ui/card-row.tsx` | Clip Reveal |
+| ProofBand | `landing/proof-band.tsx` | Counter Roll |
+| NextEvent | `landing/events-preview.tsx` | Arrive |
+| AudienceSplit | `landing/audience-split.tsx` | none |
 | ExecutiveGrid | `team/executive-grid.tsx` | one move on arrival |
 | Avatar | `ui/avatar.tsx` | none |
 | Chip | `ui/chip.tsx` | none |
@@ -66,33 +69,31 @@ One primary per section. No icon-only buttons on the marketing site.
 
 ## CentredHead
 
-The head of a selling moment, centred: the page head, the closing band, and a home section that is one message and a link (About, Partners). Eyebrow, the Archivo title (one `site_content` key per visual line, Line Mask Reveal), at most three lines of copy, then the buttons as children in one centred row. Every string is read through the edit components, so in edit mode the head is a filled-in form. A section whose job is reading or scanning content takes SectionHead instead.
+The head of a selling moment, centred: the page head, the closing band, and a home section that is one message and a link (About, Partners). The Archivo title (one `site_content` key per visual line, Line Mask Reveal), at most three lines of copy, then the buttons as children in one centred row. Every string is read through the edit components, so in edit mode the head is a filled-in form. A section whose job is reading or scanning content takes SectionHead instead.
 
-Props: `titleKeys`, `eyebrowKey`, `index`, `bodyKey`, `bodyRole` (`body` for a section head, `subtitle` for a closing band), `id`, `as` (`h2` by default), `children`.
+Props: `titleKeys`, `bodyKey`, `bodyRole` (`body` for a section head, `subtitle` for a closing band), `id`, `as` (`h2` by default), `children`.
 
 ## SectionHead
 
-The head of a section whose job is reading or scanning content, left-aligned: the About story, the event ledger on the home page. Eyebrow (with the section numeral), the Archivo title with Line Mask Reveal, optional meta or copy, then any buttons, all on the left edge the content below starts from. The content keeps that edge: the head and the paragraphs, ledger or photo under it share one left edge, the gutter on an inner page.
+The head of a section whose job is reading or scanning content, left-aligned: the event ledger on the home page. The Archivo title with Line Mask Reveal, optional meta or copy, then any buttons, all on the left edge the content below starts from. The content keeps that edge: the head and the paragraphs, ledger or photo under it share one left edge, the gutter on an inner page.
 
-Props: `titleKeys` (editable, one key per visual line) or `title` (fixed lines), `eyebrowKey` or `eyebrow`, `index`, `meta`, `bodyKey`, `id`, `as`, `children`.
+Props: `titleKeys` (editable, one key per visual line) or `title` (fixed lines), `meta`, `bodyKey`, `id`, `as`, `children`.
 
 ## Hero
 
-The home page's first section, `landing/hero.tsx`. An `inverse` slab with the `waist` ribbon, full width, with the photo slot `home.hero.image1` as its background: a RevealImage at `absolute inset-0` with `veil`, so `--inverse-veil` sits between the photo and the head. The head is centred and keeps KineticHeadline's motion (Line Mask Reveal, Word Cascade, held on the Curtain). The photo is a sibling of the head and runs its own Clip Reveal, held on the Curtain the same way. Empty, it shows the placeholder every other empty slot shows (the 9 percent ink wash on `--page`) as an opaque surface over the ribbon, under the same veil, so the area reads as a photo area; the hero's secondary ink measures 5.0:1 over it. For visitors the photo is decoration under the veil and the h1 carries the meaning, so it renders with an empty alt inside an `aria-hidden` wrapper. In edit mode the photo is a PhotoSlot with Add photo or Replace photo at its bottom left.
-
-Padding is the page head's: `clamp(7.5rem,14vw,11rem)` top and `--pad-section` bottom. The stats row under it takes `--pad-section` on both sides.
+The home page's first section, `landing/hero.tsx`: one full-bleed photo (`home.hero.image1`) that fills the first screen (at least `100svh`), under `--inverse-veil`, on an inverse slab with no ribbon. A centred head over it keeps KineticHeadline's motion (Line Mask Reveal, Word Cascade, held on the Curtain): a two-line headline, the subtitle naming real companies and a real number, then one button per audience, Apply to join (`home.cta.button_*`) and Partner with us (`home.hero.partner_*`, secondary). The brand strip follows directly below. The photo counts as a photo, not as the page's inverse container, so the ProofBand stays inverse. It replaced a hero that set the head over a three-photo mosaic.
 
 ## ClosingBand
 
-The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink. No eyebrow by default, since one over the title Join repeats it; `eyebrowKey` adds one.
+The last section of every public page, directly above the footer. An `accent` slab with the `sweep` ribbon and Slab Clip, holding a CentredHead: the title Join (`home.cta.title_line1`), one or two sentences for both audiences (`home.cta.subtitle`), then two buttons side by side. Apply to join is for students and reads `home.cta.button_*`, the same keys as the nav, the hero and About. The business button, Get in touch (`home.cta.business_*`), is the secondary variant, which on the accent slab takes the slab's own ink.
 
-Apart from the page head (inverse, waist ribbon), it is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
+Apart from the page head (inverse, with a ribbon), it is the page's one loud slab, so no other inverse or accent slab goes on a page that ends with it. A page replaces only the business button, through `businessAction`: Partners passes Become a partner, which opens the contact form, and keeps Apply to join.
 
 ## PageHead
 
-The first section of every public page other than home: an `inverse` slab with the `waist` ribbon holding a CentredHead as the page's `h1` (eyebrow, title, optional copy). One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `--pad-section` bottom. Pages pass keys only, never a padding or a tone.
+The first section of every public page other than home: an `inverse` slab with a ribbon holding a CentredHead as the page's `h1` (title, optional copy). Each page passes its own ribbon through `texture` so the inner pages open differently: About `rise`, Events `arc`, Executive team `pair`, and `waist` (the default) on Partners, Contact and the legal pages. `sweep` is a type error there, because the closing band below draws it. One padding on every page, the hero's: `clamp(7.5rem,14vw,11rem)` top, which clears the fixed nav pill at 375 and 1280, and `--pad-section` bottom. Pages pass keys only, never a padding or a tone.
 
-Props: `titleKeys`, `eyebrowKey`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page). The legal pages, whose copy is not in `site_content`, pass `titleLines` (fixed strings, same Line Mask Reveal, not fields in edit mode) instead of `titleKeys`; CentredHead takes the same prop.
+Props: `titleKeys`, `bodyKey`, `id` (the h1 id the slab is labelled by, unique per page). The legal pages, whose copy is not in `site_content`, pass `titleLines` (fixed strings, same Line Mask Reveal, not fields in edit mode) instead of `titleKeys`; CentredHead takes the same prop.
 
 With the ClosingBand it is the only other loud slab a page may carry.
 
@@ -131,18 +132,18 @@ The signature Lit velvet texture, in `ui/texture.tsx`, drawn only by `Slab`. Lay
 | `sweep` | Closing band. Bottom edge to right edge. |
 | `rise` | Statement slab. Left edge to top edge. |
 | `arc` | Stats band. One crest that swells in the middle. |
-| `waist` | Page head. Wide, narrow, wide. |
+| `waist` | The default page head. Wide, narrow, wide. |
 | `pair` | Wide, short band. Two ribbons, one following the other. |
 
 Accent gives lit velvet, inverse gives lit velvet black. Every shape works on both. The numbers, the `RIBBONS` table and the `SPREAD` table are copied from `docs/redesign/reference.html`; change them there first. Card 17 in `floor.html` renders every shape on both grounds.
 
 ## ExecutiveGrid
 
-The roster is one grid read left to right, not a stack of titled tiers.
+The roster is one tier per role, in `exec_groups.display_order`, and every portrait is the same size in every tier. Only the order of the tiers shows rank, presidents first; a larger portrait for a higher role made the people in later tiers look less important. No heading names a tier, because the title under each name already gives the role. Roles with nobody visible are dropped, and anyone whose role is not in the lookup goes in one last tier.
 
-It used to be three labelled bands, Presidents then Vice Presidents then Assistant Vice Presidents, each a group of ledger rows. Splitting people into named ranks made the page about status rather than about the team, which is not what a club roster is for. **Organization is conveyed by layout.** The order still carries the structure, presidents first and so on down, and each person's title sits under their name for anyone who wants it, but nothing announces a boundary and no group gets a bigger cell.
+Each tier is a centred flex row that wraps, so a short last row is centred under the full rows above it. Every cell in a tier has the same width, so names wrap at the same width across the row. The gap between tiers (64px) is larger than the gap between rows inside a tier (40px). Within a cell: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
 
-Bare on `--page`, starting from the gutter. Four columns from 1024 up, three from 640, two below. Every cell is identical: a `--r-disc` headshot, the name in `.title-sm`, the title in `.meta`, centred in the cell. No fill, no shadow, no border, no hover, no link. These are people, not controls, and the page has nothing to navigate to.
+Bare on `--page`, starting from the gutter. The skeleton has the shape of a typical roster: two lead cells, then six standard cells. In edit mode the roster editor shows everyone in one flat grid at the standard size, four columns from 1024 up, three from 640, two below, because dragging and changing a role move people between tiers.
 
 Headshots are always visible here, unlike on the event ledger. A profile picture is the content, not a flourish. `Avatar` layers the photo over its initials disc rather than swapping, so a missing or slow headshot shows the designed fallback instead of a hole. Object names only in the DB; call `getPublicUrl(bucket, objectName)` at runtime.
 
@@ -156,9 +157,39 @@ Status is a chip carrying a word, never colour alone. The `events` table has no 
 
 ## StatFigure
 
-Number in `--f-data` at 56px with `tabular-nums`, label under it in `.label`, optional suffix in `--accent-ink`.
+Number in `--f-text` 600 at 56px with `tabular-nums`, label under it in `.label`, optional suffix in `--accent-ink`.
 
-Only real numbers. If the figure is not something the club could defend in a room, use a SectionHead instead. Three in a row at most.
+Only real numbers. If the figure is not something the club could defend in a room, use a SectionHead instead. Four in a row at most. `size="hero"` sets the figure in Archivo at a large size for the ProofBand; the default is Instrument Sans 600 at 56px.
+
+## Brand strip
+
+The landing partner section on the logo ground, headed by one `.label` line ("Events and competitions with") instead of a section head, so the logos sit directly under the hero. With 8 logos or fewer it is a static centred row, because a few logos looping past read as a short list repeated. Above 8 it runs Marquee Drift as before.
+
+## FormatCard and CardRow
+
+A FormatCard is a tile (`--page`, `--sh-1`, `--r-lg`): a 4:5 photo at `--r-md`, the format's name in `.title-sm`, one sentence in `.body`, and the companies involved in `.meta`, hidden while empty. Cards are `clamp(280px, 40vw, 460px)` wide and never shrink.
+
+CardRow is the row that holds them on Home's "Real partners, real experiences" section, a raised slab with a one-line CentredHead. The row scrolls sideways with scroll snap on each card's left edge, instead of wrapping. It opens at its start: the first card sits one gutter (`--gut`) from the viewport's left edge and the row runs to the right edge, so only the next card is cut off and shows there is more. Previous and Next (secondary buttons with a chevron, each with an aria-label) scroll one card and are disabled at their end; they are hidden when every card fits. The row is focusable for arrow keys, and touch and trackpads scroll it directly. Reduced motion makes the buttons jump instead of glide. CardRow is `ui/card-row.tsx`, shared by the visitor row and its editor.
+
+The cards are rows of `event_formats`, shown in `display_order` with `visible` filtered. Each card's photo is an object in the `site-images` bucket, named in `image_path`; a card with no photo shows the empty photo frame. An empty sentence or companies line is left off the card. While the query is in flight or after it fails, the four shipped cards show (`src/lib/event-format-fallbacks.ts`), so the row never shows empty. In edit mode the same row holds every card, hidden ones included: the photo takes Replace photo or Add photo, the Visibility chip and the Grip sit on the photo's corners as on a headshot, the name, sentence and companies line are inline fields at their column limits (28, 140, 60), and the Add tile is the last card, at most 12 cards (`LIMITS.MAX_EVENT_FORMATS`).
+
+## ProofBand
+
+Home's one inverse slab, with the `arc` texture. A CentredHead, up to four StatFigures at `size="hero"` from `site_stats` (2 by 2 on a phone), then one named result on `--inverse-tile`, hidden while its key is empty. The figures are the club's own claims; the result is a real outcome or nothing.
+
+## NextEvent
+
+A photo beside a raised panel holding the soonest upcoming event: date, time and room in `.meta`, the title in `.title`, the description, and Register as the section's one primary when the event has a link. Up to two more upcoming events follow as raised rows, then See all events stays as the secondary. With nothing upcoming the panel shows the empty message and keeps See all events. Past events are left to the Events page.
+
+## About page
+
+Order: PageHead (`rise` ribbon), one story grid, then ClosingBand. This is the production site's layout.
+
+The story grid is twelve columns from lg: four facts and two 3:2 photos (`about.story.image1`, `image2`). Each photo spans the two facts beside it. The top pair is a raised fact, then a bare one, with the first photo on the right; the bottom pair swaps, with the second photo on the left and a sunken fact then a raised one on the right. Below lg the cells stack in reading order (fact, photo, fact, photo, fact, fact), two columns from md. Each fact is a `.title-sm` heading and one or two paragraphs (`about.story.factN_*`); an empty second paragraph is dropped. The facts arrive staggered and the photos use Clip Reveal. The only primary button is the closing band's Apply to join.
+
+## AudienceSplit
+
+Two large tiles side by side on a sunken slab, up to 1280px wide together and at least `clamp(26rem, 42vw, 36rem)` tall, students then companies: a two-line `.title`, three points in `.subtitle` with an accent tick, one primary button and a `.meta` note under it. Each tile has its own primary because each is a separate audience's decision. Apply to join reads `home.cta.*`; Partner with us reads `home.hero.partner_*`, the same keys as the hero's second button.
 
 The home stats row is a selling moment, so it is centred as a group: each figure takes a column of the same width (up to 240px), and the columns are centred together. Two figures sit in the middle with the spacing three have, never beside an empty third column.
 
@@ -224,14 +255,14 @@ On an inverse slab, a field in a muted role (`.label`, `.subtitle`, `.meta`, `.b
 
 **EditBar and Tray.** Change count, Edit and Preview, Discard, Publish, and the tray. The bar has one fixed size at each width and the tray is the only region whose content changes. There are no dialogs: confirmations, errors, a list row with its Remove, a new area and results appear in the tray. The tray is a grid of label, body and actions, 110px tall below 900px (actions on the label row, a label of up to two lines, three lines of body) and 76px from 900px (actions at the end of the body row, a one-line label). Both heights are written as the fixed padding and row gap in px plus the text part in em of the tray's `--t-body`, so text-only zoom in Safari or Firefox grows the tray with its text and nothing is clipped. Below 900px the bar is 248px tall in three bands: the count on one line with Settings and Sign out under it, beside Edit and Preview; the tray; Discard and Publish. The "Editing" label is hidden there because the pressed Edit or Preview button shows the mode. The bar sits 8px from the screen edges with 12px padding, and Edit and Preview use 12px side padding, which leaves the count 189px, enough for "100 unpublished changes" on one line. From 900px the bar is one 100px row, unchanged. A new list item without its name blocks Publish with that list's Missing name line in the tray, and the name field takes focus (`missingName()` in `publish.ts`). Preview shows the visitor layout with fills removed.
 
-**Lists.** The roster, the event ledger, the logo wall and the counted figures each have an editor in `list-editors.tsx`, reached from the visitor component through `ListEditBranch` (`src/edit/list-draft.ts`), so a visitor downloads none of it. Every field of a row is inline and sized to the column's limit in the database. The Add tile is the last cell. A removed item stays with Will be removed until Publish.
+**Lists.** The roster, the event ledger, the logo wall, the counted figures and the format cards each have an editor in `list-editors.tsx`, reached from the visitor component through `ListEditBranch` (`src/edit/list-draft.ts`), so a visitor downloads none of it. Every field of a row is inline and sized to the column's limit in the database. The Add tile is the last cell. A removed item stays with Will be removed until Publish.
 
 - **InlineSelect.** A native select in a Field, value centred, chevron in `--accent-ink` at rest, 16px on touch screens. Role and area on an executive; the built title is the role's short label, a comma and the area ("VP, Marketing"), or the role alone. The area list ends with Add an area, which turns into a text input in place and refuses a name that matches an existing area ignoring case.
 - **InlineNumber.** The figure's number in a Field as wide as 99999 in the figure's font. Counter Roll is off in edit mode.
 - **VisibilityChip.** A Chip in a toggle button, Visible or Hidden, `aria-pressed`, as wide as the longer word.
 - **StateChip.** Unpublished (warn) or Will be removed (alert). Its slot is always reserved.
 - **Grip.** Card 15's grip on a 36px disc at the item's corner. Drag by mouse or touch, or one place per arrow key, announced ("Moved Mei Chen to position 2 of 5"). The held item lifts to `--sh-3` and neighbours move on `--d-move`, `--e-move`. Executives move within their role. Events have no grip: the ledger is ordered by date.
-- **AddTile.** The empty photo-slot surface with a tertiary label, the size of an item, arriving with Clip Reveal when an add moves it along. At the list's cap (`LIMITS` in `src/lib/admin-config.ts`: 30 executives, 50 events, 20 partners, 6 figures; rows marked Will be removed do not count) it stays in its place, disabled in the disabled button's colours (`.ed-add[aria-disabled='true']` in `edit.css`), and pressing it says why in the tray. The figures editor is one centred row that wraps, and its Add tile is as wide as a figure's number row, so three figures and the tile share one row at 1280.
+- **AddTile.** The empty photo-slot surface with a tertiary label, the size of an item, arriving with Clip Reveal when an add moves it along. At the list's cap (`LIMITS` in `src/lib/admin-config.ts`: 30 executives, 50 events, 20 partners, 6 figures, 12 format cards; rows marked Will be removed do not count) it stays in its place, disabled in the disabled button's colours (`.ed-add[aria-disabled='true']` in `edit.css`), and pressing it says why in the tray. The figures editor is one centred row that wraps, and its Add tile is as wide as a figure's number row, so three figures and the tile share one row at 1280.
 - **Options.** A tertiary Button, the last control of every row. It shows the row in the tray and moves focus to the tray's first control (the link address, or Remove), which Tab from the row never reaches. Escape, Enter in the link address, or Tab past either end of the tray returns focus to it. Its name carries the row's name ("Options for Mei Chen, in the edit bar"), as every row field's does ("Name, Mei Chen").
 - **Held order.** A row whose date (events) or role (executives) changes keeps its place while focus stays in its list or the tray, then moves once on the move row when focus leaves.
 - **Leaving focus.** When a row leaves with focus in it or in its tray (Remove on an added row, or a removed row deleted by Publish), focus moves to the row that takes its place, or to the Add tile.

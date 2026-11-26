@@ -97,7 +97,7 @@ export function CustomCursor() {
         transition={sizeTransition}
       >
         <motion.span
-          className="font-data text-[10px] uppercase tracking-[0.15em]"
+          className="font-text text-[10px] font-semibold uppercase tracking-[0.15em]"
           style={{ color: "var(--accent-ink)" }}
           animate={{
             opacity: cursorState === "view" ? 1 : 0,

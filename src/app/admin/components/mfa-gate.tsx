@@ -183,7 +183,7 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
         aria-invalid={!!message}
         style={message ? FIELD_ERROR_RING : undefined}
-        className={`${FIELD_WELL} text-center font-data tracking-[0.5em]`}
+        className={`${FIELD_WELL} text-center font-text font-semibold tabular-nums tracking-[0.5em]`}
       />
 
       {message && <p className="body-sm text-alert">{message}</p>}
@@ -238,7 +238,7 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
           <summary className="label cursor-pointer text-ink-muted hover:text-accent-ink transition-colors duration-[var(--d-hover)] ease-enter">
             Cannot scan? Enter a code manually
           </summary>
-          <p className="mt-2 break-all rounded-sm bg-page px-[15px] py-[13px] font-data text-ink">
+          <p className="mt-2 break-all rounded-sm bg-page px-[15px] py-[13px] font-text font-medium tabular-nums tracking-[0.08em] text-ink">
             {secret}
           </p>
         </details>

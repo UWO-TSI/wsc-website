@@ -58,7 +58,7 @@ Moved verbatim to `docs/CLAUDE-reference.md` (same heading). Read it before work
 | `headshots` | Executive portraits | `executives.headshot_path` |
 | `sponsor-logos` | Sponsor logos | `sponsors.logo_path` |
 | `gallery` | Gallery photos (no page shows them; no editor) | `gallery_photos.image_path` |
-| `site-images` | The photo slots in `src/lib/image-slots.ts` | `site_images.object_name` |
+| `site-images` | The photo slots in `src/lib/image-slots.ts`, and the home format card photos | `site_images.object_name`, `event_formats.image_path` |
 
 ### Tables
 
@@ -69,6 +69,7 @@ Moved verbatim to `docs/CLAUDE-reference.md` (same heading). Read it before work
 | `executives` | `visible` |
 | `gallery_photos` | `visible` |
 | `site_stats` | `visible` |
+| `event_formats` | `visible` |
 
 Also `site_content` (every editable string, admins UPDATE `value` only), `site_images` (slot to object), `exec_groups` (roles), `admins`, `admin_invites`, `admin_audit`.
 

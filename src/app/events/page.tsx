@@ -56,7 +56,7 @@ export default function EventsPage() {
     <div className="stack">
       <PageHead
         id="events-heading"
-        eyebrowKey="events.header.eyebrow"
+        texture="arc"
         titleKeys={['events.header.title_line1']}
       />
 

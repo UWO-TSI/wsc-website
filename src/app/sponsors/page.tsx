@@ -25,7 +25,6 @@ export default function SponsorsPage() {
     <div className="stack">
       <PageHead
         id="partners-title"
-        eyebrowKey="partners.header.eyebrow"
         titleKeys={['partners.header.title']}
       />
 

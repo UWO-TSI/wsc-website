@@ -59,6 +59,9 @@ export const SETTINGS_COPY = {
   inviteSelf: 'That is your own address. You already have access.',
   inviteAdmin: (email: string) => `${email} already has access.`,
   inviteWaiting: (email: string) => `${email} already has an invite waiting.`,
+  /* RLS refused the insert after the checks above passed: the session is not
+     an admin with two-step verification, or no longer an admin. */
+  inviteRefused: 'The invite was refused because your access could not be confirmed. Sign in again and try again.',
 
   // Roles
   roles: 'Roles',

@@ -23,19 +23,17 @@ export function cutTiers<T>(
   return out;
 }
 
-/** At least this many people share a row, unless the whole tier is smaller. */
-export const MIN_PER_ROW = 3;
-
 /**
  * How many people go in each row of one tier, top row first. A tier that
  * fits in `perRow` is one row. A longer tier takes as few rows as fit, split
- * as evenly as possible with the longer rows first, and no row holds fewer
- * than MIN_PER_ROW: 8 at 7 per row is 4 and 4, never 7 and 1. A tier of 4
- * or 5 with room for only 3 stays one row, and its cells shrink to fit.
+ * as evenly as possible with the longer rows first: 8 at 7 per row is 4 and
+ * 4, never 7 and 1. No row holds more than `perRow`, because a row that
+ * overflows shrinks its cells until names break mid-word. So when only two
+ * fit (a phone), an odd tier ends with one person on their own row.
  */
 export function rowSizes(count: number, perRow: number): number[] {
   if (count <= perRow) return [count];
-  const rows = Math.max(1, Math.min(Math.ceil(count / perRow), Math.floor(count / MIN_PER_ROW)));
+  const rows = Math.ceil(count / perRow);
   const base = Math.floor(count / rows);
   const extra = count % rows;
   return Array.from({ length: rows }, (_, i) => base + (i < extra ? 1 : 0));

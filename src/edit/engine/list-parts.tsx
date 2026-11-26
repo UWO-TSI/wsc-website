@@ -6,6 +6,7 @@ import {
   DndContext,
   PointerSensor,
   closestCenter,
+  pointerWithin,
   useSensor,
   useSensors,
   type CollisionDetection,
@@ -733,15 +734,21 @@ export function useReorder<R extends { id: string }>({
 
   const byId = (id: UniqueIdentifier) => rows.find((r) => r.id === id);
 
+  /* The item under the pointer, or the nearest one while the pointer is
+     in a gap. The pointer decides, never the held item's centre: items
+     differ in size (the lead logo tiles are larger) and the grip is at a
+     corner, so the held item's centre can be over a different item. */
   const collision: CollisionDetection = (args) => {
     const self = byId(args.active.id);
-    return closestCenter({
+    const scoped = {
       ...args,
       droppableContainers: args.droppableContainers.filter((c) => {
         const other = byId(c.id);
         return c.id === args.active.id || (self && other ? canSwap(self, other) : false);
       }),
-    });
+    };
+    const under = pointerWithin(scoped);
+    return under.length ? under : closestCenter(scoped);
   };
 
   const onDragStart = ({ active }: DragStartEvent) => setHeld(String(active.id));

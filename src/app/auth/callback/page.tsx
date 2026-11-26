@@ -12,40 +12,49 @@ import { supabase } from '@/lib/supabase/client';
  *   - Implicit: /auth/callback#access_token=xxx (Supabase JS processes the hash)
  *
  * Once the session is confirmed, we redirect to /admin.
+ *
+ * The listener and the 8s fallback are set up synchronously, so the
+ * effect's cleanup always reaches them: leaving the page, or the first of
+ * the three paths to finish, stops the other two. Only one redirect ever
+ * fires, and none fires after the page has unmounted.
  */
 export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if a session already exists (e.g. implicit flow, already processed)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace('/admin');
-        return;
-      }
+    let done = false;
 
-      // For PKCE: wait for the code exchange to complete
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, s) => {
-        if (s) {
-          subscription.unsubscribe();
-          router.replace('/admin');
-        }
-      });
+    // Fallback: if nothing fires in 8s, send to /admin anyway
+    // (AdminAuthProvider will handle the state correctly there).
+    const fallback = setTimeout(finish, 8000);
 
-      // Fallback: if nothing fires in 8s, send to /admin anyway
-      // (AdminAuthProvider will handle the state correctly there)
-      const fallback = setTimeout(() => {
-        subscription.unsubscribe();
-        router.replace('/admin');
-      }, 8000);
-
-      return () => {
-        subscription.unsubscribe();
-        clearTimeout(fallback);
-      };
+    // Supabase calls this listener asynchronously, never during this call,
+    // so `subscription` is assigned before finish() can run.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, s) => {
+      // For PKCE: the code exchange has completed.
+      if (s) finish();
     });
+
+    function finish() {
+      if (done) return;
+      done = true;
+      subscription.unsubscribe();
+      clearTimeout(fallback);
+      router.replace('/admin');
+    }
+
+    // A session may already exist (implicit flow, already processed).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) finish();
+    });
+
+    return () => {
+      done = true;
+      subscription.unsubscribe();
+      clearTimeout(fallback);
+    };
   }, [router]);
 
   return (

@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   title: 'Admin',
 };
 
+/* ClientLayout renders no site shell on /admin, so the main landmark is
+   here: every admin screen (sign-in, the code step, Settings) is inside it. */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <main id="main-content">{children}</main>;
 }

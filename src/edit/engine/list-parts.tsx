@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { HTMLAttributes, KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
+import type { ComponentProps, HTMLAttributes, KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -12,6 +12,7 @@ import {
   type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
+  type Modifier,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
@@ -643,6 +644,36 @@ const STRATEGY: Record<ReorderLayout, SortingStrategy> = {
   row: horizontalListSortingStrategy,
 };
 
+/*
+  The held card stays inside the row's visible box. A card moved past the
+  row's last card would widen the row's scroll area, so the row could keep
+  scrolling into empty space. The drop target follows the pointer, not
+  the card (`collision` below), so the clamp changes only where the card
+  is drawn.
+*/
+const keepInRow: Modifier = ({ transform, draggingNodeRect, scrollableAncestorRects }) => {
+  const row = scrollableAncestorRects[0];
+  if (!draggingNodeRect || !row) return transform;
+  const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+  return {
+    ...transform,
+    x: clamp(transform.x, row.left - draggingNodeRect.left, row.right - draggingNodeRect.right),
+    y: clamp(transform.y, row.top - draggingNodeRect.top, row.bottom - draggingNodeRect.bottom),
+  };
+};
+
+/*
+  What each layout adds to the drag. The sideways card row scrolls only
+  while the pointer is in its outer tenth, and slowly, so a short drag
+  never scrolls it (dnd-kit's default is the outer fifth at full speed).
+  Its snap is off while a card is held (edit.css), so each small scroll
+  step is not rounded up to a whole card.
+*/
+const DRAG: Record<ReorderLayout, Pick<ComponentProps<typeof DndContext>, 'modifiers' | 'autoScroll'>> = {
+  grid: {},
+  row: { modifiers: [keepInRow], autoScroll: { threshold: { x: 0.1, y: 0.2 }, acceleration: 4 } },
+};
+
 /* dnd-kit's own live region and instructions stay silent: the list's
    status line says where the item went, in the same words the arrow keys
    use. */
@@ -812,6 +843,7 @@ export function ReorderList({
       sensors={sensors}
       collisionDetection={collision}
       accessibility={SILENT}
+      {...DRAG[layout]}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragCancel={onDragCancel}

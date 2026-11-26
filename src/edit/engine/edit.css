@@ -898,6 +898,13 @@ html.ed-on body {
   cursor: grabbing;
 }
 
+/* The sideways card row does not snap while a card is held, so the drag's
+   small scroll steps are not rounded up to a whole card. It snaps again
+   on drop. */
+:has(> .ed-item.ed-held) {
+  scroll-snap-type: none;
+}
+
 /* Hidden and removed rows fade their own ink, so the step shows on any ground. */
 .ed-item.ed-hid .ed-in {
   color: color-mix(in srgb, currentColor 65%, transparent);

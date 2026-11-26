@@ -793,9 +793,15 @@ html.ed-on body {
   cursor: pointer;
 }
 
-/* StateChip: always takes its slot, shown only when the row changed. */
+/* StateChip: shown only when the row changed. It keeps its slot (.ed-off)
+   inside an item of fixed size; in the event ledger it takes no space
+   until then (.ed-gone). */
 .ed-state {
   display: inline-flex;
+}
+
+.ed-state.ed-gone {
+  display: none;
 }
 
 /* Grip: card 15's grip on a disc, so it reads over a photo. */
@@ -896,6 +902,13 @@ html.ed-on body {
 
 .ed-item.ed-held .ed-grip {
   cursor: grabbing;
+}
+
+/* The sideways card row does not snap while a card is held, so the drag's
+   small scroll steps are not rounded up to a whole card. It snaps again
+   on drop. */
+:has(> .ed-item.ed-held) {
+  scroll-snap-type: none;
 }
 
 /* Hidden and removed rows fade their own ink, so the step shows on any ground. */

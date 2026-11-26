@@ -7,6 +7,7 @@ import SectionHead from '@/components/ui/section-head';
 import { EditableButton, EditableImage, EditableText } from '@/edit';
 import RowSkeleton from '@/components/ui/row-skeleton';
 import { useReveal } from '@/lib/reveal';
+import { formatTime, registerHref } from '@/lib/event-display';
 
 /*
   NextEvent: what is coming up, with the soonest event given the space.
@@ -25,8 +26,9 @@ import { useReveal } from '@/lib/reveal';
   With nothing upcoming the panel says so and keeps See all events, so the
   section still has its photo and a next step.
 
-  Self-contained: another agent owns the full timeline in
-  src/components/events/, so nothing here imports from that tree.
+  Nothing here imports from the full timeline in src/components/events/.
+  What the two must show the same way, the time and whether there is a
+  Register link, is in src/lib/event-display.ts.
   design-system/components.md, NextEvent.
 */
 
@@ -45,7 +47,7 @@ function isUpcoming(date: string) {
 }
 
 function whenOf(event: Event) {
-  const parts = [format(parseISO(event.date), 'EEE MMM d'), event.time, event.location];
+  const parts = [format(parseISO(event.date), 'EEE MMM d'), event.time && formatTime(event.time), event.location];
   return parts.filter(Boolean).join(' · ');
 }
 
@@ -57,6 +59,8 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
     .sort((a, b) => a.date.localeCompare(b.date));
   const [next, ...rest] = upcoming;
   const more = rest.slice(0, MORE_COUNT);
+  /* The time and the Register check are the Events page's (src/lib/event-display.ts). */
+  const register = registerHref(next?.register_url);
 
   return (
     <section className="px-[var(--gut)] py-24 sm:py-32" aria-labelledby="events-heading">
@@ -99,9 +103,7 @@ export default function EventsPreview({ events, loading, error }: EventsPreviewP
                   )}
 
                   <div className="flex flex-wrap gap-3 pt-2">
-                    {next?.register_url && (
-                      <EditableButton labelKey="events.ledger.register_label" href={next.register_url} />
-                    )}
+                    {register && <EditableButton labelKey="events.ledger.register_label" href={register} />}
                     <EditableButton
                       labelKey="home.events.link_label"
                       hrefKey="home.events.link_href"

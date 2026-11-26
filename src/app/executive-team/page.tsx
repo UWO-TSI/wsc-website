@@ -9,6 +9,7 @@ import ClosingBand from '@/components/layout/closing-band';
 import ExecutiveGrid, { ExecutiveGridSkeleton } from '@/components/team/executive-grid';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
+import { cutTiers } from '@/lib/exec-tiers';
 import { useEditMode } from '@/edit';
 
 /*
@@ -70,16 +71,10 @@ export default function ExecutiveTeamPage() {
   }, [executives, groupOrder, editing]);
 
   /* The same order cut at each role boundary. Unknown roles share the last tier. */
-  const tiers = useMemo(() => {
-    const tierOf = (slug: string) => (groupOrder.includes(slug) ? slug : '');
-    const out: Executive[][] = [];
-    for (const executive of ordered) {
-      const last = out[out.length - 1];
-      if (last && tierOf(last[0].group) === tierOf(executive.group)) last.push(executive);
-      else out.push([executive]);
-    }
-    return out;
-  }, [ordered, groupOrder]);
+  const tiers = useMemo(
+    () => cutTiers(ordered, (executive) => executive.group, groupOrder).map(({ tier }) => tier),
+    [ordered, groupOrder]
+  );
 
   return (
     <div className="stack">

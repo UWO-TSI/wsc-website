@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { HTMLAttributes, KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
+import type { ComponentProps, HTMLAttributes, KeyboardEvent, PointerEvent, ReactNode, RefObject } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -12,6 +12,7 @@ import {
   type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
+  type Modifier,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
@@ -41,7 +42,7 @@ import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, ty
   fields.tsx (.ed in edit.css), sized to the text it holds, so a row in
   edit mode is the size it is in Preview. The chips and the grip are controls, so they
   are buttons with a word or an accessible name. The state chip is not a
-  control; it only reserves its slot.
+  control.
 
   Motion is the three moves the spec allows in edit mode, on Floor's
   tokens read from the stylesheet: a reorder moves rows on the card 15
@@ -364,12 +365,31 @@ export function VisibilityChip({
   );
 }
 
-/** Unpublished or Will be removed. The slot is reserved while the row is unchanged. */
-export function StateChip({ state, className }: { state: ListRowState; className?: string }) {
+/**
+ * Unpublished or Will be removed.
+ *
+ * Inside an item of fixed size (a team cell, a logo tile, a figure, a
+ * format card) the slot is kept while the row is unchanged, on a line of
+ * its own or at the end of a line that has room for it, so a change never
+ * resizes the item or moves its neighbours. With `keep={false}` it takes
+ * no space until the row changes: the event ledger, where it is the first
+ * item of the row's right-aligned controls, so the controls after it stay
+ * where they are and only the title field gives up the room.
+ */
+export function StateChip({
+  state,
+  keep = true,
+  className,
+}: {
+  state: ListRowState;
+  keep?: boolean;
+  className?: string;
+}) {
   const removing = state === 'removing';
   const word = removing ? COPY.willBeRemoved : COPY.unpublished;
+  const off = state ? '' : keep ? ' ed-off' : ' ed-gone';
   return (
-    <span className={`ed-state${state ? '' : ' ed-off'} ${className ?? ''}`.trim()} aria-hidden={!state}>
+    <span className={`ed-state${off} ${className ?? ''}`.trim()} aria-hidden={!state}>
       <Chip status={removing ? 'alert' : 'warn'}>
         <Words words={[COPY.willBeRemoved, COPY.unpublished]} shown={word} />
       </Chip>
@@ -470,10 +490,15 @@ export function RowOptions({ table, id, who }: { table: ListTable; id: string; w
  * places first). The Grip is not held: its moves are the point. A row
  * added while the order is held takes its sorted place among the held
  * rows.
+ *
+ * `was(row)` is the row as it was when the order was held. A list that
+ * places a row by a field (the team's tiers, by role) places it by `was`,
+ * so a role change keeps the person in their old tier, in the same list
+ * element, with focus kept, until focus leaves the list.
  */
 export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted: R[]) {
-  const [held, setHeld] = useState<string[] | null>(null);
-  const holding = useRef<string[] | null>(null);
+  const [held, setHeld] = useState<R[] | null>(null);
+  const holding = useRef(false);
   const shown = useRef<R[]>(sorted);
   const release = useRef<() => void>(() => {});
 
@@ -483,11 +508,11 @@ export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted:
         const f = getUi().focus;
         const editing = f?.type === 'row' && f.table === table && f.field !== 'grip';
         if (editing && !holding.current) {
-          holding.current = shown.current.map((r) => r.id);
-          setHeld(holding.current);
+          holding.current = true;
+          setHeld(shown.current);
         } else if (!editing && holding.current) {
           release.current();
-          holding.current = null;
+          holding.current = false;
           setHeld(null);
         }
       }),
@@ -495,10 +520,11 @@ export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted:
   );
 
   let rows = sorted;
+  const before = new Map((held ?? []).map((r) => [r.id, r]));
   if (held) {
     const byId = new Map(sorted.map((r) => [r.id, r]));
-    const kept = new Set(held);
-    rows = held.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+    const kept = new Set(before.keys());
+    rows = held.flatMap(({ id }) => (byId.has(id) ? [byId.get(id)!] : []));
     sorted.forEach((r, i) => {
       if (kept.has(r.id)) return;
       const after = sorted.slice(i + 1).find((x) => kept.has(x.id));
@@ -515,7 +541,8 @@ export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted:
   const onRelease = (fn: () => void) => {
     release.current = fn;
   };
-  return { rows, onRelease };
+  const was = (row: R): R => before.get(row.id) ?? row;
+  return { rows, onRelease, was };
 }
 
 /* ── A row's photo: headshot or logo ── */
@@ -634,6 +661,36 @@ export type ReorderLayout = 'grid' | 'row';
 const STRATEGY: Record<ReorderLayout, SortingStrategy> = {
   grid: rectSortingStrategy,
   row: horizontalListSortingStrategy,
+};
+
+/*
+  The held card stays inside the row's visible box. A card moved past the
+  row's last card would widen the row's scroll area, so the row could keep
+  scrolling into empty space. The drop target follows the pointer, not
+  the card (`collision` below), so the clamp changes only where the card
+  is drawn.
+*/
+const keepInRow: Modifier = ({ transform, draggingNodeRect, scrollableAncestorRects }) => {
+  const row = scrollableAncestorRects[0];
+  if (!draggingNodeRect || !row) return transform;
+  const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+  return {
+    ...transform,
+    x: clamp(transform.x, row.left - draggingNodeRect.left, row.right - draggingNodeRect.right),
+    y: clamp(transform.y, row.top - draggingNodeRect.top, row.bottom - draggingNodeRect.bottom),
+  };
+};
+
+/*
+  What each layout adds to the drag. The sideways card row scrolls only
+  while the pointer is in its outer tenth, and slowly, so a short drag
+  never scrolls it (dnd-kit's default is the outer fifth at full speed).
+  Its snap is off while a card is held (edit.css), so each small scroll
+  step is not rounded up to a whole card.
+*/
+const DRAG: Record<ReorderLayout, Pick<ComponentProps<typeof DndContext>, 'modifiers' | 'autoScroll'>> = {
+  grid: {},
+  row: { modifiers: [keepInRow], autoScroll: { threshold: { x: 0.1, y: 0.2 }, acceleration: 4 } },
 };
 
 /* dnd-kit's own live region and instructions stay silent: the list's
@@ -805,6 +862,7 @@ export function ReorderList({
       sensors={sensors}
       collisionDetection={collision}
       accessibility={SILENT}
+      {...DRAG[layout]}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragCancel={onDragCancel}

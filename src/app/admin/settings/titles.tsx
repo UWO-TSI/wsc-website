@@ -17,6 +17,7 @@ import {
   type RoleFields,
 } from './data';
 import {
+  ALIGNED_FIELDS,
   RowField,
   RowMessage,
   SaveCancel,
@@ -306,10 +307,11 @@ function RoleForm({
       onSubmit={submit}
       message={failure ? <RowMessage tone="alert">{failure}</RowMessage> : undefined}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className={ALIGNED_FIELDS}>
         {(Object.keys(LABELS) as Array<keyof RoleFields>).map((k, i) => (
           <RowField
             key={k}
+            aligned
             id={`settings-role-${id}-${k}`}
             label={LABELS[k]}
             value={fields[k]}

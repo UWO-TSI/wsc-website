@@ -172,8 +172,8 @@ export default function AdminAuthProvider({ children }: { children: ReactNode })
         {/* Spaced with gap: the type classes reset margin outside a layer, so mb-* never applies. */}
         <Slab tone="raised" as="div" className="max-w-md text-center flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4">
-            <p className="label text-accent-ink">Admin portal</p>
-            <h1 className="title-sm text-ink">Western Sales Club</h1>
+            <p className="label text-accent-ink">Western Sales Club</p>
+            <h1 className="title-sm text-ink">Admin sign in</h1>
           </div>
           <p className="body-sm text-ink-muted measure">
             Sign in with an admin Google account to edit the site. If someone invited you,

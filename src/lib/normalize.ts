@@ -27,9 +27,11 @@ export function normalizeLine(value: string): string {
  * Schemes the site will put in an href. The database CHECK accepts any
  * leading "/", so this is one step stricter: "//host" is a link to another
  * site (protocol-relative), and a page path is "/" followed by anything
- * but a second "/".
+ * but a second "/". A browser reads a backslash as "/" and drops tabs and
+ * line breaks from a URL, so "/\host" and "/<tab>/host" are "//host" too:
+ * the character after the first "/" is none of "/", "\" or whitespace.
  */
-const URL_PATTERN = /^(https?:\/\/|\/(?!\/)|#|mailto:)/i;
+const URL_PATTERN = /^(https?:\/\/|\/(?![\/\\\s])|#|mailto:)/i;
 const HTTP_PATTERN = /^https?:\/\//i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

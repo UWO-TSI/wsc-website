@@ -107,9 +107,11 @@ export default function Accounts({ me }: { me: { id: string; email: string } }) 
       setNote({ key: 'invite', tone: 'ok', text: C.invited(target) });
       await load();
     } catch (e) {
+      /* The own-address case is caught above, before the request, so a
+         refusal here is about the session, not the address. */
       const f = failureOf(e);
       setInviteError(
-        f === 'conflict' ? C.inviteWaiting(target) : failText(f, C.inviteSelf)
+        f === 'conflict' ? C.inviteWaiting(target) : failText(f, C.inviteRefused)
       );
     }
     setBusy(null);

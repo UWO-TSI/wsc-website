@@ -101,6 +101,12 @@ export function SettingsFormRow({
   );
 }
 
+/* The grid for RowFields side by side: one column on a phone, three label,
+   input and error rows shared by every field from 640 up. The row gap
+   matches RowField's own gap-2. */
+export const ALIGNED_FIELDS =
+  'grid grid-cols-1 gap-3 sm:grid-cols-3 sm:grid-rows-[auto_auto_auto] sm:gap-y-2';
+
 export function RowField({
   id,
   label,
@@ -110,6 +116,7 @@ export function RowField({
   type = 'text',
   maxLength,
   autoFocus,
+  aligned = false,
 }: {
   id: string;
   label: string;
@@ -119,9 +126,19 @@ export function RowField({
   type?: 'text' | 'email';
   maxLength?: number;
   autoFocus?: boolean;
+  /**
+   * From 640 up, take the label, input and error rows from the parent grid
+   * (ALIGNED_FIELDS), so a label that wraps to two lines moves every input
+   * in the row down with it instead of only its own.
+   */
+  aligned?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-2">
+    <div
+      className={`flex min-w-0 flex-1 flex-col gap-2${
+        aligned ? ' sm:row-span-3 sm:grid sm:grid-rows-subgrid' : ''
+      }`}
+    >
       <label className="label" htmlFor={id}>
         {label}
       </label>

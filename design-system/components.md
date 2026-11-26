@@ -167,7 +167,7 @@ Only real numbers. If the figure is not something the club could defend in a roo
 
 ## Brand strip
 
-The landing partner section on the logo ground, headed by one `.label` line ("Events and competitions with") instead of a section head, so the logos sit directly under the hero. With 8 logos or fewer it is a static centred row, because a few logos looping past read as a short list repeated. Above 8 it runs Marquee Drift as before.
+The landing partner section on the logo ground, headed by one `.label` line ("Events and competitions with") instead of a section head, so the logos sit directly under the hero. With 8 logos or fewer it is a static centred row, because a few logos looping past read as a short list repeated. Above 8 it runs Marquee Drift as before. With no active partner the strip is left out, except in edit mode, where it stays with only its label so the label can be edited.
 
 ## FormatCard and CardRow
 

@@ -113,8 +113,11 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     grew by a whole band the moment the sponsors landed, shoving everything
     below it down. Loading renders the slab and a row of skeleton tiles at the
     real size instead.
+
+    In edit mode the strip stays with no logos, so its label can still be
+    edited. Preview leaves it out, as a visitor's page does.
   */
-  if (!loading && active.length === 0) return null;
+  if (!loading && active.length === 0 && !editing) return null;
 
   return (
     <Slab tone="logo" aria-labelledby="partners-heading">
@@ -131,7 +134,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
               ))}
             </div>
           </div>
-        ) : editing || active.length <= STATIC_MAX ? (
+        ) : active.length === 0 ? null : editing || active.length <= STATIC_MAX ? (
           <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8">
             {active.map((sponsor) => (
               <SponsorMark key={sponsor.id} sponsor={sponsor} logoUrl={logoOf(sponsor)} still />

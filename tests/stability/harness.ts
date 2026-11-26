@@ -6,13 +6,18 @@ import { installBoxes, type Diff, type MarkSummary } from './boxes';
 /*
   The stability run for one page at one width.
 
-  Rule under test: in edit mode typing, hovering and focusing never move or
-  resize anything that persists. Persistent elements are marked once the page
-  has settled (boxes.ts). Each field is then focused, filled to its maximum
-  length, hovered and blurred, and after every step each marked box is
-  compared with its record (tolerance 0.5px), both once the step has
-  settled and on every frame while it ran. The tray's content may change;
-  its outer box may not.
+  Rule under test: in edit mode focusing, hovering and blurring never move
+  or resize anything that persists, and a field that is typed in and then
+  put back leaves every box where it was. A field is the size of the text
+  it holds, so typing itself may resize the field and move what follows
+  it; while it is full the page may not scroll sideways. Persistent
+  elements are marked once the page has settled (boxes.ts). Each field is
+  focused, hovered and blurred, and after each of those steps every marked
+  box is compared with its record (tolerance 0.5px), both once the step
+  has settled and on every frame while it ran. Then the field is filled to
+  its maximum length and put back, and every box is compared once the
+  restore has settled. The tray's content may change; its outer box may
+  not.
 
   Nothing is published. Drafts are discarded at the end of the page, and a
   route guard refuses any write to the database or to storage.
@@ -219,7 +224,9 @@ export async function runStability(
     const settled = await stab<Diff[]>('compare');
     if (settled.length) failures.push({ ...base, field, step, phase: 'settled', diffs: settled });
     const settledIds = new Set(settled.map((d) => d.i));
-    const transient = live.filter((d) => !settledIds.has(d.i));
+    /* Typing and putting the text back resize the field on purpose, so
+       only the settled result of a restore is checked. */
+    const transient = step === 'restore' ? [] : live.filter((d) => !settledIds.has(d.i));
     if (transient.length) failures.push({ ...base, field, step, phase: 'transient', diffs: transient });
     await scrollWidth(field, step);
   };
@@ -237,6 +244,15 @@ export async function runStability(
         await loc.focus({ timeout: 10_000 });
         await check(label, 'focus');
 
+        await watch();
+        await loc.hover({ force: true, timeout: 10_000 });
+        await check(label, 'hover');
+
+        await watch();
+        await loc.evaluate((el) => (el as HTMLElement).blur());
+        await page.waitForTimeout(220);
+        await check(label, 'blur');
+
         if (c.kind === 'text') {
           const keys = c.field.split(' ');
           const limits = c.lines
@@ -247,14 +263,15 @@ export async function runStability(
                   : (SITE_CONTENT[c.field as keyof typeof SITE_CONTENT]?.max ??
                     (c.maxLength > 0 ? c.maxLength : 40)),
               ];
-          await watch();
+          await loc.focus();
           await page.keyboard.press('ControlOrMeta+a');
           for (let l = 0; l < limits.length; l++) {
             if (l > 0) await page.keyboard.press('Enter');
             await page.keyboard.type(c.numeric ? '9'.repeat(limits[l]) : mixed(limits[l]));
           }
           typed++;
-          await check(label, 'type');
+          await frames(page, 3);
+          await scrollWidth(label, 'type');
           /* Proves the field took the whole string: a field that refused
              part of it would make the check above weaker than it looks. */
           const expected = limits.reduce((n, m) => n + m, 0) + limits.length - 1;
@@ -271,18 +288,8 @@ export async function runStability(
           }
         }
 
-        await watch();
-        await loc.hover({ force: true, timeout: 10_000 });
-        await check(label, 'hover');
-
-        await watch();
-        await loc.evaluate((el) => (el as HTMLElement).blur());
-        await page.waitForTimeout(220);
-        await check(label, 'blur');
-
         if (c.kind === 'text') {
           await watch();
-          await loc.focus();
           await page.keyboard.press('ControlOrMeta+a');
           if (original) await page.keyboard.insertText(original);
           else await page.keyboard.press('Delete');

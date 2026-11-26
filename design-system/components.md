@@ -163,7 +163,9 @@ Status is a chip carrying a word, never colour alone. The `events` table has no 
 
 Number in `--f-text` 600 at 56px with `tabular-nums`, label under it in `.label`, optional suffix in `--accent-ink`.
 
-Only real numbers. If the figure is not something the club could defend in a room, use a SectionHead instead. Four in a row at most. `size="hero"` sets the figure in Archivo at a large size for the ProofBand; the default is Instrument Sans 600 at 56px.
+Only real numbers. If the figure is not something the club could defend in a room, use a SectionHead instead. Four in a row at most. `size="hero"` sets the figure in Archivo 900 for the ProofBand; the default is Instrument Sans 600 at 56px.
+
+The hero size fits its cell, which is a size container: the figure is `clamp(3rem, 8vw, 6.5rem)` or the cell's width less 60px divided by the row's widest figure in em, whichever is smaller (`heroFigureSize`, `rowEm`). A digit and a plus count 0.68em, any other suffix character 1em, and an empty suffix one plus. Every figure in a row takes the widest figure's size, so the figures of a row are one size, and 99999 with a 2-character suffix fits its cell at 375, 768 and 1280. The 60px is the padding and gap of the editor's number and suffix fields, so edit mode sets the same size in the same cell.
 
 ## Brand strip
 
@@ -179,7 +181,13 @@ The cards are rows of `event_formats`, shown in `display_order` with `visible` f
 
 ## ProofBand
 
-Home's one inverse slab, with the `arc` texture. A CentredHead, up to four StatFigures at `size="hero"` from `site_stats` (2 by 2 on a phone), then one named result on `--inverse-tile`, hidden while its key is empty. The figures are the club's own claims; the result is a real outcome or nothing.
+Home's one inverse slab, with the `arc` texture. A CentredHead, up to four StatFigures at `size="hero"` from `site_stats`, then one named result on `--inverse-tile`, hidden while its key is empty. The figures are the club's own claims; the result is a real outcome or nothing. Four is `LIMITS.MAX_SITE_STATS`, which is also the editor's cap.
+
+The home stats row is a selling moment, so it is centred as a group. The figures are a centred row that wraps, and every cell has one width: half the row on a phone, a third from 700px, a quarter when there are four figures. One to three figures are centred with the spacing three have, never beside an empty column. Four are 2 by 2 on a phone and one row from 700px; a third figure on a phone is centred under the first two. Labels wrap inside their cell.
+
+While the query is in flight or after it fails, the three shipped figures show (`src/lib/site-stat-fallbacks.ts`). Once it answers, the database decides: with no visible figures the row is left out, and if the result is empty too, the whole band is left off the page. With a result and no figures, the head and the result show.
+
+In edit mode the shown figures (the first four visible) are the visitor's row, in the same cells at the same size, so each figure is where Preview puts it. Hidden figures follow in a second row of the same cells, dimmed, and the Add tile is the last cell of that row, so neither changes the shown figures' columns. The Grip reorders within each row. Each figure's Visibility chip, Grip and Options wrap inside its cell. The empty suffix field shows a faint plus.
 
 ## NextEvent
 
@@ -194,8 +202,6 @@ The story grid is twelve columns from lg: four facts and two 3:2 photos (`about.
 ## AudienceSplit
 
 Two large tiles side by side on a sunken slab, up to 1280px wide together and at least `clamp(26rem, 42vw, 36rem)` tall, students then companies: a two-line `.title`, three points in `.subtitle` with an accent tick, one primary button and a `.meta` note under it. Each tile has its own primary because each is a separate audience's decision. Apply to join reads `home.cta.*`; Partner with us reads `home.hero.partner_*`, the same keys as the hero's second button.
-
-The home stats row is a selling moment, so it is centred as a group: each figure takes a column of the same width (up to 240px), and the columns are centred together. Two figures sit in the middle with the spacing three have, never beside an empty third column.
 
 ## AsyncState
 
@@ -268,7 +274,7 @@ On an inverse slab, a field in a muted role (`.label`, `.subtitle`, `.meta`, `.b
 - **VisibilityChip.** A Chip in a toggle button, Visible or Hidden, `aria-pressed`, as wide as the longer word.
 - **StateChip.** Unpublished (warn) or Will be removed (alert). Its slot is always reserved.
 - **Grip.** Card 15's grip on a 36px disc at the item's corner. Under the pointer, and while held, the disc inverts to the accent fill with `--on-accent` ink, which reads on every ground. Drag by mouse or touch, or one place per arrow key, announced ("Moved Mei Chen to position 2 of 5"). Every list reorders through one implementation, `useReorder` with `ReorderList`, `ReorderItem` and `Grip` (dnd-kit): item positions are measured once when a drag starts, the other items slide aside while the held one follows the pointer, the order changes once on drop, and the page scrolls when the held item nears an edge. The held item lifts to `--sh-3` and neighbours move on `--d-move`, `--e-move`. Executives move within their role. Events have no grip: the ledger is ordered by date.
-- **AddTile.** The empty photo-slot surface with a tertiary label, the size of an item, arriving with Clip Reveal when an add moves it along. It is the last cell of each list, except the event ledger, where it is the first row because the ledger runs newest first. At the list's cap (`LIMITS` in `src/lib/admin-config.ts`: 30 executives, 50 events, 20 partners, 6 figures, 12 format cards; rows marked Will be removed do not count) it stays in its place, disabled in the disabled button's colours (`.ed-add[aria-disabled='true']` in `edit.css`), and pressing it says why in the tray. The figures editor is one centred row that wraps, and its Add tile is as wide as a figure's number row, so three figures and the tile share one row at 1280.
+- **AddTile.** The empty photo-slot surface with a tertiary label, the size of an item, arriving with Clip Reveal when an add moves it along. It is the last cell of each list, except the event ledger, where it is the first row because the ledger runs newest first. At the list's cap (`LIMITS` in `src/lib/admin-config.ts`: 30 executives, 50 events, 20 partners, 4 figures, 12 format cards; rows marked Will be removed do not count) it stays in its place, disabled in the disabled button's colours (`.ed-add[aria-disabled='true']` in `edit.css`), and pressing it says why in the tray. In the figures editor the Add tile is the last cell of the hidden figures' row (ProofBand).
 - **Options.** A tertiary Button, the last control of every row. It shows the row in the tray and moves focus to the tray's first control (the link address, or Remove), which Tab from the row never reaches. Escape, Enter in the link address, or Tab past either end of the tray returns focus to it. Its name carries the row's name ("Options for Mei Chen, in the edit bar"), as every row field's does ("Name, Mei Chen").
 - **Held order.** A row whose date (events) or role (executives) changes keeps its place while focus stays in its list or the tray, then moves once on the move row when focus leaves.
 - **Leaving focus.** When a row leaves with focus in it or in its tray (Remove on an added row, or a removed row deleted by Publish), focus moves to the row that takes its place, or to the Add tile.

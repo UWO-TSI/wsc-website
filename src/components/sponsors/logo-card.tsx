@@ -2,11 +2,15 @@
 
 import RevealImage from '@/components/ui/reveal-image';
 import type { Sponsor } from '@/types/database';
-import { getPublicUrl } from '@/lib/supabase/storage';
 import { externalLinkProps } from '@/lib/link-utils';
 
 interface LogoCardProps {
   sponsor: Sponsor;
+  /**
+   * The mark's URL, or null for the name in the display face. The wall
+   * resolves it: a logo drafted in edit mode first, then the stored object.
+   */
+  logoUrl: string | null;
   /** Position in display_order, zero-based. Carries the tile's scale. */
   rank: number;
   total: number;
@@ -40,8 +44,7 @@ export const TILE_SIZE: Record<Scale, string> = {
   std: 'h-12 w-36 sm:h-16 sm:w-44',
 };
 
-export default function LogoCard({ sponsor, rank, total, onReady }: LogoCardProps) {
-  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
+export default function LogoCard({ sponsor, logoUrl, rank, total, onReady }: LogoCardProps) {
   const scale = scaleFor(rank, total);
 
   /*

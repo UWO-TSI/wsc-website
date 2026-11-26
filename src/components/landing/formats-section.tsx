@@ -6,6 +6,7 @@ import CardRow, { CARD_ROW_ITEM } from '@/components/ui/card-row';
 import CentredHead from '@/components/ui/centred-head';
 import RevealImage from '@/components/ui/reveal-image';
 import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
+import { useDraftFile } from '@/edit';
 import { EVENT_FORMAT_FALLBACKS } from '@/lib/event-format-fallbacks';
 import { SITE_IMAGES_BUCKET } from '@/lib/image-slots';
 import { getPublicUrl } from '@/lib/supabase/storage';
@@ -43,6 +44,8 @@ export default function FormatsSection() {
     editList: true,
   });
   const listEditing = useListEditBranch();
+  /* A photo chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('event_formats');
   const listRef = useRef<HTMLUListElement>(null);
 
   const formats = (loading || error ? EVENT_FORMAT_FALLBACKS : data).filter((f) => f.visible);
@@ -65,7 +68,11 @@ export default function FormatsSection() {
                       yet, so the frame loads; after an error it is empty. */}
                   <FormatCard
                     format={format}
-                    src={loading ? undefined : getPublicUrl(SITE_IMAGES_BUCKET, format.image_path)}
+                    src={
+                      loading
+                        ? undefined
+                        : (draftFile(format.id, 'image_path') ?? getPublicUrl(SITE_IMAGES_BUCKET, format.image_path))
+                    }
                     index={i}
                   />
                 </li>

@@ -8,5 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: 'https://westernsalesclub.ca/events', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
     { url: 'https://westernsalesclub.ca/sponsors', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
     { url: 'https://westernsalesclub.ca/contact-us', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.5 },
+    { url: 'https://westernsalesclub.ca/terms-of-service', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
+    { url: 'https://westernsalesclub.ca/privacy-policy', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.2 },
   ];
 }

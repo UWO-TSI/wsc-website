@@ -199,7 +199,10 @@ export const COPY = {
   // Bar: Settings and Sign out. Not in the spec table.
   settings: 'Settings',
   signOut: 'Sign out',
-  accountGroup: 'Settings and sign out',
+  /** Leaves edit mode and stays signed in. */
+  exit: 'Exit',
+  exitName: 'Exit edit mode and stay signed in',
+  accountGroup: 'Settings, exit and sign out',
 
   // Bar: the changes list, opened from the count. Not in the spec table.
   changesShow: 'Show unpublished changes',

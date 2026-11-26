@@ -372,9 +372,10 @@ html.ed-on body {
   font-size: var(--t-meta);
 }
 
-/* Below 900px Sign out shows only in Settings, so the count has room. */
+/* Below 900px Sign out shows only in Settings, so the count has room;
+   Exit stays. */
 @media (max-width: 899px) {
-  .ed-acct .ed-link {
+  .ed-acct .ed-signout {
     display: none;
   }
 }

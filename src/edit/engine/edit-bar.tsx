@@ -6,7 +6,7 @@ import Button from '@/components/ui/button';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { SITE_CONTENT, type SiteContentKey } from '@/lib/site-content-defaults';
 import { IMAGE_SLOTS, type ImageSlotKey } from '@/lib/image-slots';
-import { setEditPreview, useEditSnapshot } from '@/edit/edit-mode';
+import { leaveEditMode, setEditPreview, useEditSnapshot } from '@/edit/edit-mode';
 import { COPY } from '@/edit/engine/copy';
 import {
   changeCount,
@@ -280,7 +280,27 @@ export default function EditBar({ publisher }: { publisher: Publisher }) {
         <Button variant="tertiary" className="ed-gear" href="/admin/settings" aria-label={COPY.settings}>
           <GearIcon />
         </Button>
-        <Button variant="tertiary" className="ed-link" disabled={ui.phase === 'publishing'} onClick={() => signOutAndReload()}>
+        {/* Exit leaves edit mode and keeps the session: /admin opens edit
+            mode again without a sign-in. The reload drops the edit code
+            from memory; drafts stay in this browser. */}
+        <Button
+          variant="tertiary"
+          className="ed-link"
+          aria-label={COPY.exitName}
+          disabled={ui.phase === 'publishing'}
+          onClick={() => {
+            leaveEditMode();
+            window.location.reload();
+          }}
+        >
+          {COPY.exit}
+        </Button>
+        <Button
+          variant="tertiary"
+          className="ed-link ed-signout"
+          disabled={ui.phase === 'publishing'}
+          onClick={() => signOutAndReload()}
+        >
           {COPY.signOut}
         </Button>
       </div>

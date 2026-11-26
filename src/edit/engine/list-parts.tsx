@@ -112,7 +112,7 @@ export function RowField({ table, id, column, value, max, label, who, placeholde
   useMeasure(() => {
     const el = ref.current;
     if (!el) return;
-    if (!block) el.style.width = `${textWidth(el, shown) + 2}px`;
+    if (!block) el.style.width = `min(${textWidth(el, shown) + 2}px, 100%)`;
     el.style.height = `${textHeight(el, shown, el.clientWidth)}px`;
   }, [shown, block]);
 

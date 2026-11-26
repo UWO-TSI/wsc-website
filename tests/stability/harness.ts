@@ -131,7 +131,7 @@ export async function settle(page: Page) {
 }
 
 async function discard(page: Page): Promise<string | null> {
-  const status = page.locator('.ed-status .meta');
+  const status = page.locator('.ed-count');
   if (/No changes/i.test((await status.textContent()) ?? '')) return null;
   await page.locator('.ed-discard button').click();
   await page.locator('[data-ed-tray] button', { hasText: /^Discard \d+/ }).click();

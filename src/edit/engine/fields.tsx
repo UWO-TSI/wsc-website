@@ -92,7 +92,9 @@ export function EditText({ k, as: Tag = 'span', className, id, size }: EditableT
     const el = ref.current;
     if (!el) return;
     const s = value || m.label;
-    el.style.width = fill ? '' : `${textWidth(el, s) + 2}px`;
+    /* min() with a percentage keeps a long value from widening the box
+       around it: the field never asks for more than the space it has. */
+    el.style.width = fill ? '' : `min(${textWidth(el, s) + 2}px, 100%)`;
     el.style.height = `${fieldHeight(el, s)}px`;
   }, [value, m.label, fill]);
 

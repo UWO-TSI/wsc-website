@@ -1,12 +1,34 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { FIELD_ERROR_RING, FIELD_WELL } from '@/components/contact/field';
 import Slab from '@/components/ui/slab';
 import Button from '@/components/ui/button';
+import AuthenticatorGuide from './authenticator-guide';
 
 type Mode = 'loading' | 'enroll' | 'challenge' | 'error';
+
+/*
+  Whether this device is a phone or tablet. Someone setting up on the phone
+  that will hold the code cannot scan their own screen, so the phone form
+  leads with the otpauth link and the copyable key, and folds the QR code
+  away. Decided by the pointer, not the width: a narrow desktop window still
+  gets the QR code first.
+*/
+const COARSE = '(pointer: coarse)';
+function subscribeCoarse(onChange: () => void) {
+  const query = window.matchMedia(COARSE);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+function useOnPhone() {
+  return useSyncExternalStore(
+    subscribeCoarse,
+    () => window.matchMedia(COARSE).matches,
+    () => false
+  );
+}
 
 interface MfaGateProps {
   onVerified: () => void;
@@ -36,6 +58,10 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
   const [factorId, setFactorId] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
+  /** otpauth:// link: opens the phone's authenticator with the account filled in. */
+  const [uri, setUri] = useState<string | null>(null);
+  const [copied, setCopied] = useState<'no' | 'yes' | 'failed'>('no');
+  const onPhone = useOnPhone();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -81,6 +107,7 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
       setFactorId(enrolled.id);
       setQrCode(enrolled.totp.qr_code);
       setSecret(enrolled.totp.secret);
+      setUri(enrolled.totp.uri);
       setMode('enroll');
     } catch (err) {
       setMessage((err as Error).message || 'Could not start two-factor setup.');
@@ -123,20 +150,31 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
     gap, never margins: the type classes reset margin outside a layer, so an
     mb-* on a title or body block never applies.
   */
-  const shell = (title: string | null, inner: React.ReactNode) => (
-    <div className="min-h-screen bg-page flex items-center justify-center px-6 py-16">
-      <Slab tone="raised" as="div" className="w-full max-w-md text-center flex flex-col items-center gap-8">
-        <div className="flex flex-col items-center gap-4">
-          <p className="label text-accent-ink">Two-factor authentication</p>
-          {title && <h1 className="title-sm text-ink">{title}</h1>}
-        </div>
-        {inner}
-        <Button variant="tertiary" onClick={onSignOut}>
-          Sign out
-        </Button>
-      </Slab>
+  const page = (children: React.ReactNode) => (
+    <div className="min-h-screen bg-page flex items-center justify-center px-6 py-16">{children}</div>
+  );
+
+  const head = (title: string | null) => (
+    <div className="flex flex-col items-center gap-4">
+      <p className="label text-accent-ink">Two-factor authentication</p>
+      {title && <h1 className="title-sm text-ink">{title}</h1>}
     </div>
   );
+
+  const signOutButton = (
+    <Button variant="tertiary" onClick={onSignOut}>
+      Sign out
+    </Button>
+  );
+
+  const shell = (title: string | null, inner: React.ReactNode) =>
+    page(
+      <Slab tone="raised" as="div" className="w-full max-w-md text-center flex flex-col items-center gap-8">
+        {head(title)}
+        {inner}
+        {signOutButton}
+      </Slab>
+    );
 
   if (mode === 'loading') {
     return shell(
@@ -216,41 +254,129 @@ export default function MfaGate({ onVerified, onSignOut }: MfaGateProps) {
     );
   }
 
-  return shell(
-    'Set up two-factor',
+  const copySecret = async () => {
+    if (!secret) return;
+    try {
+      await navigator.clipboard.writeText(secret);
+      setCopied('yes');
+    } catch {
+      setCopied('failed');
+    }
+  };
+
+  const qr = qrCode && (
     <>
-      <p className="body-sm text-ink-muted measure">
-        Scan this with Google Authenticator, Microsoft Authenticator, 1Password, or Apple
-        Passwords. Then enter the 6-digit code it shows.
-      </p>
-
-      {qrCode && (
-        <>
-          {/* Supabase returns the QR as an inline SVG data URI, which
-              next/image cannot optimise. The white plate gives a scanner
-              the contrast it needs. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrCode} alt="Two-factor setup QR code" className="h-48 w-48 rounded-sm bg-white p-3" />
-        </>
-      )}
-
-      {secret && (
-        <details className="w-full text-left">
-          <summary className="label cursor-pointer text-ink-muted hover:text-accent-ink transition-colors duration-[var(--d-hover)] ease-enter">
-            Cannot scan? Enter a code manually
-          </summary>
-          <p className="mt-2 break-all rounded-sm bg-page px-[15px] py-[13px] font-text font-medium tabular-nums tracking-[0.08em] text-ink">
-            {secret}
-          </p>
-        </details>
-      )}
-
-      {codeInput}
-
-      <p className="meta text-ink-faint measure">
-        Keep this in an app you will still have next term. If you lose the device, the site
-        owner has to remove the factor for you.
-      </p>
+      {/* Supabase returns the QR as an inline SVG data URI, which
+          next/image cannot optimise. The white plate gives a scanner
+          the contrast it needs. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={qrCode} alt="Two-factor setup QR code" className="h-48 w-48 rounded-sm bg-white p-3" />
     </>
+  );
+
+  const keepNote = (
+    <p className="meta text-ink-faint measure">
+      Keep this in an app you will still have next term. If you lose your phone, ask another
+      admin to remove you and invite you again.
+    </p>
+  );
+
+  /*
+    Phone: one raised section to set up (the otpauth link, the key, the
+    guide) and one sunken section to enter the code, so each has one
+    primary button.
+  */
+  if (onPhone) {
+    return (
+      <div className="min-h-screen bg-page px-4 py-6">
+        <div className="stack mx-auto w-full max-w-md">
+          <Slab tone="raised" as="div" className="flex flex-col gap-8">
+            <div className="flex flex-col items-center gap-4 text-center">
+              {head('Set up two-factor')}
+              <p className="body-sm text-ink-muted measure">
+                Add the club to an authenticator app on this phone, then paste the 6-digit code it
+                shows.
+              </p>
+            </div>
+
+            {uri && <Button href={uri}>Open in authenticator app</Button>}
+
+            {secret && (
+              <div className="flex flex-col gap-2">
+                <span className="label">Or copy the setup key</span>
+                <div className="flex items-center gap-2 rounded-sm bg-page py-1.5 pl-[15px] pr-1.5">
+                  <span className="min-w-0 flex-1 break-all font-text font-medium tabular-nums tracking-[0.08em] text-ink">
+                    {secret}
+                  </span>
+                  <Button variant="secondary" onClick={copySecret}>
+                    {copied === 'yes' ? 'Copied' : 'Copy'}
+                  </Button>
+                </div>
+                {copied === 'failed' && (
+                  <p className="body-sm text-alert">
+                    Copying is blocked here. Press and hold the key to copy it.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {qrCode && (
+              <details className="w-full">
+                <summary className="label cursor-pointer text-ink-muted">
+                  Setting up on another device? Show the QR code
+                </summary>
+                <div className="mt-4 flex justify-center">{qr}</div>
+              </details>
+            )}
+
+            <AuthenticatorGuide onPhone />
+          </Slab>
+
+          <Slab tone="sunken" as="div" className="flex flex-col items-center gap-6 text-center">
+            {codeInput}
+            {keepNote}
+            {signOutButton}
+          </Slab>
+        </div>
+      </div>
+    );
+  }
+
+  /* Computer: the setup card, and the guide beside it (below it when narrow). */
+  return page(
+    <div className="flex w-full max-w-[1120px] flex-wrap items-start justify-center gap-6">
+      <Slab
+        tone="raised"
+        as="div"
+        className="flex w-full max-w-md flex-[1_1_380px] flex-col items-center gap-8 text-center"
+      >
+        {head('Set up two-factor')}
+        <p className="body-sm text-ink-muted measure">
+          Scan this code with an authenticator app on your phone, then enter the 6-digit code it
+          shows. The guide shows where to tap in each app.
+        </p>
+
+        {qr}
+
+        {secret && (
+          <details className="w-full text-left">
+            <summary className="label cursor-pointer text-ink-muted hover:text-accent-ink transition-colors duration-[var(--d-hover)] ease-enter">
+              Cannot scan? Enter a code manually
+            </summary>
+            <p className="mt-2 break-all rounded-sm bg-page px-[15px] py-[13px] font-text font-medium tabular-nums tracking-[0.08em] text-ink">
+              {secret}
+            </p>
+          </details>
+        )}
+
+        {codeInput}
+        {keepNote}
+        {signOutButton}
+      </Slab>
+
+      <Slab tone="sunken" as="div" className="min-w-0 flex-[999_1_560px]">
+        <AuthenticatorGuide onPhone={false} />
+      </Slab>
+    </div>
   );
 }

@@ -250,6 +250,10 @@ Three columns, the repo's existing span pattern: large 2x2, tall 1x2, wide 2x1, 
 
 Dot tracks exactly, ring lags behind on a lerp. Four states: default 38px, hover 46, view 62, text 12. The ring is one of only two strokes in the system, alongside the focus ring, because a ring is its shape. Pointer devices only, and off while editing (Preview shows it again).
 
+## Authenticator guide (admin)
+
+Card 19 in `floor.html`. `src/app/admin/components/authenticator-guide.tsx`, shown by the two-factor setup screen (`mfa-gate.tsx`, enroll mode). An app picker (Apple Passwords, Google Authenticator, Microsoft Authenticator, each with its App Store icon from `public/logos/authenticators/`, used only to name the app), then three steps for that app. On a computer the setup card is `raised` and the guide is a `sunken` slab beside it, with a phone drawn in the site's neutrals; pressing a step changes the phone screen, and a disc of `--accent` at 35% marks what to tap. On a coarse pointer (phone or tablet) setup leads with Open in authenticator app (the `otpauth://` link from enrolment) and a copyable setup key, the QR code is folded away, the steps have no drawing, and the code entry is a separate `sunken` slab so each section has one primary button. Switching app or step swaps content with no motion.
+
 ## Editor (admin)
 
 Card 15 in `floor.html`. The dashboard that used it was removed: content is edited in place in edit mode (card 16), and the Settings page uses card 15's list rows. The card stays as the reference for the list rows and for the reorder move (`--d-move`, `--e-move`).

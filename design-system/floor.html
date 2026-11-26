@@ -1696,7 +1696,7 @@ Sales Team</span></span>
           <div class="e16-list">
             <div class="e16-srow"><span class="body-sm" style="color:var(--ink)">owner@example.ca</span><span class="meta">Signed in 2 days ago</span><span class="acts"><span class="chip-s"><span class="d" style="background:var(--ink-faint)"></span>Owner</span></span></div>
             <div class="e16-srow"><span class="body-sm" style="color:var(--ink)">president@example.ca</span><span class="meta">Signed in today</span><span class="acts"><button class="btn b3 small danger" type="button">Remove</button></span></div>
-            <div class="e16-form"><span class="body-sm" style="color:var(--ink)">Remove vp.events@example.ca? They lose access now. A new invite gives it back.</span><span style="display:flex;gap:8px"><button class="btn b2 small" type="button">Keep</button><button class="btn b1 small" type="button">Remove</button></span></div>
+            <div class="e16-form"><span class="body-sm" style="color:var(--ink)">Remove vp.events@example.ca? Their account and two-factor setup are deleted now. A new invite lets them set up again from the start.</span><span style="display:flex;gap:8px"><button class="btn b2 small" type="button">Keep</button><button class="btn b1 small" type="button">Remove</button></span></div>
             <div class="e16-srow"><span class="body-sm" style="color:var(--ink)">new.vp@example.ca</span><span class="meta">Invited, expires in 14 days</span><span class="acts"><button class="btn b3 small" type="button">Withdraw</button></span></div>
             <div class="e16-form">
               <div class="line"><div class="fld"><label for="e16-inv">Invite by Google email</label><input id="e16-inv" type="email" value="president@example.ca"></div><button class="btn b1" type="button">Invite</button></div>
@@ -1720,6 +1720,41 @@ Sales Team</span></span>
     </div>
 
     <p class="meta e16-soon">Not built yet, so not drawn: InlineSelect, InlineNumber, VisibilityChip, StateChip, Grip, AddTile.</p>
+  </section>
+
+  <section class="slab">
+    <div class="sechead"><span class="label"><span class="n">19</span> &nbsp;Authenticator guide</span><span class="meta">Beside two-factor setup. Shows where to tap in each app.</span></div>
+    <p class="body-sm" style="margin:0 0 20px;max-width:62ch">
+      On a computer the setup card is raised and the guide sits beside it on sunken: an app picker
+      with each app's App Store icon, a phone drawn in the site's neutrals, and three steps. Pressing
+      a step changes the phone screen. A disc of the accent at 35% marks what to tap, the way a touch
+      shows; it is a fill, so there is no new stroke. On a phone or tablet (coarse pointer) the person
+      cannot scan their own screen, so setup leads with Open in authenticator app (the otpauth link)
+      and a copyable setup key, folds the QR code away, and shows the steps without the drawing. The
+      code entry is its own sunken section there, so each section has one primary button.
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:var(--sunken);border-radius:var(--r-xl);padding:24px">
+      <div style="display:flex;flex-direction:column;gap:14px;flex:1 1 260px;min-width:0">
+        <span class="title-sm">Add the code to your app</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="btn b2" type="button" aria-pressed="true" style="font-weight:600">Apple Passwords</button>
+          <button class="btn b3" type="button" aria-pressed="false">Google Authenticator</button>
+          <button class="btn b3" type="button" aria-pressed="false">Microsoft Authenticator</button>
+        </div>
+        <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px">
+          <li style="display:flex;gap:12px;background:var(--page);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-1)"><span class="label" style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex:none">1</span><span class="body-sm"><b style="color:var(--ink)">Point the Camera at the code.</b> Tap Open in Passwords when it appears.</span></li>
+          <li style="display:flex;gap:12px;border-radius:var(--r-lg);padding:14px"><span class="label" style="width:26px;height:26px;border-radius:50%;background:var(--sunken);display:flex;align-items:center;justify-content:center;flex:none">2</span><span class="body-sm"><b style="color:var(--ink)">Save it as a new entry.</b> Tap + at the top.</span></li>
+          <li style="display:flex;gap:12px;border-radius:var(--r-lg);padding:14px"><span class="label" style="width:26px;height:26px;border-radius:50%;background:var(--sunken);display:flex;align-items:center;justify-content:center;flex:none">3</span><span class="body-sm"><b style="color:var(--ink)">Enter the code here.</b> Passwords, then Codes.</span></li>
+        </ol>
+      </div>
+      <div role="img" aria-label="Phone drawing, step 1" style="width:180px;height:368px;border-radius:30px;background:var(--inverse);padding:7px;flex:none;box-shadow:var(--sh-3)">
+        <div style="height:100%;border-radius:24px;background:var(--inverse);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+          <span class="meta" style="width:96px;height:96px;border-radius:var(--r-md);background:var(--inverse-tile);color:var(--on-inverse);display:flex;align-items:center;justify-content:center;text-align:center">QR code</span>
+          <span class="body-sm" style="position:relative;background:var(--page);color:var(--ink);border-radius:999px;padding:8px 14px;font-weight:600">Open in Passwords<span style="position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:color-mix(in srgb,var(--accent) 35%,transparent)"></span></span>
+        </div>
+      </div>
+    </div>
+    <p class="meta" style="margin:12px 0 0">Source: <code>src/app/admin/components/authenticator-guide.tsx</code>, used by <code>mfa-gate.tsx</code>. Icons: <code>public/logos/authenticators/</code>.</p>
   </section>
 
   <section class="slab">

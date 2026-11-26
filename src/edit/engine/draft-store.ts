@@ -438,8 +438,12 @@ export function overlayRows<T>(table: string, rows: T[]): T[] {
   );
   seenIds.set(t, withIds.map((r) => r.id!));
   seenRows.set(t, new Map(withIds.map((r) => [r.id!, r as Record<string, unknown>])));
+  const preview = getEditSnapshot().status === 'preview';
+  const vis = LIST_VISIBILITY_COLUMN[t];
   const d = lists.get(t);
-  if (!d) return withIds;
+  /* With no draft for the table nothing is removed, but published rows can
+     still be hidden, and Preview leaves those out too. */
+  if (!d) return preview ? withIds.filter((r) => (r as Record<string, unknown>)[vis] !== false) : withIds;
 
   const byId = new Map<string, T>();
   for (const r of withIds) byId.set(r.id!, d.updates[r.id!] ? ({ ...r, ...d.updates[r.id!] } as T) : r);
@@ -448,8 +452,6 @@ export function overlayRows<T>(table: string, rows: T[]): T[] {
   const order = currentOrder(t, d).filter((id) => byId.has(id));
   for (const id of byId.keys()) if (!order.includes(id)) order.push(id);
 
-  const preview = getEditSnapshot().status === 'preview';
-  const vis = LIST_VISIBILITY_COLUMN[t];
   return order
     .map((id) => byId.get(id)!)
     .filter((r) => {

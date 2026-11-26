@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type FormEvent, type ChangeEvent, type FocusEvent } from 'react';
+import { flushSync } from 'react-dom';
 import emailjs from '@emailjs/browser';
 import Button from '@/components/ui/button';
 import Slab from '@/components/ui/slab';
@@ -62,6 +63,22 @@ const COLUMN_CLASS = 'mx-auto w-full max-w-[640px]';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/* Form order, so a refused submit moves focus to the first field to fix. */
+const VALIDATED: FieldName[] = ['name', 'email', 'subject', 'message'];
+
+/*
+  Which part of an address failed EMAIL_PATTERN, checked in order, so the
+  message names the part that broke. The value is already trimmed.
+*/
+function emailError(value: string): string {
+  if (/\s/.test(value)) return 'Remove the space from the email and send again.';
+  const at = value.split('@').length - 1;
+  if (at === 0) return 'That is missing an @. Check it and send again.';
+  if (at > 1) return 'That has more than one @. Keep one and send again.';
+  if (value.startsWith('@')) return 'Add the part before the @, then send again.';
+  return 'Check the part after the @. It needs a domain such as uwo.ca.';
+}
+
 /*
   What broke and how to fix it, never "Invalid input".
 */
@@ -74,7 +91,7 @@ function validateField(name: FieldName, formData: FormData): string | undefined 
 
   if (name === 'email') {
     if (!value) return 'Add an email so we can reply.';
-    if (!EMAIL_PATTERN.test(value)) return 'That is missing an @. Check it and send again.';
+    if (!EMAIL_PATTERN.test(value)) return emailError(value);
   }
 
   return undefined;
@@ -87,6 +104,12 @@ function validateAll(formData: FormData): Record<FieldName, string | undefined> 
     subject: validateField('subject', formData),
     message: validateField('message', formData),
   };
+}
+
+function blockedText(count: number): string {
+  return count === 1
+    ? 'Not sent. 1 field needs a fix.'
+    : `Not sent. ${count} fields need a fix.`;
 }
 
 interface ContactFormProps {
@@ -105,6 +128,8 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitFailed, setSubmitFailed] = useState(false);
   const [sent, setSent] = useState(false);
+  /* Fields with an error at the last refused submit, for the live region. */
+  const [blocked, setBlocked] = useState(0);
 
   const errors = validateAll(formData);
   const shownError = (name: FieldName) => (touched[name] || submitted ? errors[name] : undefined);
@@ -126,11 +151,21 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
-    setSubmitFailed(false);
-
     const currentErrors = validateAll(formData);
-    if (Object.values(currentErrors).some(Boolean)) return;
+    const invalid = VALIDATED.filter((name) => currentErrors[name]);
+
+    /* Render the error text first, so the field that takes focus is
+       already described by its error when a screen reader reads it. */
+    flushSync(() => {
+      setSubmitted(true);
+      setSubmitFailed(false);
+      setBlocked(invalid.length);
+    });
+
+    if (invalid.length > 0) {
+      document.getElementById(`contact-${invalid[0]}`)?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -249,6 +284,7 @@ export default function ContactForm({ initialOrgType = '' }: ContactFormProps) {
         />
 
         <div aria-live="polite" aria-atomic="true">
+          {blocked > 0 && <p className="sr-only">{blockedText(blocked)}</p>}
           {submitFailed && (
             <div className="flex flex-col items-center gap-2 text-center">
               <Chip status="alert">Not sent</Chip>

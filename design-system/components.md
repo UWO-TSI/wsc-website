@@ -109,7 +109,7 @@ The form sits in a `--sunken` slab and each input is a `--page` well at `--r-sm`
 
 A light fill on white cannot reach 3:1, and no borderless light theme can. Identification is carried by the persistent visible label, which is why a placeholder-only field is forbidden here rather than discouraged. State is `--focus` at focus and `--alert` plus written text at error.
 
-Error copy says what broke and how to fix it: "That is missing an @. Check it and send again." Never "Invalid input". Errors appear on blur or submit, never on the first keystroke. Success replaces the form with `--ok` and the words Message sent, not a toast.
+Error copy says what broke and how to fix it: "That is missing an @. Check it and send again." Never "Invalid input". The email error names the part that failed (a space, no @, more than one @, nothing before the @, no domain after it). Errors appear on blur or submit, never on the first keystroke. A refused submit moves focus to the first field with an error, which reads its error through `aria-describedby`, and the form's live region says how many fields need a fix. Success replaces the form with `--ok` and the words Message sent, not a toast.
 
 Every field needs a stable `id` and a `<label for>`.
 

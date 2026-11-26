@@ -12,6 +12,8 @@ export type TrayContext =
   | { type: 'text'; key: string }
   | { type: 'lines'; keys: string[]; tooWide: boolean }
   | { type: 'button'; labelKey: string; hrefKey: string }
+  /* A link with no label to edit (a footer social icon); the tray shows its address. */
+  | { type: 'link'; hrefKey: string }
   | { type: 'photo'; slot: string }
   /* A field, chip or grip of one list row; the tray shows the row and Remove. */
   | { type: 'row'; table: ListTable; id: string; field: string }
@@ -80,6 +82,8 @@ const target = (ctx: TrayContext) => {
       return ctx.keys.join();
     case 'button':
       return ctx.labelKey;
+    case 'link':
+      return ctx.hrefKey;
     case 'photo':
       return ctx.slot;
     case 'row':

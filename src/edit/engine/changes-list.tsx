@@ -17,7 +17,9 @@ import { changeList, type Change, type FieldChange } from '@/edit/engine/draft-s
   the draft value. Pressing an entry closes the list and focuses the
   field when it is on this page, or opens the page it is on. Escape
   closes the list and returns focus to the count, and a press outside the
-  bar closes it.
+  bar closes it. The bar also closes it on Escape at the count, when the
+  count reaches 0, and on Discard and Publish (edit-bar.tsx), so it is
+  only ever opened from the count.
 
   It opens above the bar and scrolls inside itself, so the bar keeps its
   size and the page under it does not move.

@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { normalizeUrl, validateField } from '@/lib/normalize';
 import { COPY } from '@/edit/engine/copy';
-import { blurField, leaveTray, setUi } from '@/edit/engine/ui-store';
+import { blurField, edited, leaveTray, setUi } from '@/edit/engine/ui-store';
 
 /*
   The one link address input in the tray: a site_content button's link,
@@ -68,7 +68,11 @@ export function LinkField({
         }
         blurField();
       }}
-      onChange={(e) => onSave(e.target.value.trim())}
+      onChange={(e) => {
+        /* Typing clears a refused-link message, as it does on any field. */
+        edited();
+        onSave(e.target.value.trim());
+      }}
     />
   );
 }

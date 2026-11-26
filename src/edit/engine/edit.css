@@ -362,18 +362,36 @@ html.ed-on body {
   box-shadow: var(--sh-3);
 }
 
+/*
+  From 900px to 1439px, two rows: the account controls, the changes button
+  and Edit and Preview; then the tray, with Discard and Publish at its end.
+  In one row the other controls take about 890px, which left the tray 24px
+  at 900 and 337px at 1280, too little for the Discard confirmation, the
+  offline notice or a refused link. Here the tray has the bar's width less
+  Discard and Publish: 532px at 900. The changes button keeps 240px, room
+  for "100 unpublished changes".
+*/
 @media (min-width: 900px) {
   .ed-bar {
     left: 12px;
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    /* One row, left to right: the account controls, the changes button,
-       the tray, then the three actions. */
-    grid-template-columns: auto minmax(240px, auto) minmax(0, 1fr) auto auto auto;
-    grid-template-areas: 'acct status tray seg discard publish';
-    column-gap: 12px;
+    grid-template-columns: auto minmax(240px, auto) minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'acct status . seg seg'
+      'tray tray tray discard publish';
+    gap: 10px 12px;
     padding: 12px 14px;
     border-radius: var(--r-xl);
+  }
+}
+
+/* From 1440px, one row, left to right: the account controls, the changes
+   button, the tray (about 500px), then the three actions. */
+@media (min-width: 1440px) {
+  .ed-bar {
+    grid-template-columns: auto minmax(240px, auto) minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'acct status tray seg discard publish';
   }
 }
 
@@ -457,6 +475,32 @@ html.ed-on body {
 
 .ed-count-n svg {
   flex: none;
+}
+
+/*
+  The count's phone form. Below 640px the first row leaves the count about
+  110px at 375, so it reads "2 changes" (COPY.pendingPhone) at --t-body-sm,
+  with 6px sides here and 10px sides on Edit and Preview: room for
+  "100 changes" and the chevron at 375. The full count stays its
+  accessible name.
+*/
+.ed-count-phone {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .ed-count {
+    padding-inline: 6px;
+    font-size: var(--t-body-sm);
+  }
+
+  .ed-count-full {
+    display: none;
+  }
+
+  .ed-count-phone {
+    display: block;
+  }
 }
 
 .ed-count[aria-expanded='true'] .ed-count-n svg {
@@ -563,7 +607,7 @@ html.ed-on body {
   border-radius: var(--r-pill);
 }
 
-/* 12px sides below 900px give the count its room; 16px from 900px. */
+/* 10px sides below 640px and 12px below 900px give the count its room; 16px from 900px. */
 .ed-seg button {
   padding: 8px 12px;
   border: 0;
@@ -579,6 +623,13 @@ html.ed-on body {
 @media (min-width: 900px) {
   .ed-seg button {
     padding: 8px 16px;
+  }
+}
+
+/* Below 640px, 10px sides, for the count's room (.ed-count-phone). */
+@media (max-width: 639px) {
+  .ed-seg button {
+    padding-inline: 10px;
   }
 }
 

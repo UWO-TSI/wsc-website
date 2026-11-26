@@ -122,8 +122,8 @@ export const SITE_CONTENT = {
   // Home / Join
   'home.cta.title_line1': { value: 'Join', kind: 'text', page: 'Home', section: 'Join', label: 'Heading', max: 24 },
   'home.cta.subtitle': { value: 'Students join through the Western USC store. Businesses can contact us about partnering.', kind: 'text', page: 'Home', section: 'Join', label: 'Subtitle', max: 90 },
-  'home.cta.button_label': { value: 'Apply to join', kind: 'text', page: 'Home', section: 'Join', label: 'Button text', max: 28 },
-  'home.cta.button_href': { value: STORE_URL, kind: 'url', page: 'Home', section: 'Join', label: 'Button link', max: 200 },
+  'home.cta.button_label': { value: 'Apply to join', kind: 'text', page: 'Home', section: 'Join', label: 'Apply button text', max: 28, help: 'The Apply to join button in the nav, the hero and the Join band.' },
+  'home.cta.button_href': { value: STORE_URL, kind: 'url', page: 'Home', section: 'Join', label: 'Apply button link', max: 200 },
   'home.cta.business_label': { value: 'Get in touch', kind: 'text', page: 'Home', section: 'Join', label: 'Business button text', max: 28 },
   'home.cta.business_href': { value: '/contact-us', kind: 'url', page: 'Home', section: 'Join', label: 'Business button link', max: 200 },
 

@@ -10,6 +10,8 @@ import { byDateDesc } from '@/components/events/timeline';
 import { TILE_SIZE, scaleFor } from '@/components/sponsors/logo-card';
 import CardRow, { CARD_ROW_ITEM } from '@/components/ui/card-row';
 import { FORMAT_CARD, FORMAT_PHOTO, FORMAT_PHOTO_SIZES } from '@/components/landing/formats-section';
+import { FIGURE_ROW, figureCell } from '@/components/landing/proof-band';
+import { HERO_FIGURE, figureEm, heroFigureSize, rowEm } from '@/components/ui/stat-figure';
 import { EditableButton, useEditSnapshot } from '@/edit';
 import { externalLinkProps } from '@/lib/link-utils';
 import { LIMITS } from '@/lib/admin-config';
@@ -714,6 +716,16 @@ export function SponsorsEditor({ sponsors }: { sponsors: Sponsor[] }) {
 
 /* ── Counted figures ── */
 
+/*
+  The visitor's figures (proof-band.tsx) with their fields inline. The
+  shown figures (the first LIMITS.MAX_SITE_STATS visible ones, as the page
+  picks them) are the visitor's row: the same cells, the same count and
+  the same fitted size, so each figure is where Preview puts it at the
+  same type. The hidden figures, dimmed, and then the Add tile follow in a
+  second row of the same cells, so they never change the shown figures'
+  columns. The Grip reorders within each row. Each figure's controls wrap
+  inside its cell.
+*/
 export function StatsEditor({ stats }: { stats: SiteStat[] }) {
   const table = 'site_stats';
   const api = useList<SiteStat>(table);
@@ -723,7 +735,18 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
   const [adds, setAdds] = useState(0);
   const nameOf = (s: SiteStat) => s.label.trim() || copy.fresh;
 
-  const reorder = useReorder({ api, table, rows: stats, listRef, nameOf });
+  const shownIds = new Set(stats.filter((s) => s.visible).slice(0, LIMITS.MAX_SITE_STATS).map((s) => s.id));
+  const isShown = (s: SiteStat) => shownIds.has(s.id);
+  const ordered = [...stats.filter(isShown), ...stats.filter((s) => !isShown(s))];
+
+  const reorder = useReorder({
+    api,
+    table,
+    rows: ordered,
+    listRef,
+    nameOf,
+    canSwap: (a, b) => isShown(a) === isShown(b),
+  });
   const { items, done } = useLeaving(stats, api, reorder.capture, listRef);
 
   useRowTray(table, (id, field, row): RowTrayView => {
@@ -743,82 +766,102 @@ export function StatsEditor({ stats }: { stats: SiteStat[] }) {
     focusNew(`[data-ed-field="site_stats.${id}.value"] input`);
   };
 
+  /* A leaving row (deleted by Publish) stays in the row it was in. */
+  const front = items.filter(({ row, leaving }) => isShown(row) || (leaving && row.visible));
+  const back = items.filter((item) => !front.includes(item));
+  const shown = front.filter(({ leaving }) => !leaving).map(({ row }) => row);
+  const cell = figureCell(shown.length);
+  const fit = rowEm(shown);
+
+  /* A longer or shorter widest figure resizes every figure in the row, but
+     each field measures its width only when its own text or the window
+     changes. The window's resize pass (onRemeasure in measure.ts) measures
+     them all again. */
+  const lastFit = useRef(fit);
+  useLayoutEffect(() => {
+    if (lastFit.current === fit) return;
+    lastFit.current = fit;
+    window.dispatchEvent(new Event('resize'));
+  }, [fit]);
+
+  const figure = ({ row: s, leaving }: (typeof items)[number]) => {
+    const state = api.state(s.id);
+    const who = nameOf(s);
+    const index = ordered.findIndex((r) => r.id === s.id);
+    /* A hidden figure longer than the shown ones shrinks to its own fit. */
+    const em = isShown(s) ? fit : Math.max(fit, figureEm(s.value, s.suffix));
+    return (
+      <ReorderItem
+        key={s.id}
+        id={s.id}
+        as="div"
+        disabled={leaving}
+        data-leaving={leaving ? '' : undefined}
+        inert={leaving}
+        onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
+        className={`${itemClass(state, !s.visible, reorder.held === s.id, leaving)} ${cell} flex flex-col items-center gap-2 text-center`}
+      >
+        <span className={`flex max-w-full items-center justify-center gap-2 ${HERO_FIGURE}`} style={{ fontSize: heroFigureSize(em) }}>
+          <InlineNumber
+            table={table}
+            id={s.id}
+            column="value"
+            value={s.value}
+            max={LIMIT.statValue}
+            label={COPY.field.value}
+            who={who}
+            onChange={(value) => api.update(s.id, { value })}
+          />
+          <RowField
+            table={table}
+            id={s.id}
+            column="suffix"
+            value={s.suffix ?? ''}
+            max={LIMIT.statSuffix}
+            label={COPY.field.suffix}
+            who={who}
+            placeholder="+"
+            className="accent-mark"
+            onChange={(suffix) => api.update(s.id, { suffix: suffix || null } as Partial<SiteStat>)}
+          />
+        </span>
+        <RowField
+          table={table}
+          id={s.id}
+          column="label"
+          value={s.label}
+          max={LIMIT.statLabel}
+          label={COPY.field.label}
+          who={who}
+          className="label"
+          onChange={(label) => api.update(s.id, { label })}
+        />
+        <span className="flex max-w-full flex-wrap items-center justify-center gap-2">
+          <VisibilityChip table={table} id={s.id} who={who} visible={s.visible} onToggle={() => api.hide(s.id, s.visible)} />
+          <Grip {...reorder.gripProps(s, Math.max(0, index))} />
+          <RowOptions table={table} id={s.id} who={who} />
+        </span>
+        <StateChip state={state} />
+      </ReorderItem>
+    );
+  };
+
   return (
     <ReorderList layout="grid" {...reorder.listProps}>
-      {/* The visitor grid (proof-band.tsx): two columns on a phone, one
-          row from 700px, with the Add tile as the last cell, so each
-          figure sits in the column it has in Preview and a longer number
-          does not move its neighbours. */}
-      <div
-        ref={listRef}
-        className={`grid grid-cols-2 gap-x-4 gap-y-10 ${items.length + 1 >= 4 ? 'min-[700px]:grid-cols-4' : 'min-[700px]:grid-cols-3'}`}
-      >
-        {items.map(({ row: s, leaving }, index) => {
-          const state = api.state(s.id);
-          const who = nameOf(s);
-          return (
-            <ReorderItem
-              key={s.id}
-              id={s.id}
-              as="div"
-              disabled={leaving}
-              data-leaving={leaving ? '' : undefined}
-              inert={leaving}
-              onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(s.id)}
-              className={`${itemClass(state, !s.visible, reorder.held === s.id, leaving)} flex flex-col items-center gap-2 text-center`}
-            >
-              <span className="flex items-center gap-2 font-text text-[clamp(2.4rem,7vw,56px)] font-semibold leading-none tracking-[-0.03em] tabular-nums">
-                <InlineNumber
-                  table={table}
-                  id={s.id}
-                  column="value"
-                  value={s.value}
-                  max={LIMIT.statValue}
-                  label={COPY.field.value}
-                  who={who}
-                  onChange={(value) => api.update(s.id, { value })}
-                />
-                <RowField
-                  table={table}
-                  id={s.id}
-                  column="suffix"
-                  value={s.suffix ?? ''}
-                  max={LIMIT.statSuffix}
-                  label={COPY.field.suffix}
-                  who={who}
-                  className="accent-mark"
-                  onChange={(suffix) => api.update(s.id, { suffix: suffix || null } as Partial<SiteStat>)}
-                />
-              </span>
-              <RowField
-                table={table}
-                id={s.id}
-                column="label"
-                value={s.label}
-                max={LIMIT.statLabel}
-                label={COPY.field.label}
-                who={who}
-                className="label"
-                onChange={(label) => api.update(s.id, { label })}
-              />
-              <span className="flex items-center gap-2">
-                <VisibilityChip table={table} id={s.id} who={who} visible={s.visible} onToggle={() => api.hide(s.id, s.visible)} />
-                <Grip {...reorder.gripProps(s, index)} />
-                <RowOptions table={table} id={s.id} who={who} />
-              </span>
-              <StateChip state={state} />
-            </ReorderItem>
-          );
-        })}
-        {/* The tile fills its grid cell, as tall as the figures' row. */}
-        <div key={`add-${adds}`} className="flex">
-          <AddTile
-            label={copy.add}
-            shape="figure"
-            appear={adds > 0}
-            full={fullAt(api, stats, LIMITS.MAX_SITE_STATS, copy.full)}
-            onAdd={add}
-          />
+      <div ref={listRef} className="flex flex-col gap-y-10">
+        {front.length > 0 && <div className={FIGURE_ROW}>{front.map(figure)}</div>}
+        <div className={FIGURE_ROW}>
+          {back.map(figure)}
+          {/* The tile fills its cell, as tall as the row. */}
+          <div key={`add-${adds}`} className={`${cell} flex`}>
+            <AddTile
+              label={copy.add}
+              shape="figure"
+              appear={adds > 0}
+              full={fullAt(api, stats, LIMITS.MAX_SITE_STATS, copy.full)}
+              onAdd={add}
+            />
+          </div>
         </div>
       </div>
       <p className="sr-only" role="status">

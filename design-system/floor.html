@@ -596,7 +596,7 @@
   .edrow { display: grid; grid-template-columns: 36px minmax(0,1fr) minmax(0,1fr) auto; gap: 12px; align-items: center; background: var(--sunken); border-radius: var(--r-md); padding: 12px; transition: box-shadow var(--d-hover) var(--e-enter); }
   .edrow.held { box-shadow: var(--sh-3); position: relative; z-index: 1; }
   .grip { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--ink-muted); border-radius: var(--r-sm); cursor: grab; touch-action: none; transition: background-color var(--d-hover) var(--e-enter), color var(--d-hover) var(--e-enter); }
-  .grip:hover { background: var(--accent-veil); color: var(--accent-ink); }
+  .grip:hover, .grip:active { background: var(--accent); color: var(--on-accent); }
   .edrow.held .grip { cursor: grabbing; }
 
   /* ── Card 16: Edit mode. Mirrors src/edit/engine/edit.css, values unchanged. ── */

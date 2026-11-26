@@ -32,7 +32,7 @@ async function discardAll(page: Page) {
 }
 
 const LISTS = [
-  { path: '/executive-team', list: 'ul:has(> [data-key] .ed-grip)', sameGroup: true },
+  { path: '/executive-team', list: 'ul:has(> [data-key] + [data-key])', sameGroup: true },
   { path: '/sponsors', list: 'div:has(> [data-key] .ed-grip)', sameGroup: false },
   { path: '/', list: '.slab-inv div:has(> [data-key] .ed-grip)', sameGroup: false },
 ];

@@ -39,16 +39,16 @@ const SIZE = {
 };
 
 /*
-  The roster editor (src/edit/engine/list-editors.tsx) stays one flat grid,
-  because dragging and changing a role move people between tiers. These are
-  its layout and portrait size, the same size as the visitor view.
+  The roster editor (src/edit/engine/list-editors.tsx) uses the same tiers,
+  cells and portrait size, so edit mode shows the roster as Preview does.
+  A drag moves a person within their role; changing the role moves them to
+  that role's tier.
 */
-export const GRID = 'grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-4';
+export const CELL = SIZE.cell;
 export const AVATAR_WIDTH = SIZE.avatar;
 export const AVATAR_SIZES = SIZE.sizes;
-
-const TIER_ROW = 'm-0 flex list-none flex-wrap justify-center gap-x-6 gap-y-10 p-0';
-const TIER_STACK = 'flex flex-col gap-16';
+export const TIER_ROW = 'm-0 flex list-none flex-wrap justify-center gap-x-6 gap-y-10 p-0';
+export const TIER_STACK = 'flex flex-col gap-16';
 
 /*
   The skeleton has the shape of a typical roster: two presidents, then a row
@@ -95,7 +95,7 @@ export function titleOf(executive: Executive, groups: ExecGroup[], areas: ExecAr
 /*
   `tiers` is the roster split by role, in role order, with empty roles
   removed. While editing, the engine's roster editor renders instead with the
-  same people in the same order, flat: every field inline, the Add tile last,
+  same people in the same tiers: every field inline, the Add tile last,
   the Grip, the chips, and Remove in the tray. A visitor never downloads it
   (src/edit/list-draft.ts).
 */

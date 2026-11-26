@@ -5,7 +5,7 @@ import { isBefore, parseISO, startOfDay, format } from 'date-fns';
 import Avatar from '@/components/ui/avatar';
 import Chip from '@/components/ui/chip';
 import RevealImage from '@/components/ui/reveal-image';
-import { AVATAR_SIZES, AVATAR_WIDTH, GRID, titleOf } from '@/components/team/executive-grid';
+import { AVATAR_SIZES, AVATAR_WIDTH, CELL, TIER_ROW, TIER_STACK, titleOf } from '@/components/team/executive-grid';
 import { byDateDesc } from '@/components/events/timeline';
 import { TILE_SIZE, scaleFor } from '@/components/sponsors/logo-card';
 import CardRow, { CARD_ROW_ITEM } from '@/components/ui/card-row';
@@ -146,6 +146,17 @@ function fullAt(api: ListDraftApi, rows: Array<{ id: string }>, max: number, lin
 
 /* ── Executives ── */
 
+/** Consecutive rows of one role, with the index of the first: the visitor's tiers. */
+function tiersOf<T extends { row: { group: string } }>(entries: T[]) {
+  const out: Array<{ tier: T[]; start: number }> = [];
+  entries.forEach((entry, i) => {
+    const last = out[out.length - 1];
+    if (last && last.tier[0].row.group === entry.row.group) last.tier.push(entry);
+    else out.push({ tier: [entry], start: i });
+  });
+  return out;
+}
+
 export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
   const table = 'executives';
   const api = useList<Executive>(table);
@@ -156,7 +167,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
   const areas = [...areaRows, ...draftAreas().map((a) => ({ ...a, display_order: 0 }))].sort((a, b) =>
     a.name.localeCompare(b.name)
   );
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const focusNew = useFocusNew();
   const [adds, setAdds] = useState(0);
   const [addingArea, setAddingArea] = useState<string | null>(null);
@@ -198,127 +209,139 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
     focusNew(`[data-ed-field="executives.${id}.name"] textarea`);
   };
 
+  /* The Add tile is the last cell of the last tier. */
+  const addCell = (
+    <li key={`add-${adds}`} className={`flex flex-col items-center ${CELL}`}>
+      <span className={AVATAR_WIDTH}>
+        <AddTile
+          label={copy.add}
+          shape="disc"
+          appear={adds > 0}
+          full={fullAt(api, rows, LIMITS.MAX_EXECUTIVES, copy.full)}
+          onAdd={add}
+        />
+      </span>
+    </li>
+  );
+
   return (
     <ReorderList layout="grid" {...reorder.listProps}>
-      <ul ref={listRef} className={`m-0 list-none p-0 ${GRID}`}>
-        {items.map(({ row: e, leaving }, index) => {
-          const state = api.state(e.id);
-          const src = api.fileUrl(e.id, 'headshot_path') ?? getPublicUrl('headshots', e.headshot_path);
-          const who = nameOf(e);
-          const head = COPY.rowHead(copy.kind, who);
-          return (
-            <ReorderItem
-              key={e.id}
-              id={e.id}
-              as="li"
-              disabled={leaving}
-              data-leaving={leaving ? '' : undefined}
-              inert={leaving}
-              onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(e.id)}
-              className={`${itemClass(state, !e.visible, reorder.held === e.id, leaving)} relative flex flex-col items-center gap-3 text-center`}
-            >
-              <span className={`relative ${AVATAR_WIDTH}`}>
-                <Avatar name={e.name} src={src} fluid sizes={AVATAR_SIZES} />
-                <RowPhoto
-                  api={api}
-                  table={table}
+      {/* The visitor's tiers (executive-grid.tsx): one centred row per role. */}
+      <div ref={listRef} className={TIER_STACK}>
+        {tiersOf(items).map(({ tier, start }, t, all) => (
+          <ul key={`${tier[0].row.group}-${start}`} className={TIER_ROW}>
+            {tier.map(({ row: e, leaving }, i) => {
+              const index = start + i;
+              const state = api.state(e.id);
+              const src = api.fileUrl(e.id, 'headshot_path') ?? getPublicUrl('headshots', e.headshot_path);
+              const who = nameOf(e);
+              const head = COPY.rowHead(copy.kind, who);
+              return (
+                <ReorderItem
+                  key={e.id}
                   id={e.id}
-                  column="headshot_path"
-                  filled={!!src}
-                  what={COPY.field.headshot}
-                  who={nameOf(e)}
-                  head={head}
-                />
-              </span>
-              <VisibilityChip
-                table={table}
-                id={e.id}
-                who={who}
-                visible={e.visible}
-                onToggle={() => api.hide(e.id, e.visible)}
-                className="ed-over-tl"
-              />
-              <Grip {...reorder.gripProps(e, index)} className="ed-grip ed-over-tr" />
-
-              <div className="flex w-full flex-col gap-2">
-                <RowField
-                  table={table}
-                  id={e.id}
-                  column="name"
-                  value={e.name}
-                  max={LIMIT.executiveName}
-                  label={COPY.field.name}
-                  who={who}
-                  placeholder={COPY.field.fullName}
-                  block
-                  className="title-sm"
-                  onChange={(name) => api.update(e.id, { name })}
-                />
-                <span className="meta flex flex-col gap-2">
-                  <InlineSelect
-                    table={table}
-                    id={e.id}
-                    column="group"
-                    value={e.group}
-                    label={COPY.field.role}
-                    who={who}
-                    options={groups.map((g) => ({ value: g.slug, label: g.short_label, title: g.singular_label }))}
-                    onChange={(group) =>
-                      api.update(e.id, { group, title: built(group, e.area_id ?? null) } as Partial<Executive>)
-                    }
-                  />
-                  {addingArea === e.id ? (
-                    <NewArea
-                      areas={areas}
-                      onDone={(name) => {
-                        setAddingArea(null);
-                        if (name) {
-                          const areaId = addDraftArea(name);
-                          api.update(e.id, { area_id: areaId, title: `${built(e.group, null)}, ${name}`.slice(0, LIMIT.areaName) } as Partial<Executive>);
-                        }
-                        focusNew(`[data-ed-field="executives.${e.id}.area_id"] select`);
-                      }}
-                      onFocus={() => focusField({ type: 'area', id: e.id })}
-                    />
-                  ) : (
-                    <InlineSelect
+                  as="li"
+                  disabled={leaving}
+                  data-leaving={leaving ? '' : undefined}
+                  inert={leaving}
+                  onAnimationEnd={(ev) => leaving && ev.target === ev.currentTarget && done(e.id)}
+                  className={`${itemClass(state, !e.visible, reorder.held === e.id, leaving)} relative flex flex-col items-center gap-3 text-center ${CELL}`}
+                >
+                  <span className={`relative ${AVATAR_WIDTH}`}>
+                    <Avatar name={e.name} src={src} fluid sizes={AVATAR_SIZES} />
+                    <RowPhoto
+                      api={api}
                       table={table}
                       id={e.id}
-                      column="area_id"
-                      value={e.area_id ?? ''}
-                      label={COPY.field.area}
-                      who={who}
-                      options={[
-                        { value: '', label: COPY.noArea },
-                        ...areas.map((a) => ({ value: a.id, label: a.name })),
-                        { value: ADD_AREA, label: COPY.addArea },
-                      ]}
-                      onChange={(value) => {
-                        if (value === ADD_AREA) return setAddingArea(e.id);
-                        const areaId = value || null;
-                        api.update(e.id, { area_id: areaId, title: built(e.group, areaId) } as Partial<Executive>);
-                      }}
+                      column="headshot_path"
+                      filled={!!src}
+                      what={COPY.field.headshot}
+                      who={nameOf(e)}
+                      head={head}
                     />
-                  )}
-                </span>
-              </div>
-              <RowOptions table={table} id={e.id} who={who} />
-              <StateChip state={state} />
-            </ReorderItem>
-          );
-        })}
-        <li key={`add-${adds}`} className="flex flex-col items-center">
-          <span className={AVATAR_WIDTH}>
-            <AddTile
-              label={copy.add}
-              shape="disc"
-              appear={adds > 0}
-              full={fullAt(api, rows, LIMITS.MAX_EXECUTIVES, copy.full)}
-              onAdd={add}
-            />
-          </span>
-        </li>
-      </ul>
+                  </span>
+                  <VisibilityChip
+                    table={table}
+                    id={e.id}
+                    who={who}
+                    visible={e.visible}
+                    onToggle={() => api.hide(e.id, e.visible)}
+                    className="ed-over-tl"
+                  />
+                  <Grip {...reorder.gripProps(e, index)} className="ed-grip ed-over-tr" />
+
+                  <div className="flex w-full flex-col gap-2">
+                    <RowField
+                      table={table}
+                      id={e.id}
+                      column="name"
+                      value={e.name}
+                      max={LIMIT.executiveName}
+                      label={COPY.field.name}
+                      who={who}
+                      placeholder={COPY.field.fullName}
+                      block
+                      className="title-sm"
+                      onChange={(name) => api.update(e.id, { name })}
+                    />
+                    <span className="meta flex flex-col gap-2">
+                      <InlineSelect
+                        table={table}
+                        id={e.id}
+                        column="group"
+                        value={e.group}
+                        label={COPY.field.role}
+                        who={who}
+                        options={groups.map((g) => ({ value: g.slug, label: g.short_label, title: g.singular_label }))}
+                        onChange={(group) =>
+                          api.update(e.id, { group, title: built(group, e.area_id ?? null) } as Partial<Executive>)
+                        }
+                      />
+                      {addingArea === e.id ? (
+                        <NewArea
+                          areas={areas}
+                          onDone={(name) => {
+                            setAddingArea(null);
+                            if (name) {
+                              const areaId = addDraftArea(name);
+                              api.update(e.id, { area_id: areaId, title: `${built(e.group, null)}, ${name}`.slice(0, LIMIT.areaName) } as Partial<Executive>);
+                            }
+                            focusNew(`[data-ed-field="executives.${e.id}.area_id"] select`);
+                          }}
+                          onFocus={() => focusField({ type: 'area', id: e.id })}
+                        />
+                      ) : (
+                        <InlineSelect
+                          table={table}
+                          id={e.id}
+                          column="area_id"
+                          value={e.area_id ?? ''}
+                          label={COPY.field.area}
+                          who={who}
+                          options={[
+                            { value: '', label: COPY.noArea },
+                            ...areas.map((a) => ({ value: a.id, label: a.name })),
+                            { value: ADD_AREA, label: COPY.addArea },
+                          ]}
+                          onChange={(value) => {
+                            if (value === ADD_AREA) return setAddingArea(e.id);
+                            const areaId = value || null;
+                            api.update(e.id, { area_id: areaId, title: built(e.group, areaId) } as Partial<Executive>);
+                          }}
+                        />
+                      )}
+                    </span>
+                  </div>
+                  <RowOptions table={table} id={e.id} who={who} />
+                  <StateChip state={state} />
+                </ReorderItem>
+              );
+            })}
+            {t === all.length - 1 && addCell}
+          </ul>
+        ))}
+        {items.length === 0 && <ul className={TIER_ROW}>{addCell}</ul>}
+      </div>
       <p className="sr-only" role="status">
         {reorder.announce}
       </p>

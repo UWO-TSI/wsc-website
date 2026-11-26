@@ -818,9 +818,15 @@ html.ed-on body {
     color var(--d-hover) var(--e-enter);
 }
 
-.ed-grip:hover {
-  background: var(--accent-veil);
-  color: var(--accent-ink);
+/* Under the pointer the disc inverts: the accent fill with its own ink,
+   as a pressed Edit button. Both are opaque, so the disc reads on every
+   ground (the see-through veil it used before turned it dark on a dark
+   section). */
+.ed-grip:hover,
+.ed-grip:active,
+.ed-item.ed-held .ed-grip {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .ed-over-tl,

@@ -619,7 +619,8 @@ export function RowPhoto({
 
 type Rects = Map<string, DOMRect>;
 
-const items = (list: HTMLElement) => list.querySelectorAll<HTMLElement>(':scope > [data-key]');
+/* Every item in the list, also when the list is split into rows (the team tiers). */
+const items = (list: HTMLElement) => list.querySelectorAll<HTMLElement>('[data-key]');
 
 function rectsOf(list: HTMLElement): Rects {
   const out: Rects = new Map();
@@ -712,7 +713,7 @@ export function useReorder<R extends { id: string }>({
       });
     }
     if (refocus.current && list) {
-      list.querySelector<HTMLElement>(`:scope > [data-key="${refocus.current}"] .ed-grip`)?.focus();
+      list.querySelector<HTMLElement>(`[data-key="${refocus.current}"] .ed-grip`)?.focus();
       refocus.current = null;
     }
   });

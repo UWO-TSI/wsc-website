@@ -470,10 +470,15 @@ export function RowOptions({ table, id, who }: { table: ListTable; id: string; w
  * places first). The Grip is not held: its moves are the point. A row
  * added while the order is held takes its sorted place among the held
  * rows.
+ *
+ * `was(row)` is the row as it was when the order was held. A list that
+ * places a row by a field (the team's tiers, by role) places it by `was`,
+ * so a role change keeps the person in their old tier, in the same list
+ * element, with focus kept, until focus leaves the list.
  */
 export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted: R[]) {
-  const [held, setHeld] = useState<string[] | null>(null);
-  const holding = useRef<string[] | null>(null);
+  const [held, setHeld] = useState<R[] | null>(null);
+  const holding = useRef(false);
   const shown = useRef<R[]>(sorted);
   const release = useRef<() => void>(() => {});
 
@@ -483,11 +488,11 @@ export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted:
         const f = getUi().focus;
         const editing = f?.type === 'row' && f.table === table && f.field !== 'grip';
         if (editing && !holding.current) {
-          holding.current = shown.current.map((r) => r.id);
-          setHeld(holding.current);
+          holding.current = true;
+          setHeld(shown.current);
         } else if (!editing && holding.current) {
           release.current();
-          holding.current = null;
+          holding.current = false;
           setHeld(null);
         }
       }),
@@ -495,10 +500,11 @@ export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted:
   );
 
   let rows = sorted;
+  const before = new Map((held ?? []).map((r) => [r.id, r]));
   if (held) {
     const byId = new Map(sorted.map((r) => [r.id, r]));
-    const kept = new Set(held);
-    rows = held.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+    const kept = new Set(before.keys());
+    rows = held.flatMap(({ id }) => (byId.has(id) ? [byId.get(id)!] : []));
     sorted.forEach((r, i) => {
       if (kept.has(r.id)) return;
       const after = sorted.slice(i + 1).find((x) => kept.has(x.id));
@@ -515,7 +521,8 @@ export function useHeldOrder<R extends { id: string }>(table: ListTable, sorted:
   const onRelease = (fn: () => void) => {
     release.current = fn;
   };
-  return { rows, onRelease };
+  const was = (row: R): R => before.get(row.id) ?? row;
+  return { rows, onRelease, was };
 }
 
 /* ── A row's photo: headshot or logo ── */

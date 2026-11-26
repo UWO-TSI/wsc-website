@@ -17,6 +17,7 @@ import { getPublicUrl } from '@/lib/supabase/storage';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import { useSiteContent } from '@/providers/site-content-provider';
 import { EXEC_GROUP_FALLBACKS } from '@/lib/exec-group-fallbacks';
+import { cutTiers } from '@/lib/exec-tiers';
 import { registerHref } from '@/lib/event-display';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import type { Event, EventFormat, ExecArea, ExecGroup, Executive, SiteStat, Sponsor } from '@/types/database';
@@ -146,17 +147,6 @@ function fullAt(api: ListDraftApi, rows: Array<{ id: string }>, max: number, lin
 
 /* ── Executives ── */
 
-/** Consecutive rows of one role, with the index of the first: the visitor's tiers. */
-function tiersOf<T extends { row: { group: string } }>(entries: T[]) {
-  const out: Array<{ tier: T[]; start: number }> = [];
-  entries.forEach((entry, i) => {
-    const last = out[out.length - 1];
-    if (last && last.tier[0].row.group === entry.row.group) last.tier.push(entry);
-    else out.push({ tier: [entry], start: i });
-  });
-  return out;
-}
-
 export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
   const table = 'executives';
   const api = useList<Executive>(table);
@@ -164,6 +154,7 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
   const { data: groupRows } = useSupabaseQuery<ExecGroup>('exec_groups');
   const { data: areaRows } = useSupabaseQuery<ExecArea>('exec_areas', { orderBy: 'name' });
   const groups = groupRows.length ? groupRows : EXEC_GROUP_FALLBACKS;
+  const slugs = groups.map((g) => g.slug);
   const areas = [...areaRows, ...draftAreas().map((a) => ({ ...a, display_order: 0 }))].sort((a, b) =>
     a.name.localeCompare(b.name)
   );
@@ -179,10 +170,15 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
     return (area ? `${role}, ${area}` : role).slice(0, LIMIT.areaName);
   };
 
-  /* A role change re-groups the roster; the row stays put until focus leaves the list. */
+  /* A role change re-groups the roster. While the order is held the person
+     stays in their old tier (held.was), in the same list element, so focus
+     stays in the field; they move to the new tier once focus leaves the
+     roster. */
   const held = useHeldOrder(table, executives);
   const rows = held.rows;
-  const reorder = useReorder({ api, table, rows, listRef, nameOf, canSwap: (a, b) => a.group === b.group });
+  /* A Grip move stays in a tier: one role, or the shared tier of unknown roles. */
+  const tierOf = (e: Executive) => (slugs.includes(e.group) ? e.group : '');
+  const reorder = useReorder({ api, table, rows, listRef, nameOf, canSwap: (a, b) => tierOf(a) === tierOf(b) });
   held.onRelease(reorder.capture);
   const { items, done } = useLeaving(rows, api, reorder.capture, listRef);
 
@@ -228,8 +224,8 @@ export function ExecutivesEditor({ executives }: { executives: Executive[] }) {
     <ReorderList layout="grid" {...reorder.listProps}>
       {/* The visitor's tiers (executive-grid.tsx): one centred row per role. */}
       <div ref={listRef} className={TIER_STACK}>
-        {tiersOf(items).map(({ tier, start }, t, all) => (
-          <ul key={`${tier[0].row.group}-${start}`} className={TIER_ROW}>
+        {cutTiers(items, ({ row }) => held.was(row).group, slugs).map(({ tier, start }, t, all) => (
+          <ul key={`${held.was(tier[0].row).group}-${start}`} className={TIER_ROW}>
             {tier.map(({ row: e, leaving }, i) => {
               const index = start + i;
               const state = api.state(e.id);

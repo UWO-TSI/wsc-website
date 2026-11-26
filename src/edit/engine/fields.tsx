@@ -289,10 +289,11 @@ export function EditButton({ labelKey, hrefKey, variant, arrow, onAccent, classN
     el.style.font = cs.font;
     el.style.letterSpacing = cs.letterSpacing;
     el.style.color = cs.color;
-    /* The cap is the width of the region the button is placed in. A button
-       row is often a flex item sized to its content, which would make the
-       cap depend on the label it limits, so the row itself is not used. */
-    const region = face.current!.closest<HTMLElement>('li, section, nav, footer, form');
+    /* The cap is the width of the region the button is placed in (a list
+       item, a card, a section). A button row is often a flex item sized to
+       its content, which would make the cap depend on the label it limits,
+       so the row itself is not used. */
+    const region = face.current!.closest<HTMLElement>('li, article, section, nav, footer, form');
     const regionWidth = region
       ? region.clientWidth - parseFloat(getComputedStyle(region).paddingLeft) - parseFloat(getComputedStyle(region).paddingRight)
       : document.documentElement.clientWidth;

@@ -28,7 +28,7 @@ import { LIMITS } from '@/lib/admin-config';
 import type { ListDraftApi, ListRowState, ListTable } from '@/edit/list-draft';
 import { COPY } from '@/edit/engine/copy';
 import { currentRow } from '@/edit/engine/draft-store';
-import { onRemeasure, textHeight, textWidth } from '@/edit/engine/measure';
+import { onRemeasure, textHeight } from '@/edit/engine/measure';
 import { blurField, edited, enterTray, focusField, getUi, setUi, subscribeUi, type Tone } from '@/edit/engine/ui-store';
 
 /*
@@ -104,16 +104,15 @@ export interface RowFieldProps {
 export function RowField({ table, id, column, value, max, label, who, placeholder, block, className, onChange }: RowFieldProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  /* As the text fields in fields.tsx: a block field takes its cell, a
-     one-line field is the size of its text (the placeholder while empty)
-     and capped at its cell by max-width. Only the height is measured, at
-     the width the field was given. */
+  /* As the text fields in fields.tsx: a block field takes its cell; a
+     one-line field is the size of its text (the placeholder while empty),
+     through a hidden copy of it (.ed-size, FitSize in fields.tsx), and
+     never wider than its cell. Only the height is measured, at the width
+     the field was given. */
   const shown = value || placeholder || label;
   useMeasure(() => {
     const el = ref.current;
-    if (!el) return;
-    if (!block) el.style.width = `min(${textWidth(el, shown) + 2}px, 100%)`;
-    el.style.height = `${textHeight(el, shown, el.clientWidth)}px`;
+    if (el) el.style.height = `${textHeight(el, shown, el.clientWidth)}px`;
   }, [shown, block]);
 
   return (
@@ -121,6 +120,11 @@ export function RowField({ table, id, column, value, max, label, who, placeholde
       className={`ed ${block ? 'ed-block' : 'ed-line'} ${className ?? ''}`.trim()}
       data-ed-field={fieldId(table, id, column)}
     >
+      {!block && (
+        <span className="ed-size" aria-hidden="true">
+          {shown}
+        </span>
+      )}
       <textarea
         ref={ref}
         className="ed-in"
@@ -210,24 +214,23 @@ export function InlineNumber({
   className?: string;
   onChange: (value: number) => void;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
   const [typed, setTyped] = useState<string | null>(null);
   const digits = String(max).length;
+  const shown = typed ?? String(value);
 
-  useMeasure(() => {
-    const el = ref.current;
-    if (el) el.style.width = `${textWidth(el, typed ?? String(value)) + 2}px`;
-  }, [typed, value]);
-
+  /* As wide as the number, through a hidden copy of it (.ed-size), and
+     never wider than its cell. */
   return (
     <span className={`ed ed-line ${className ?? ''}`.trim()} data-ed-field={fieldId(table, id, column)}>
+      <span className="ed-size" aria-hidden="true">
+        {shown}
+      </span>
       <input
-        ref={ref}
         className="ed-in"
         inputMode="numeric"
         pattern="[0-9]*"
         maxLength={digits}
-        value={typed ?? String(value)}
+        value={shown}
         aria-label={nameFor(label, who)}
         onChange={(e) => {
           const raw = e.target.value.replace(/\D/g, '').slice(0, digits);

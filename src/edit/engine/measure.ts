@@ -1,7 +1,9 @@
 /*
   Text measurement for edit-mode fields. A field's width comes from the
-  component's layout (CSS) or, for a field as wide as its text, from
-  textWidth here; nothing reads the surrounding layout to guess a column.
+  component's layout (CSS); a field as wide as its text gets that width
+  from a hidden copy of the text in its shell (.ed-size in edit.css), and
+  a button label from textWidth here. Nothing reads the surrounding
+  layout to guess a column.
   Heights are measured at the width the field was given. Fields measure
   when they mount, on every change to their text, when the fonts finish
   loading, and when the window is resized.

@@ -48,10 +48,38 @@
   display: inline-block;
 }
 
-/* A one-line list field is as wide as its text (measured), never wider
-   than its cell. */
+/* A one-line list field is as wide as its text (.ed-size below), never
+   wider than its cell. */
 .ed-line > .ed-in {
   max-width: 100%;
+}
+
+/*
+  The width of a field as wide as its text (.ed-fit, and the one-line
+  list fields): a hidden copy of the text, before the control, is the only
+  content of the shell with a width of its own. It holds no height, so the
+  control alone sets the field's height. The control has width 0, so it
+  adds nothing to the shell's size, and min-width 100%, so it then fills
+  the shell. The shell is sized as the text itself would be: one line
+  wide, or the space it has when the line is longer, never more. Spaces
+  count, so a typed trailing space widens the field, and the copy may
+  break anywhere, so a long unbroken value never widens the element. The
+  2px at the end is room for the caret.
+*/
+.ed-size {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  padding-right: 2px;
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.ed-size + .ed-in {
+  width: 0;
+  min-width: 100%;
 }
 
 /*
@@ -64,8 +92,8 @@
 
   The box comes from the component: a fill field (.ed-fill) takes the
   element's width, which the component sets (a measure, a grid cell, a
-  card's column); a fit field (.ed-fit) is as wide as its text and never
-  wider than that box.
+  card's column); a fit field (.ed-fit) is as wide as its text (.ed-size)
+  and never wider than that box.
 */
 .ed.ed-out {
   padding: 0;

@@ -3,8 +3,9 @@ import type { ComponentType } from 'react';
 import { useEditSnapshot, type EditEngineApi } from '@/edit/edit-mode';
 
 /*
-  The list draft interface. Types, two constants and the branch below, so
-  importing it costs the anonymous bundle almost nothing. The
+  The list draft interface. Types, two constants, the branch and the
+  drafted file reader below, so importing it costs the anonymous bundle
+  almost nothing. The
   implementation is in src/edit/engine/draft-store.ts and is reached
   through useEditSnapshot().engine?.list(table) while edit mode is on.
 
@@ -97,6 +98,20 @@ export interface ListEngineApi extends EditEngineApi {
 export function useListEditBranch(): boolean {
   const { status, engine } = useEditSnapshot();
   return status === 'editing' && engine !== null && 'listEditors' in engine;
+}
+
+/**
+ * Reads the drafted files of one list: the object URL of a file chosen for
+ * a row's column and not yet published, or null. Visitor components put it
+ * before the stored object name, so Preview shows a new headshot, logo or
+ * card photo as visitors will see it after Publish. Always null while the
+ * engine is not loaded, so a visitor's page reads the stored files only.
+ */
+export function useDraftFile(table: ListTable): (id: string, column: string) => string | null {
+  /* The snapshot changes on every draft change, so a chosen file re-renders the caller. */
+  const { engine } = useEditSnapshot();
+  const list = engine?.list(table);
+  return (id, column) => list?.fileUrl(id, column) ?? null;
 }
 
 export function ListEditBranch<P extends object>({ name, props }: { name: ListEditorName; props: P }) {

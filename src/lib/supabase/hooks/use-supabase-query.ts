@@ -56,7 +56,7 @@ export function useSupabaseQuery<T>(
     editList = false,
   } = options;
 
-  const { engine, rev, refresh } = useEditSnapshot();
+  const { engine, status, rev, refresh } = useEditSnapshot();
 
   /*
     In edit mode a list table is read without its visibility filter (an
@@ -127,6 +127,9 @@ export function useSupabaseQuery<T>(
     fetchData();
   }, [fetchData, refresh]);
 
+  /* `status` is a dependency because Preview changes the rows without a
+     draft change: the engine leaves hidden and removed rows out of every
+     list while Preview is on. */
   const shown = useMemo(() => {
     if (!engine) return data;
     const rows = engine.rows(table, data);
@@ -137,7 +140,7 @@ export function useSupabaseQuery<T>(
       return r[visibility] !== false && list.state(String(r.id)) !== 'removing';
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [engine, rev, table, data, visibility, editList]);
+  }, [engine, status, rev, table, data, visibility, editList]);
 
   return { data: shown, loading, error, refetch: fetchData };
 }

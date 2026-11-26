@@ -8,6 +8,7 @@ import { useReveal } from '@/lib/reveal';
 import { useSupabaseQuery } from '@/lib/supabase/hooks/use-supabase-query';
 import type { ExecArea, ExecGroup, Executive } from '@/types/database';
 import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
+import { useDraftFile } from '@/edit';
 
 /*
   The roster, as one centred row group per role, in role order.
@@ -112,8 +113,13 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
   const { data: groups } = useSupabaseQuery<ExecGroup>('exec_groups', { enabled: needsLookups });
   const { data: areas } = useSupabaseQuery<ExecArea>('exec_areas', { enabled: needsLookups });
 
+  /* A headshot chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('executives');
+  const headshot = (executive: Executive) =>
+    draftFile(executive.id, 'headshot_path') ?? getPublicUrl('headshots', executive.headshot_path);
+
   const photos = executives.flatMap((executive) => {
-    const src = getPublicUrl('headshots', executive.headshot_path);
+    const src = headshot(executive);
     return src ? [{ id: executive.id, src }] : [];
   });
 
@@ -138,7 +144,7 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
         return (
           <ul key={tier[0].group} className={TIER_ROW}>
             {tier.map((executive) => {
-              const src = getPublicUrl('headshots', executive.headshot_path);
+              const src = headshot(executive);
               return (
                 <li
                   key={executive.id}
@@ -158,7 +164,9 @@ function ExecutiveGridView({ tiers }: { tiers: Executive[][] }) {
                     />
                   </span>
 
-                  <div className="flex flex-col gap-1">
+                  {/* A word longer than the cell breaks inside the cell
+                      instead of running over the next name. */}
+                  <div className="flex flex-col gap-1 [overflow-wrap:anywhere]">
                     <span className="title-sm">{executive.name}</span>
                     <span className="meta">{titleOf(executive, groups, areas)}</span>
                   </div>

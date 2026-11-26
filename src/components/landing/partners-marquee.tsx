@@ -6,7 +6,7 @@ import RevealImage from '@/components/ui/reveal-image';
 import type { Sponsor } from '@/types/database';
 import Slab from '@/components/ui/slab';
 import Skeleton from '@/components/ui/skeleton';
-import { EditableText, useEditMode } from '@/edit';
+import { EditableText, useDraftFile, useEditMode } from '@/edit';
 import { getPublicUrl } from '@/lib/supabase/storage';
 
 /*
@@ -69,6 +69,10 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
   const { editing } = useEditMode();
 
   const active = sponsors.filter((sponsor) => sponsor.active);
+  /* A logo chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('sponsors');
+  const logoOf = (sponsor: Sponsor) =>
+    draftFile(sponsor.id, 'logo_path') ?? getPublicUrl('sponsor-logos', sponsor.logo_path);
 
   useEffect(() => {
     const onVisibility = () => setHidden(document.hidden);
@@ -109,8 +113,11 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
     grew by a whole band the moment the sponsors landed, shoving everything
     below it down. Loading renders the slab and a row of skeleton tiles at the
     real size instead.
+
+    In edit mode the strip stays with no logos, so its label can still be
+    edited. Preview leaves it out, as a visitor's page does.
   */
-  if (!loading && active.length === 0) return null;
+  if (!loading && active.length === 0 && !editing) return null;
 
   return (
     <Slab tone="logo" aria-labelledby="partners-heading">
@@ -127,10 +134,10 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
               ))}
             </div>
           </div>
-        ) : editing || active.length <= STATIC_MAX ? (
+        ) : active.length === 0 ? null : editing || active.length <= STATIC_MAX ? (
           <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-center gap-x-[clamp(2.5rem,6vw,5rem)] gap-y-8">
             {active.map((sponsor) => (
-              <SponsorMark key={sponsor.id} sponsor={sponsor} still />
+              <SponsorMark key={sponsor.id} sponsor={sponsor} logoUrl={logoOf(sponsor)} still />
             ))}
           </div>
         ) : (
@@ -156,7 +163,7 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
                   aria-hidden={copy > 0}
                 >
                   {active.map((sponsor) => (
-                    <SponsorMark key={`${copy}-${sponsor.id}`} sponsor={sponsor} />
+                    <SponsorMark key={`${copy}-${sponsor.id}`} sponsor={sponsor} logoUrl={logoOf(sponsor)} />
                   ))}
                 </div>
               ))}
@@ -169,9 +176,15 @@ export default function PartnersMarquee({ sponsors, loading }: PartnersMarqueePr
 }
 
 /* `still` drops the hover scale, for the static grid in edit mode. */
-function SponsorMark({ sponsor, still = false }: { sponsor: Sponsor; still?: boolean }) {
-  const logoUrl = getPublicUrl('sponsor-logos', sponsor.logo_path);
-
+function SponsorMark({
+  sponsor,
+  logoUrl,
+  still = false,
+}: {
+  sponsor: Sponsor;
+  logoUrl: string | null;
+  still?: boolean;
+}) {
   return (
     <div
       className={`${still ? 'flex flex-none items-center justify-center' : 'mq-item'} h-12 w-36 sm:h-14 sm:w-44`}

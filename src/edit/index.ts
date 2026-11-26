@@ -14,7 +14,8 @@
 
   Edit mode is entered with enterEditMode() (after sign-in) and left with
   leaveEditMode(); setEditPreview() switches Preview. List editors reach
-  the list draft through useEditSnapshot().engine?.list(table).
+  the list draft through useEditSnapshot().engine?.list(table), and visitor
+  components read a drafted row file through useDraftFile(table).
 */
 
 export {
@@ -27,7 +28,7 @@ export {
   type EditStatus,
   type EditEngineApi,
 } from '@/edit/edit-mode';
-export type { ListTable, ListDraftApi, ListRowState } from '@/edit/list-draft';
+export { useDraftFile, type ListTable, type ListDraftApi, type ListRowState } from '@/edit/list-draft';
 export { default as EditableText, type EditableTextProps, type TextTag } from '@/edit/editable-text';
 export { default as EditableLines, type EditableLinesProps } from '@/edit/editable-lines';
 export { default as EditableButton, type EditableButtonProps } from '@/edit/editable-button';

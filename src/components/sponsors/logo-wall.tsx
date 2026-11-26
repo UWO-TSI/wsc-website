@@ -9,7 +9,7 @@ import LogoCard, { TILE_SIZE } from '@/components/sponsors/logo-card';
 import { getPublicUrl } from '@/lib/supabase/storage';
 import { useReveal } from '@/lib/reveal';
 import { useSiteContent } from '@/providers/site-content-provider';
-import { EditableText, useEditMode } from '@/edit';
+import { EditableText, useDraftFile, useEditMode } from '@/edit';
 import { ListEditBranch, useListEditBranch } from '@/edit/list-draft';
 
 interface LogoWallProps {
@@ -72,9 +72,12 @@ function LogoGrid(props: { sponsors: Sponsor[] }) {
 }
 
 function LogoGridView({ sponsors }: { sponsors: Sponsor[] }) {
-  const ids = sponsors.flatMap((sponsor) =>
-    getPublicUrl('sponsor-logos', sponsor.logo_path ?? null) ? [sponsor.id] : []
-  );
+  /* A logo chosen in edit mode and not yet published shows in Preview. */
+  const draftFile = useDraftFile('sponsors');
+  const logoOf = (sponsor: Sponsor) =>
+    draftFile(sponsor.id, 'logo_path') ?? getPublicUrl('sponsor-logos', sponsor.logo_path ?? null);
+
+  const ids = sponsors.flatMap((sponsor) => (logoOf(sponsor) ? [sponsor.id] : []));
   const pending = useRef(new Set(ids));
   const [ready, setReady] = useState(ids.length === 0);
   const ref = useReveal<HTMLDivElement>({ ready });
@@ -90,6 +93,7 @@ function LogoGridView({ sponsors }: { sponsors: Sponsor[] }) {
         <LogoCard
           key={sponsor.id}
           sponsor={sponsor}
+          logoUrl={logoOf(sponsor)}
           rank={index}
           total={sponsors.length}
           onReady={() => settle(sponsor.id)}
